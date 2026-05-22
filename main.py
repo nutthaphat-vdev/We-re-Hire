@@ -38,7 +38,6 @@ class Settings(BaseSettings):
     supabase_url:         str = "https://wexupoegrynxbhdzioym.supabase.co"
     supabase_anon_key:    str = ""
     supabase_jwt_secret:  str = ""  # Settings → API → JWT Secret
-    google_client_id:     str = ""  # Google Cloud Console → OAuth 2.0 Client ID
 
     class Config:
         env_file = ".env"
@@ -163,23 +162,22 @@ async def google_callback(
     db:   asyncpg.Connection = Depends(get_db),
 ):
     """
-    Frontend ได้ Google ID token แล้วส่งมาที่นี่
-    Backend verify ด้วย Google public keys → สร้าง/หา user ใน DB → ออก JWT ของเรา
+    Frontend ได้ Supabase session access_token แล้วส่งมาที่นี่
+    Backend verify ด้วย SUPABASE_JWT_SECRET (HS256) → สร้าง/หา user ใน DB → ออก JWT ของเรา
     """
-    from google.oauth2 import id_token
-    from google.auth.transport import requests as grequests
     try:
-        idinfo = id_token.verify_oauth2_token(
+        payload = jwt.decode(
             body.access_token,
-            grequests.Request(),
-            settings.google_client_id,
+            settings.supabase_jwt_secret,
+            algorithms=["HS256"],
+            options={"verify_aud": False},
         )
     except Exception as e:
         logger.error(f"[google_callback] verify failed | token[:60]={body.access_token[:60]!r} | error={type(e).__name__}: {e}")
-        raise HTTPException(status_code=401, detail=f"Google token ไม่ถูกต้อง: {e}")
+        raise HTTPException(status_code=401, detail=f"Token ไม่ถูกต้อง: {e}")
 
-    supabase_uid = idinfo.get("sub")
-    email        = idinfo.get("email", "")
+    supabase_uid = payload.get("sub")
+    email        = payload.get("email") or payload.get("user_metadata", {}).get("email", "")
 
     if not email:
         raise HTTPException(status_code=400, detail="ไม่พบ email จาก Google")
