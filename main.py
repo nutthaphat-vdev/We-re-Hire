@@ -6,8 +6,11 @@ Stack: FastAPI + asyncpg + Supabase (PostgreSQL + PostGIS) + PyJWT
 """
 
 import os
+import logging
 import asyncpg
 import jwt
+
+logger = logging.getLogger("wehire")
 import bcrypt
 import httpx
 from contextlib import asynccontextmanager
@@ -171,7 +174,8 @@ async def google_callback(
             grequests.Request(),
             settings.google_client_id,
         )
-    except ValueError as e:
+    except Exception as e:
+        logger.error(f"[google_callback] verify failed | token[:60]={body.access_token[:60]!r} | error={type(e).__name__}: {e}")
         raise HTTPException(status_code=401, detail=f"Google token ไม่ถูกต้อง: {e}")
 
     supabase_uid = idinfo.get("sub")
