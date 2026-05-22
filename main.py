@@ -163,6 +163,8 @@ async def google_callback(
     Backend verify → สร้าง/หา user ใน DB → ออก JWT ของเรา
     """
     # Verify Supabase JWT ด้วย SUPABASE_JWT_SECRET (HS256)
+    _header = jwt.get_unverified_header(body.access_token)
+    print(f"[google_callback] token[:50]={body.access_token[:50]!r}  alg={_header.get('alg')}  kid={_header.get('kid')}", flush=True)
     try:
         payload = jwt.decode(
             body.access_token,
