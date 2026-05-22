@@ -163,15 +163,36 @@ async def google_callback(
 ):
     """
     Frontend ได้ Supabase session access_token แล้วส่งมาที่นี่
-    Backend verify ด้วย SUPABASE_JWT_SECRET (HS256) → สร้าง/หา user ใน DB → ออก JWT ของเรา
+    Backend verify ด้วย Supabase JWKS (ES256) → สร้าง/หา user ใน DB → ออก JWT ของเรา
     """
+    from jwt.algorithms import ECAlgorithm
     try:
+        # ดึง JWKS จาก Supabase
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(f"{settings.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json")
+            r.raise_for_status()
+            jwks = r.json()
+
+        # หา public key ที่ตรงกับ kid ใน token header
+        header = jwt.get_unverified_header(body.access_token)
+        kid = header.get("kid")
+        public_key = None
+        for key in jwks.get("keys", []):
+            if key.get("kid") == kid:
+                public_key = ECAlgorithm.from_jwk(key)
+                break
+
+        if not public_key:
+            raise HTTPException(status_code=401, detail="ไม่พบ signing key สำหรับ token นี้")
+
         payload = jwt.decode(
             body.access_token,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256"],
+            public_key,
+            algorithms=["ES256"],
             options={"verify_aud": False},
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"[google_callback] verify failed | token[:60]={body.access_token[:60]!r} | error={type(e).__name__}: {e}")
         raise HTTPException(status_code=401, detail=f"Token ไม่ถูกต้อง: {e}")
