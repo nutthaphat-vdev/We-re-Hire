@@ -405,9 +405,16 @@
       <div style="padding:32px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
           <div class="page-title">การแจ้งเตือน</div>
-          <button class="btn btn-secondary btn-sm" onclick="markAllRead()">อ่านทั้งหมด</button>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-secondary btn-sm" onclick="loadNotifications()" title="รีเฟรช" style="padding:6px 10px;font-size:16px;line-height:1">↻</button>
+            <button class="btn btn-secondary btn-sm" id="markAllBtn" onclick="markAllRead()">อ่านทั้งหมด</button>
+          </div>
         </div>
         <div class="page-sub">การอัปเดตล่าสุด</div>
+        <div style="display:flex;gap:0;background:var(--surface2);border-radius:8px;padding:3px;margin-bottom:20px;width:fit-content;border:1px solid var(--border)">
+          <button id="notifFilterAll" class="btn btn-sm" onclick="setNotifFilter('all')" style="border-radius:5px;background:var(--accent);color:#0d0f12;border:none;font-weight:600">ทั้งหมด</button>
+          <button id="notifFilterUnread" class="btn btn-sm" onclick="setNotifFilter('unread')" style="border-radius:5px;background:transparent;color:var(--muted);border:none">ยังไม่อ่าน <span id="notifUnreadCount" style="display:none;margin-left:4px;background:var(--danger);color:#fff;font-size:10px;padding:1px 5px;border-radius:8px"></span></button>
+        </div>
         <div id="notificationsContent"></div>
       </div>
     </div>
@@ -461,7 +468,7 @@
 </div>
 
 <script>
-const API = 'https://web-production-1db39.up.railway.app';
+const API = 'https://web-production-03c5a.up.railway.app';
 let token = localStorage.getItem('wh_token') || '';
 let userRole = localStorage.getItem('wh_role') || '';
 let userId = localStorage.getItem('wh_uid') || '';
@@ -806,6 +813,8 @@ async function loadWorkerProfile() {
       </div>`;
     // โหลด review summary async
     loadReviewSummary(userId, 'worker', 'workerReviewSummary');
+    // Re-init dropdowns เพราะ form render หลัง initApp
+    initCategoryDropdowns();
   } catch(e) {
     // ยังไม่มีโปรไฟล์ — แสดงฟอร์มสร้าง
     if (e.message.includes('ไม่พบโปรไฟล์') || e.message.includes('404')) {
@@ -848,6 +857,8 @@ async function loadWorkerProfile() {
           <div id="alertCreateProfile"></div>
           <button class="btn btn-primary" onclick="doCreateProfile()">✅ สร้างโปรไฟล์</button>
         </div>`;
+      // Re-init dropdowns หลัง form render
+      initCategoryDropdowns();
     } else {
       el.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
     }
@@ -1399,10 +1410,45 @@ async function submitReport() {
 // ─── NOTIFICATIONS ─────────────────────────────────────────
 
 let _notifTimer = null;
+let _notifFilter = 'all';
+
+const _notifIconMap = {
+  new_applicant:      '👤',
+  hired:              '✅',
+  rejected:           '❌',
+  shortlisted:        '📋',
+  application_update: '📝',
+  review_pending:     '⭐',
+  payment:            '💰',
+  background_check:   '🛡️',
+  employer_verified:  '🏅',
+  default:            '🔔',
+};
+
+const _notifLabelMap = {
+  new_applicant:      { text: 'ผู้สมัครใหม่',  color: 'badge-blue'  },
+  hired:              { text: 'ได้รับการจ้าง', color: 'badge-green' },
+  rejected:           { text: 'ไม่ผ่าน',        color: 'badge-danger'},
+  shortlisted:        { text: 'คัดเลือกแล้ว',  color: 'badge-warn'  },
+  application_update: { text: 'อัปเดตใบสมัคร', color: 'badge-gray'  },
+  review_pending:     { text: 'รอรีวิว',        color: 'badge-warn'  },
+  payment:            { text: 'การชำระเงิน',    color: 'badge-green' },
+  background_check:   { text: 'ยืนยันตัวตน',   color: 'badge-green' },
+  employer_verified:  { text: 'Verified',        color: 'badge-blue'  },
+};
+
+function _notifDateLabel(dateStr) {
+  const d = new Date(dateStr);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yest  = new Date(today); yest.setDate(yest.getDate()-1);
+  d.setHours(0,0,0,0);
+  if (d.getTime() === today.getTime()) return 'วันนี้';
+  if (d.getTime() === yest.getTime())  return 'เมื่อวาน';
+  return new Date(dateStr).toLocaleDateString('th-TH', {day:'numeric',month:'long',year:'numeric'});
+}
 
 async function startNotifPolling() {
   await refreshNotifBadge();
-  // poll ทุก 30 วิ
   _notifTimer = setInterval(refreshNotifBadge, 30000);
 }
 
@@ -1410,60 +1456,127 @@ async function refreshNotifBadge() {
   try {
     const data = await api('GET', '/notifications/unread-count');
     const badge = document.getElementById('notifBadge');
+    const countEl = document.getElementById('notifUnreadCount');
     if (!badge) return;
     if (data.count > 0) {
-      badge.textContent = data.count > 99 ? '99+' : data.count;
+      const label = data.count > 99 ? '99+' : data.count;
+      badge.textContent = label;
       badge.style.display = 'inline-block';
+      if (countEl) { countEl.textContent = label; countEl.style.display = 'inline-block'; }
     } else {
       badge.style.display = 'none';
+      if (countEl) countEl.style.display = 'none';
     }
   } catch(e) {}
+}
+
+function setNotifFilter(filter) {
+  _notifFilter = filter;
+  const all    = document.getElementById('notifFilterAll');
+  const unread = document.getElementById('notifFilterUnread');
+  if (filter === 'all') {
+    all.style.background    = 'var(--accent)'; all.style.color    = '#0d0f12'; all.style.fontWeight = '600';
+    unread.style.background = 'transparent';   unread.style.color = 'var(--muted)'; unread.style.fontWeight = '';
+  } else {
+    unread.style.background = 'var(--accent)'; unread.style.color = '#0d0f12'; unread.style.fontWeight = '600';
+    all.style.background    = 'transparent';   all.style.color    = 'var(--muted)'; all.style.fontWeight = '';
+  }
+  loadNotifications();
 }
 
 async function loadNotifications() {
   const el = document.getElementById('notificationsContent');
   el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
   try {
-    // mark all read เมื่อเปิดหน้า
-    await api('PATCH', '/notifications/read-all');
-    refreshNotifBadge();
+    const qs   = _notifFilter === 'unread' ? '?limit=100&unread=true' : '?limit=100';
+    const data = await api('GET', `/notifications${qs}`);
 
-    const data = await api('GET', '/notifications?limit=50');
     if (!data.length) {
-      el.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div><div class="empty-text">ยังไม่มีการแจ้งเตือน</div></div>';
+      const msg = _notifFilter === 'unread' ? 'ไม่มีการแจ้งเตือนที่ยังไม่อ่าน' : 'ยังไม่มีการแจ้งเตือน';
+      el.innerHTML = `<div class="empty"><div class="empty-icon">🔔</div><div class="empty-text">${msg}</div></div>`;
       return;
     }
-    const iconMap = {
-      new_applicant: '👤',
-      hired:         '✅',
-      rejected:      '❌',
-      shortlisted:   '📋',
-      new_applicant: '🔔',
-    };
-    el.innerHTML = data.map(n => `
-      <div class="card" style="padding:14px 18px;${!n.is_read ? 'border-left:3px solid var(--accent)' : ''}">
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <div style="font-size:22px;margin-top:2px">${iconMap[n.type] || '🔔'}</div>
-          <div style="flex:1">
-            <div style="font-weight:600;font-size:14px">${n.title}</div>
-            ${n.body ? `<div style="font-size:13px;color:var(--muted);margin-top:4px;white-space:pre-line">${n.body}</div>` : ''}
-            <div style="font-size:11px;color:var(--muted);margin-top:6px;font-family:'IBM Plex Mono',monospace">
-              ${new Date(n.created_at).toLocaleString('th-TH')}
+
+    // Group by smart date label
+    const groups = {};
+    data.forEach(n => {
+      const key = _notifDateLabel(n.created_at);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(n);
+    });
+
+    const html = Object.entries(groups).map(([dateLabel, notifs]) => `
+      <div style="margin-bottom:24px">
+        <div style="font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase">${dateLabel}</div>
+        ${notifs.map(n => {
+          const icon  = _notifIconMap[n.type]  || _notifIconMap.default;
+          const lbl   = _notifLabelMap[n.type] || { text: n.type, color: 'badge-gray' };
+          const time  = new Date(n.created_at).toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'});
+          const unread = !n.is_read;
+          return `
+          <div class="notif-card card" data-id="${n.id}" style="padding:14px 16px;margin-bottom:8px;transition:all .2s;${unread ? 'border-left:3px solid var(--accent);background:rgba(0,229,160,.04)' : ''}">
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="font-size:22px;line-height:1.3;flex-shrink:0">${icon}</div>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
+                  <div style="font-weight:600;font-size:14px;word-break:break-word">${n.title}</div>
+                  <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">
+                    <span class="badge ${lbl.color}" style="font-size:10px">${lbl.text}</span>
+                    ${unread ? '<span class="badge badge-blue" style="font-size:10px">ใหม่</span>' : ''}
+                  </div>
+                </div>
+                ${n.body ? `<div style="font-size:13px;color:var(--muted);margin-bottom:8px;white-space:pre-wrap;word-break:break-word">${n.body}</div>` : ''}
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <div style="font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace">${time}</div>
+                  ${unread ? `<button class="btn btn-secondary btn-sm" onclick="markNotifRead('${n.id}',this)" style="font-size:11px">อ่านแล้ว</button>` : '<span style="font-size:11px;color:var(--muted)">อ่านแล้ว ✓</span>'}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>`).join('');
+          </div>`;
+        }).join('')}
+      </div>
+    `).join('');
+
+    el.innerHTML = html;
   } catch(e) {
     el.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
   }
 }
 
-async function markAllRead() {
+async function markNotifRead(notifId, btn) {
   try {
+    await api('PATCH', `/notifications/${notifId}/read`);
+    const card = btn.closest('.notif-card');
+    if (card) {
+      card.style.borderLeft = '';
+      card.style.background = '';
+      card.querySelectorAll('.badge-blue').forEach(b => b.remove());
+      btn.outerHTML = '<span style="font-size:11px;color:var(--muted)">อ่านแล้ว ✓</span>';
+    }
+    refreshNotifBadge();
+  } catch(e) {
+    alert(e.message);
+  }
+}
+
+async function markAllRead() {
+  const btn = document.getElementById('markAllBtn');
+  try {
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>'; }
     await api('PATCH', '/notifications/read-all');
     refreshNotifBadge();
-    loadNotifications();
-  } catch(e) {}
+    // Update only notification cards
+    document.querySelectorAll('#notificationsContent .notif-card').forEach(card => {
+      card.style.borderLeft = '';
+      card.style.background = '';
+      card.querySelectorAll('.badge-blue').forEach(b => b.remove());
+      const markBtn = card.querySelector('button[onclick*="markNotifRead"]');
+      if (markBtn) markBtn.outerHTML = '<span style="font-size:11px;color:var(--muted)">อ่านแล้ว ✓</span>';
+    });
+    if (btn) { btn.disabled = false; btn.innerHTML = 'อ่านทั้งหมด'; }
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.innerHTML = 'อ่านทั้งหมด'; }
+  }
 }
 
 // ─── REVIEW SUMMARY ────────────────────────────────────────
