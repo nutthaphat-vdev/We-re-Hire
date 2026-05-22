@@ -1,9 +1,9 @@
 # WeHire — Progress & Roadmap
-อัปเดต: 22 พฤษภาคม 2568
+อัปเดต: 23 พฤษภาคม 2568
 
 ---
 
-## ✅ สิ่งที่ทำเสร็จแล้ววันนี้
+## ✅ สิ่งที่ทำเสร็จแล้ว
 
 ### 🔧 Infrastructure
 - [x] Supabase PostgreSQL + PostGIS setup
@@ -17,7 +17,7 @@
 - [x] POST /auth/register (email + password)
 - [x] POST /auth/login
 - [x] GET /auth/me
-- [x] Google OAuth via Supabase (login + register)
+- [x] Google OAuth via Supabase — verify ด้วย JWKS + ES256 (ไม่ใช่ HS256/RS256)
 
 ### 👷 Worker
 - [x] GET/POST/PATCH /workers/profile/me
@@ -54,18 +54,34 @@
 - [x] Auto-reveal เมื่อทั้งคู่ส่ง
 - [x] หน้า "รีวิวของฉัน" ใน sidebar
 
+### 🔒 Trust & Safety
+- [x] Report user endpoint + UI ปุ่ม 🚩
+- [x] Block user endpoint
+- [x] 006_trust_safety.sql migration
+
+### 🔔 Notifications
+- [x] Notification badge (unread count) ใน sidebar — poll ทุก 30 วิ
+- [x] หน้า Notifications list พร้อม filter ทั้งหมด / ยังไม่อ่าน
+- [x] Smart date labels (วันนี้ / เมื่อวาน / full Thai date)
+- [x] Type badges สีต่างกันตามประเภท (hired, rejected, ผู้สมัครใหม่ ฯลฯ)
+- [x] ปุ่มอ่านแล้ว (ทีละอัน + อ่านทั้งหมด)
+
+### 🗺️ Zones
+- [x] GET /zones endpoint (Master Data API)
+- [x] #jobZone dropdown โหลดจาก API แทน hardcode — พร้อมรองรับ 50 เขต
+
 ### 🗄️ Database Migrations (run แล้วทั้งหมด)
 - [x] supabase_setup_full.sql
 - [x] 003_review_system.sql
 - [x] 004_review_star_rating.sql
 - [x] 005_job_categories.sql
+- [x] 006_trust_safety.sql
 
 ---
 
 ## 🔧 ต้องทำต่อ (ก่อน Present)
 
-- [ ] Notification badge ใน sidebar
-- [ ] หน้า Notifications list
+- [ ] เพิ่ม zones กรุงเทพ 50 เขต + ปริมณฑล — INSERT ใน Supabase โดยตรง ไม่แก้ code
 - [ ] Review summary (ดาวเฉลี่ย + top tags) บน profile card
 - [ ] ปุ่ม 📞 โผล่ทันทีหลังกด hired โดยไม่ต้อง reload
 - [ ] Google Maps API Key — restrict domain ใน Google Console
@@ -76,14 +92,12 @@
 ## 📋 Roadmap อนาคต
 
 ### Phase 1 — Polish MVP
-- [ ] Notification badge + list
 - [ ] Review summary บน profile
 - [ ] Landing page อธิบาย product
 
 ### Phase 2 — Trust & Safety
 - [ ] Background check flow
 - [ ] Employer verification
-- [ ] Report/block user
 
 ### Phase 3 — Wallet & Payment 💰
 - [ ] Wallet + Escrow system
@@ -112,7 +126,3 @@
 >
 > แก้ด้วย: ล็อคเบอร์ไว้จนกว่าจะ hired ผ่านแอพ
 > ปิดสนิทด้วย: Phase 3 Wallet — เงินอยู่ในแอพ ใครก็ไม่อยากออกนอกระบบ
-
----
-
-*พักได้เลยพี่ 🙏 วันนี้ทำได้เยอะมากๆ!*
