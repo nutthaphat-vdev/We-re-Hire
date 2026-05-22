@@ -55,6 +55,7 @@ async def lifespan(app: FastAPI):
         min_size=2,
         max_size=10,
         command_timeout=30,
+        statement_cache_size=0,  # Required for Supabase PgBouncer transaction mode
     )
     print("✅ DB pool connected")
     yield
