@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     supabase_url:         str = "https://wexupoegrynxbhdzioym.supabase.co"
     supabase_anon_key:    str = ""
     supabase_jwt_secret:  str = ""  # Settings → API → JWT Secret
+    google_client_id:     str = ""  # Google Cloud Console → OAuth 2.0 Client ID
 
     class Config:
         env_file = ".env"
@@ -159,26 +160,22 @@ async def google_callback(
     db:   asyncpg.Connection = Depends(get_db),
 ):
     """
-    Frontend ได้ Supabase session แล้วส่ง access_token มาที่นี่
-    Backend verify → สร้าง/หา user ใน DB → ออก JWT ของเรา
+    Frontend ได้ Google ID token แล้วส่งมาที่นี่
+    Backend verify ด้วย Google public keys → สร้าง/หา user ใน DB → ออก JWT ของเรา
     """
-    # Verify Supabase JWT ด้วย SUPABASE_JWT_SECRET (HS256)
-    _header = jwt.get_unverified_header(body.access_token)
-    print(f"[google_callback] token[:50]={body.access_token[:50]!r}  alg={_header.get('alg')}  kid={_header.get('kid')}", flush=True)
+    from google.oauth2 import id_token
+    from google.auth.transport import requests as grequests
     try:
-        payload = jwt.decode(
+        idinfo = id_token.verify_oauth2_token(
             body.access_token,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256"],
-            options={"verify_aud": False},
+            grequests.Request(),
+            settings.google_client_id,
         )
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token หมดอายุ กรุณา login ใหม่")
-    except jwt.InvalidTokenError as e:
-        raise HTTPException(status_code=401, detail=f"Supabase token ไม่ถูกต้อง: {e}")
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=f"Google token ไม่ถูกต้อง: {e}")
 
-    supabase_uid = payload.get("sub")
-    email        = payload.get("email") or payload.get("user_metadata", {}).get("email", "")
+    supabase_uid = idinfo.get("sub")
+    email        = idinfo.get("email", "")
 
     if not email:
         raise HTTPException(status_code=400, detail="ไม่พบ email จาก Google")
