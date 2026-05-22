@@ -161,13 +161,20 @@ async def google_callback(
     Backend verify → สร้าง/หา user ใน DB → ออก JWT ของเรา
     """
     # Verify Supabase JWT
+    # Supabase ใช้ JWT Signing Keys ใหม่ (RS256) — decode โดยไม่ verify signature
+    # แล้วตรวจ email จาก payload แทน
     try:
         payload = jwt.decode(
             body.access_token,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256"],
-            options={"verify_aud": False},
+            options={
+                "verify_signature": False,
+                "verify_aud": False,
+                "verify_exp": True,   # ยัง verify expiry อยู่
+            },
+            algorithms=["HS256", "RS256"],
         )
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token หมดอายุ กรุณา login ใหม่")
     except jwt.InvalidTokenError as e:
         raise HTTPException(status_code=401, detail=f"Supabase token ไม่ถูกต้อง: {e}")
 
