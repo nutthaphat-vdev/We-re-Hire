@@ -43,11 +43,22 @@ pool = await asyncpg.create_pool(
 ```
 ถ้าลบออก → `DuplicatePreparedStatementError` ทั้งระบบพัง
 
-### 2. Google OAuth — ใช้ JWKS จริง
+### 2. Google OAuth — Supabase JWT ใช้ ES256 + JWKS เท่านั้น
 ```python
-# ✅ ถูกต้อง — verify signature จริงด้วย JWKS
+# ✅ ถูกต้อง — ES256 + JWKS + match kid
+from jwt.algorithms import ECAlgorithm
 async with httpx.AsyncClient() as client:
-    jwks = await client.get(f"{supabase_url}/auth/v1/.well-known/jwks.json")
+    r = await client.get(f"{supabase_url}/auth/v1/.well-known/jwks.json")
+    jwks = r.json()
+header = jwt.get_unverified_header(access_token)
+for key in jwks["keys"]:
+    if key["kid"] == header["kid"]:
+        public_key = ECAlgorithm.from_jwk(key)
+payload = jwt.decode(access_token, public_key, algorithms=["ES256"], options={"verify_aud": False})
+
+# ❌ ห้ามทำ! Supabase ไม่ได้ใช้ HS256 หรือ RS256
+jwt.decode(token, settings.supabase_jwt_secret, algorithms=["HS256"])  # จะ fail
+jwt.decode(token, rsa_key, algorithms=["RS256"])                        # จะ fail
 
 # ❌ ห้ามทำ! ช่องโหว่ระดับรูหนอนจักรวาล
 options={"verify_signature": False}  # ใครก็ forge token ได้!
