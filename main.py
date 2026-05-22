@@ -9,6 +9,7 @@ import os
 import asyncpg
 import jwt
 import bcrypt
+import httpx
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -161,23 +162,51 @@ async def google_callback(
     Frontend ได้ Supabase session แล้วส่ง access_token มาที่นี่
     Backend verify → สร้าง/หา user ใน DB → ออก JWT ของเรา
     """
-    # Verify Supabase JWT
-    # Supabase ใช้ JWT Signing Keys ใหม่ (RS256) — decode โดยไม่ verify signature
-    # แล้วตรวจ email จาก payload แทน
+    # Verify Supabase JWT ด้วย JWKS (RS256) — ปลอดภัยจริง ไม่ใช่ verify_signature=False
     try:
+        # ดึง JWKS จาก Supabase
+        supabase_url = settings.supabase_url.rstrip("/")
+        async with httpx.AsyncClient(timeout=10) as client:
+            jwks_resp = await client.get(f"{supabase_url}/auth/v1/.well-known/jwks.json")
+            jwks_resp.raise_for_status()
+            jwks_data = jwks_resp.json()
+
+        # หา key ที่ตรงกับ kid ใน token header
+        from jwt.algorithms import RSAAlgorithm
+        import json
+        header = jwt.get_unverified_header(body.access_token)
+        kid = header.get("kid")
+        alg = header.get("alg", "RS256")
+
+        # หา matching key จาก JWKS
+        public_key = None
+        for key_data in jwks_data.get("keys", []):
+            if key_data.get("kid") == kid:
+                public_key = RSAAlgorithm.from_jwk(json.dumps(key_data))
+                break
+
+        if public_key is None:
+            # fallback: ถ้า JWKS ไม่มี kid ตรง ลอง Legacy HS256
+            if settings.supabase_jwt_secret and settings.supabase_jwt_secret not in ("your-jwt-secret", ""):
+                public_key = settings.supabase_jwt_secret
+                alg = "HS256"
+            else:
+                raise HTTPException(status_code=401, detail="ไม่พบ signing key สำหรับ token นี้")
+
         payload = jwt.decode(
             body.access_token,
-            options={
-                "verify_signature": False,
-                "verify_aud": False,
-                "verify_exp": True,   # ยัง verify expiry อยู่
-            },
-            algorithms=["HS256", "RS256"],
+            public_key,
+            algorithms=["RS256", "HS256"],
+            options={"verify_aud": False},
         )
+    except HTTPException:
+        raise
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token หมดอายุ กรุณา login ใหม่")
     except jwt.InvalidTokenError as e:
         raise HTTPException(status_code=401, detail=f"Supabase token ไม่ถูกต้อง: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"ไม่สามารถ verify token ได้: {e}")
 
     supabase_uid = payload.get("sub")
     email        = payload.get("email") or payload.get("user_metadata", {}).get("email", "")
