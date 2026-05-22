@@ -116,8 +116,39 @@
 </head>
 <body>
 
+<!-- LANDING PAGE -->
+<div id="landingPage" style="min-height:100vh;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;text-align:center">
+  <div style="max-width:560px;width:100%">
+    <div style="font-size:42px;font-weight:800;color:var(--accent);letter-spacing:-1px;margin-bottom:6px">WeHire</div>
+    <div style="font-size:14px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:40px">แพลตฟอร์มจ้างงานรายวัน • กรุงเทพฯ MVP</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:40px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 14px">
+        <div style="font-size:28px;margin-bottom:8px">👷</div>
+        <div style="font-weight:600;font-size:14px;margin-bottom:4px">หางาน</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5">รับงานใกล้บ้าน ตรงสาย ตรงราคา</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 14px">
+        <div style="font-size:28px;margin-bottom:8px">🏭</div>
+        <div style="font-weight:600;font-size:14px;margin-bottom:4px">จ้างงาน</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5">โพสต์งาน ระบบจับคู่อัตโนมัติ</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 14px">
+        <div style="font-size:28px;margin-bottom:8px">🛡️</div>
+        <div style="font-weight:600;font-size:14px;margin-bottom:4px">ปลอดภัย</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5">Verified Badge + Blind Review</div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="showAuthFromLanding()" style="font-size:16px;padding:14px 40px;border-radius:10px">
+      เริ่มใช้งาน →
+    </button>
+    <div style="margin-top:16px;font-size:12px;color:var(--muted)">ฟรี ไม่มีค่าสมัคร</div>
+  </div>
+</div>
+
 <!-- AUTH PAGE -->
-<div id="authPage" class="auth-wrap">
+<div id="authPage" class="auth-wrap" style="display:none">
   <div class="auth-card">
     <div class="auth-logo">
       <div class="auth-logo-text">WeHire</div>
@@ -528,6 +559,12 @@ function showAlert(id, msg, type='error') {
   if (!el) return;
   el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
   setTimeout(() => { if(el) el.innerHTML=''; }, 5000);
+}
+
+// ─── LANDING ───────────────────────────────────────────────
+function showAuthFromLanding() {
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('authPage').style.display = 'flex';
 }
 
 // ─── AUTH ──────────────────────────────────────────────────
@@ -1006,17 +1043,23 @@ async function checkEmployerProfile() {
   const form = document.getElementById('postJobForm');
   try {
     const emp = await api('GET', '/employers/profile/me');
+    const verifiedBadge = emp.verified_status === 'verified'
+      ? '<span class="badge badge-green">✅ Verified</span>'
+      : emp.verified_status === 'pending'
+        ? '<span class="badge badge-warn">⏳ รอการอนุมัติ</span>'
+        : `<button class="btn btn-secondary btn-sm" onclick="requestEmployerVerify(this)" style="font-size:11px">🏢 ขอ Verify บริษัท</button>`;
     el.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px 16px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
-        <div style="flex:1">
-          <div style="font-weight:600">${emp.company_name}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">${emp.contact_person} · ${emp.business_type||''}</div>
+      <div style="padding:12px 16px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div style="flex:1">
+            <div style="font-weight:600">${emp.company_name}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${emp.contact_person} · ${emp.business_type||''}</div>
+          </div>
+          ${verifiedBadge}
         </div>
-        ${emp.verified_status === 'verified'
-          ? '<span class="badge badge-green">✅ Verified</span>'
-          : `<button class="btn btn-secondary btn-sm" onclick="requestEmployerVerify(this)" style="font-size:11px">🏢 ขอ Verify บริษัท</button>`
-        }
+        <div id="employerReviewSummary"></div>
       </div>`;
+    loadReviewSummary(emp.user_id, 'employer', 'employerReviewSummary');
     form.style.display = 'block';
   } catch(e) {
     form.style.display = 'none';
@@ -1347,11 +1390,10 @@ async function showContact(appId, btn) {
 
 async function requestBackgroundCheck(btn) {
   btn.disabled = true;
-  btn.innerHTML = '<span class="loading"></span> กำลังตรวจสอบ...';
+  btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>';
   try {
     await api('POST', '/workers/background-check/request');
-    btn.parentElement.innerHTML = '<span class="badge badge-green">✅ Verified</span>';
-    setTimeout(() => loadWorkerProfile(), 800);
+    btn.parentElement.innerHTML = '<span class="badge badge-warn">⏳ รอการอนุมัติ</span>';
   } catch(e) {
     btn.disabled = false;
     btn.innerHTML = '🔍 ขอ Verify ตัวตน';
@@ -1361,11 +1403,10 @@ async function requestBackgroundCheck(btn) {
 
 async function requestEmployerVerify(btn) {
   btn.disabled = true;
-  btn.innerHTML = '<span class="loading"></span>';
+  btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>';
   try {
     await api('POST', '/employers/verify/request');
-    btn.outerHTML = '<span class="badge badge-green">✅ Verified</span>';
-    setTimeout(() => checkEmployerProfile(), 800);
+    btn.outerHTML = '<span class="badge badge-warn">⏳ รอการอนุมัติ</span>';
   } catch(e) {
     btn.disabled = false;
     btn.innerHTML = '🏢 ขอ Verify บริษัท';

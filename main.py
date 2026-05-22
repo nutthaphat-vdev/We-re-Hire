@@ -18,7 +18,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID
 
-from fastapi import FastAPI, Depends, HTTPException, Request, status
+from fastapi import FastAPI, Depends, HTTPException, Header, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, Field
@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     supabase_url:         str = "https://wexupoegrynxbhdzioym.supabase.co"
     supabase_anon_key:    str = ""
     supabase_jwt_secret:  str = ""  # Settings → API → JWT Secret
+    admin_secret:         str = ""  # X-Admin-Secret header สำหรับ admin endpoints
 
     class Config:
         env_file = ".env"
@@ -454,7 +455,7 @@ async def get_employer_profile(
 ):
     row = await db.fetchrow(
         """
-        SELECT id, company_name, business_type, contact_person, verified_status, created_at
+        SELECT id, user_id, company_name, business_type, contact_person, verified_status, created_at
         FROM   employer_profiles
         WHERE  user_id = $1
         """,
@@ -1325,7 +1326,7 @@ async def request_background_check(
     user: dict = Depends(require_worker),
     db:   asyncpg.Connection = Depends(get_db),
 ):
-    """Worker ขอทำ background check — mock: auto-verify ใน 5 วิ"""
+    """Worker ส่งคำขอ background check — รอ admin อนุมัติ"""
     worker = await db.fetchrow(
         "SELECT id, background_check_status FROM worker_profiles WHERE user_id=$1",
         UUID(user["sub"]),
@@ -1334,35 +1335,75 @@ async def request_background_check(
         raise HTTPException(status_code=404, detail="สร้าง Worker Profile ก่อน")
     if worker["background_check_status"] == "verified":
         raise HTTPException(status_code=409, detail="ผ่านการตรวจสอบแล้ว")
+    if worker["background_check_status"] == "pending":
+        raise HTTPException(status_code=409, detail="รออยู่ระหว่างการตรวจสอบแล้ว")
 
-    # Set pending
     await db.execute(
         "UPDATE worker_profiles SET background_check_status='pending' WHERE id=$1",
         worker["id"],
     )
+    return {"status": "pending", "message": "ส่งคำขอแล้ว รอ admin อนุมัติ"}
 
-    # Mock: auto-verify ทันที (production: ส่งไป 3rd party service)
+
+@app.patch("/admin/workers/{worker_user_id}/verify", tags=["Admin"])
+async def admin_verify_worker(
+    worker_user_id: UUID,
+    x_admin_secret: str = Header(default=""),
+    db: asyncpg.Connection = Depends(get_db),
+):
+    """Admin อนุมัติ background check ของ worker"""
+    if not settings.admin_secret or x_admin_secret != settings.admin_secret:
+        raise HTTPException(status_code=403, detail="ไม่มีสิทธิ์")
+
+    worker = await db.fetchrow(
+        "SELECT id, user_id FROM worker_profiles WHERE user_id=$1", worker_user_id
+    )
+    if not worker:
+        raise HTTPException(status_code=404, detail="ไม่พบ worker")
+
     await db.execute(
-        """
-        UPDATE worker_profiles
-        SET    background_check_status = 'verified',
-               background_checked_at  = NOW()
-        WHERE  id = $1
-        """,
+        "UPDATE worker_profiles SET background_check_status='verified', background_checked_at=NOW() WHERE id=$1",
         worker["id"],
     )
-
-    # Notify worker
     await db.execute(
         """
         INSERT INTO notifications (user_id, type, title, body)
         VALUES ($1, 'background_check', '✅ ผ่านการตรวจสอบแล้ว',
                 'โปรไฟล์ของคุณได้รับ Badge "Verified" แล้ว นายจ้างจะเห็นคุณก่อนคนอื่น')
         """,
-        UUID(user["sub"]),
+        worker_user_id,
     )
+    return {"status": "verified"}
 
-    return {"status": "verified", "message": "ผ่านการตรวจสอบแล้ว"}
+
+@app.patch("/admin/employers/{employer_user_id}/verify", tags=["Admin"])
+async def admin_verify_employer(
+    employer_user_id: UUID,
+    x_admin_secret: str = Header(default=""),
+    db: asyncpg.Connection = Depends(get_db),
+):
+    """Admin อนุมัติ employer verification"""
+    if not settings.admin_secret or x_admin_secret != settings.admin_secret:
+        raise HTTPException(status_code=403, detail="ไม่มีสิทธิ์")
+
+    emp = await db.fetchrow(
+        "SELECT id FROM employer_profiles WHERE user_id=$1", employer_user_id
+    )
+    if not emp:
+        raise HTTPException(status_code=404, detail="ไม่พบ employer")
+
+    await db.execute(
+        "UPDATE employer_profiles SET verified_status='verified' WHERE id=$1", emp["id"]
+    )
+    await db.execute(
+        """
+        INSERT INTO notifications (user_id, type, title, body)
+        VALUES ($1, 'employer_verified', '✅ บริษัทได้รับการยืนยันแล้ว',
+                'โปรไฟล์ของคุณได้รับ Badge "Verified Employer" แล้ว Worker จะเชื่อถือมากขึ้น')
+        """,
+        employer_user_id,
+    )
+    return {"status": "verified"}
 
 
 # ============================================================
@@ -1374,7 +1415,7 @@ async def request_employer_verification(
     user: dict = Depends(require_employer),
     db:   asyncpg.Connection = Depends(get_db),
 ):
-    """Employer ขอ verify บริษัท — mock: auto-verify"""
+    """Employer ส่งคำขอ verify บริษัท — รอ admin อนุมัติ"""
     emp = await db.fetchrow(
         "SELECT id, verified_status FROM employer_profiles WHERE user_id=$1",
         UUID(user["sub"]),
@@ -1383,22 +1424,13 @@ async def request_employer_verification(
         raise HTTPException(status_code=404, detail="สร้าง Employer Profile ก่อน")
     if emp["verified_status"] == "verified":
         raise HTTPException(status_code=409, detail="ได้รับการยืนยันแล้ว")
+    if emp["verified_status"] == "pending":
+        raise HTTPException(status_code=409, detail="รออยู่ระหว่างการตรวจสอบแล้ว")
 
     await db.execute(
-        "UPDATE employer_profiles SET verified_status='verified' WHERE id=$1",
-        emp["id"],
+        "UPDATE employer_profiles SET verified_status='pending' WHERE id=$1", emp["id"]
     )
-
-    await db.execute(
-        """
-        INSERT INTO notifications (user_id, type, title, body)
-        VALUES ($1, 'employer_verified', '✅ บริษัทได้รับการยืนยันแล้ว',
-                'โปรไฟล์ของคุณได้รับ Badge "Verified Employer" แล้ว Worker จะเชื่อถือมากขึ้น')
-        """,
-        UUID(user["sub"]),
-    )
-
-    return {"status": "verified", "message": "บริษัทได้รับการยืนยันแล้ว"}
+    return {"status": "pending", "message": "ส่งคำขอแล้ว รอ admin อนุมัติ"}
 
 
 # ============================================================
