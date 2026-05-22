@@ -689,7 +689,7 @@ def compute_match_score(
     distance_score = max(0.0, 1.0 - (distance_km / radius_km))
 
     if worker_rate and job_rate > 0:
-        ratio = worker_rate / job_rate
+        ratio = float(worker_rate) / float(job_rate)
         rate_score = 1.0 if ratio <= 1.0 else (1.0 - (ratio - 1.0) / 0.2 if ratio <= 1.2 else 0.0)
     else:
         rate_score = 0.5
