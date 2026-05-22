@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WeHire — แพลตฟอร์มจ้างงานรายวัน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD73zNRp4SIKQm0vNM1tUiNTo_LrI7VQXQ&libraries=places&language=th"></script>
+<style>
+  :root {
+    --bg:#0d0f12; --surface:#161a20; --surface2:#1e232b; --border:#2a3040;
+    --accent:#00e5a0; --accent2:#0099ff; --warn:#ff6b35;
+    --text:#e8edf5; --muted:#6b7a94; --danger:#ff4757; --success:#00e5a0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;font-size:15px;line-height:1.6;min-height:100vh;}
+  .app{display:flex;min-height:100vh;}
+  .sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
+  .main{flex:1;overflow:auto;}
+  .logo{padding:24px 20px 16px;border-bottom:1px solid var(--border);}
+  .logo-text{font-size:20px;font-weight:700;color:var(--accent);letter-spacing:-.5px;}
+  .logo-sub{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px;}
+  .nav{padding:12px 0;flex:1;}
+  .nav-section{padding:8px 16px 4px;font-size:10px;color:var(--muted);letter-spacing:.1em;font-family:'IBM Plex Mono',monospace;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;color:var(--muted);font-size:14px;transition:all .15s;border-left:2px solid transparent;}
+  .nav-item:hover{color:var(--text);background:var(--surface2);}
+  .nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,229,160,.06);}
+  .nav-item svg{width:16px;height:16px;flex-shrink:0;}
+  .token-box{margin:12px;padding:10px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);}
+  .token-label{font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:4px;}
+  .token-val{font-size:10px;color:var(--accent);font-family:'IBM Plex Mono',monospace;word-break:break-all;max-height:40px;overflow:hidden;}
+  .token-role{display:inline-block;font-size:10px;padding:2px 8px;border-radius:4px;font-family:'IBM Plex Mono',monospace;margin-bottom:6px;}
+  .role-worker{background:rgba(0,229,160,.15);color:var(--accent);}
+  .role-employer{background:rgba(0,153,255,.15);color:var(--accent2);}
+  .page{display:none;padding:32px;max-width:900px;}
+  .page.active{display:block;}
+  .page-title{font-size:24px;font-weight:700;margin-bottom:4px;}
+  .page-sub{color:var(--muted);font-size:14px;margin-bottom:28px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px;}
+  .form-group{margin-bottom:16px;}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-family:'IBM Plex Mono',monospace;letter-spacing:.03em;}
+  input,select,textarea{width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Sarabun',sans-serif;font-size:14px;outline:none;transition:border-color .2s;}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+  select option{background:var(--surface2);}
+  textarea{resize:vertical;min-height:80px;}
+  .btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+  .btn-primary{background:var(--accent);color:#0d0f12;}
+  .btn-primary:hover{background:#00ffb3;transform:translateY(-1px);}
+  .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+  .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-danger{background:rgba(255,71,87,.15);color:var(--danger);border:1px solid rgba(255,71,87,.3);}
+  .btn-sm{padding:6px 12px;font-size:12px;}
+  .btn-block{width:100%;justify-content:center;}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;font-family:'IBM Plex Mono',monospace;}
+  .badge-green{background:rgba(0,229,160,.15);color:var(--accent);}
+  .badge-blue{background:rgba(0,153,255,.15);color:var(--accent2);}
+  .badge-warn{background:rgba(255,107,53,.15);color:var(--warn);}
+  .badge-danger{background:rgba(255,71,87,.15);color:var(--danger);}
+  .badge-gray{background:var(--surface2);color:var(--muted);}
+  .job-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:12px;transition:all .2s;}
+  .job-card:hover{border-color:var(--accent);}
+  .job-meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+  .job-meta span{font-size:12px;color:var(--muted);}
+  .match-bar{height:4px;background:var(--surface2);border-radius:2px;margin-top:10px;}
+  .match-fill{height:4px;background:var(--accent);border-radius:2px;transition:width .5s;}
+  .match-label{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+  .match-score{font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--accent);font-weight:600;}
+  .candidate{display:flex;align-items:center;gap:14px;padding:14px;background:var(--surface2);border-radius:8px;margin-bottom:8px;}
+  .avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#0d0f12;flex-shrink:0;}
+  .candidate-info{flex:1;}
+  .candidate-name{font-weight:600;font-size:14px;}
+  .candidate-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+  .candidate-actions{display:flex;gap:6px;}
+  .alert{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  .alert-success{background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.2);color:var(--accent);}
+  .alert-error{background:rgba(255,71,87,.1);border:1px solid rgba(255,71,87,.2);color:var(--danger);}
+  .alert-info{background:rgba(0,153,255,.1);border:1px solid rgba(0,153,255,.2);color:var(--accent2);}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;}
+  .stat-num{font-size:28px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--accent);}
+  .stat-label{font-size:12px;color:var(--muted);margin-top:2px;}
+  .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);}
+  .auth-card{width:420px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px;}
+  .auth-logo{text-align:center;margin-bottom:28px;}
+  .auth-logo-text{font-size:28px;font-weight:700;color:var(--accent);}
+  .auth-logo-sub{font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:4px;}
+  .auth-tabs{display:flex;background:var(--surface2);border-radius:8px;padding:4px;margin-bottom:24px;}
+  .auth-tab{flex:1;padding:8px;text-align:center;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;color:var(--muted);transition:all .2s;}
+  .auth-tab.active{background:var(--accent);color:#0d0f12;}
+  .role-select{display:flex;gap:8px;margin-bottom:16px;}
+  .role-btn{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;font-family:'Sarabun',sans-serif;font-size:14px;text-align:center;transition:all .2s;}
+  .role-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,160,.08);}
+  .loading{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,229,160,.3);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .empty{text-align:center;padding:48px;color:var(--muted);}
+  .empty-icon{font-size:40px;margin-bottom:12px;opacity:.4;}
+  .empty-text{font-size:14px;}
+  .divider{height:1px;background:var(--border);margin:20px 0;}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .tag{font-size:11px;padding:3px 10px;border-radius:4px;background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+  .tag-match{background:rgba(0,229,160,.1);color:var(--accent);border-color:rgba(0,229,160,.2);}
+
+  /* Debug panel */
+  #debugPanel{position:fixed;bottom:0;right:0;width:420px;max-height:280px;background:#0a0c0f;border-top:1px solid var(--border);border-left:1px solid var(--border);border-radius:8px 0 0 0;z-index:9999;display:flex;flex-direction:column;}
+  #debugHeader{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;}
+  #debugTitle{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--muted);}
+  #debugBadge{font-size:10px;font-family:'IBM Plex Mono',monospace;padding:1px 6px;border-radius:3px;background:rgba(0,229,160,.15);color:var(--accent);}
+  #debugLogs{flex:1;overflow-y:auto;padding:8px 12px;}
+  #debugLogs .log{font-size:11px;font-family:'IBM Plex Mono',monospace;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);line-height:1.5;}
+  #debugLogs .log.ok{color:#00e5a0;}
+  #debugLogs .log.err{color:#ff4757;}
+  #debugLogs .log.info{color:#6b7a94;}
+  #debugLogs .log.warn{color:#ff6b35;}
+</style>
+</head>
+<body>
+
+<!-- AUTH PAGE -->
+<div id="authPage" class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-text">WeHire</div>
+      <div class="auth-logo-sub">แพลตฟอร์มจ้างงานรายวัน • BKK MVP</div>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuthTab('login')">เข้าสู่ระบบ</div>
+      <div class="auth-tab" onclick="switchAuthTab('register')">สมัครสมาชิก</div>
+    </div>
+    <div id="alertAuth"></div>
+    <div id="loginForm">
+      <div class="form-group">
+        <label>อีเมล</label>
+        <input type="email" id="loginEmail" placeholder="email@example.com">
+      </div>
+      <div class="form-group">
+        <label>รหัสผ่าน</label>
+        <input type="password" id="loginPassword" placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="doLogin()" id="loginBtn">เข้าสู่ระบบ</button>
+      <div style="display:flex;align-items:center;gap:10px;margin:16px 0">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <span style="font-size:12px;color:var(--muted)">หรือ</span>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <button class="btn btn-secondary btn-block" onclick="doGoogleLogin('worker')" style="gap:10px">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-3.59-13.46-8.83l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        เข้าสู่ระบบด้วย Google
+      </button>
+    </div>
+    <div id="registerForm" style="display:none">
+      <div class="form-group">
+        <label>บทบาท</label>
+        <div class="role-select">
+          <div class="role-btn active" onclick="selectRole('worker',this)">👷 Worker</div>
+          <div class="role-btn" onclick="selectRole('employer',this)">🏭 Employer</div>
+        </div>
+        <input type="hidden" id="regRole" value="worker">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>อีเมล</label>
+          <input type="email" id="regEmail" placeholder="email@example.com">
+        </div>
+        <div class="form-group">
+          <label>เบอร์โทร</label>
+          <input type="tel" id="regPhone" placeholder="0812345678">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>รหัสผ่าน</label>
+        <input type="password" id="regPassword" placeholder="อย่างน้อย 6 ตัวอักษร">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="doRegister()" style="margin-bottom:12px">สมัครสมาชิก</button>
+      <div style="display:flex;align-items:center;gap:10px;margin:12px 0">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <span style="font-size:12px;color:var(--muted)">หรือ</span>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <button class="btn btn-secondary btn-block" onclick="doGoogleLogin(document.getElementById('regRole').value)" style="gap:10px">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-3.59-13.46-8.83l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        สมัครด้วย Google
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" class="app" style="display:none">
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-text">WeHire</div>
+      <div class="logo-sub">BKK MVP v0.1</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">GENERAL</div>
+      <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        หน้าหลัก
+      </div>
+      <div class="nav-item" onclick="showPage('notifications')" id="nav-notifications">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        <span style="flex:1">การแจ้งเตือน</span>
+        <span id="notifBadge" style="display:none;background:var(--danger);color:#fff;font-size:10px;font-family:'IBM Plex Mono',monospace;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center"></span>
+      </div>
+      <div class="nav-section" id="navWorkerSection">WORKER</div>
+      <div class="nav-item" onclick="showPage('nearby')" id="nav-nearby">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        หางานใกล้บ้าน
+      </div>
+      <div class="nav-item" onclick="showPage('myapps')" id="nav-myapps">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        ประวัติสมัคร
+      </div>
+      <div class="nav-item" onclick="showPage('myreviews')" id="nav-myreviews-worker">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+        รีวิวของฉัน
+      </div>
+      <div class="nav-item" onclick="showPage('workerprofile')" id="nav-workerprofile">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        โปรไฟล์ของฉัน
+      </div>
+      <div class="nav-section" id="navEmployerSection">EMPLOYER</div>
+      <div class="nav-item" onclick="showPage('postjob')" id="nav-postjob">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        โพสต์งานใหม่
+      </div>
+      <div class="nav-item" onclick="showPage('myjobs')" id="nav-myjobs">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        งานของฉัน
+      </div>
+      <div class="nav-item" onclick="showPage('myreviews')" id="nav-myreviews-employer">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+        รีวิวของฉัน
+      </div>
+    </nav>
+    <div class="token-box">
+      <div class="token-label">SESSION TOKEN</div>
+      <div id="sidebarRole"></div>
+      <div class="token-val" id="sidebarToken">—</div>
+      <div style="margin-top:8px;display:flex;gap:6px;">
+        <button class="btn btn-secondary btn-sm" onclick="copyToken()" style="flex:1;font-size:11px">Copy Token</button>
+        <button class="btn btn-danger btn-sm" onclick="doLogout()" style="flex:1;font-size:11px">ออก</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main" style="padding:0">
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div style="padding:32px">
+        <div class="page-title">สวัสดี 👋</div>
+        <div class="page-sub" id="dashGreeting">ยินดีต้อนรับสู่ WeHire</div>
+        <div class="stats" id="dashStats"></div>
+        <div id="dashContent"></div>
+      </div>
+    </div>
+
+    <!-- NEARBY JOBS -->
+    <div class="page" id="page-nearby">
+      <div style="padding:32px">
+        <div class="page-title">หางานใกล้บ้าน</div>
+        <div class="page-sub">ค้นหางานในรัศมีที่กำหนด</div>
+        <div class="card">
+          <div class="form-group">
+            <label>ค้นหาสถานที่</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="searchPlaceInput" placeholder="พิมพ์ชื่อสถานที่ เช่น ลาดกระบัง, อ่อนนุช..." style="flex:1">
+              <button class="btn btn-secondary btn-sm" onclick="useMyLocation()" title="ใช้ตำแหน่งปัจจุบัน" style="white-space:nowrap">📍 GPS</button>
+            </div>
+            <div id="searchLocationDisplay" style="font-size:12px;color:var(--accent);margin-top:6px;font-family:'IBM Plex Mono',monospace;min-height:18px"></div>
+          </div>
+          <div id="searchMapPreview" style="display:none;border-radius:8px;overflow:hidden;margin-bottom:16px;height:160px;"></div>
+          <div class="form-group">
+            <label>รัศมี (กม.) — <span id="radiusVal">10</span> กม.</label>
+            <input type="range" id="searchRadius" min="1" max="15" value="10" oninput="document.getElementById('radiusVal').textContent=this.value" style="padding:0;background:none;border:none;">
+          </div>
+          <input type="hidden" id="searchLat" value="13.7018">
+          <input type="hidden" id="searchLng" value="100.6011">
+          <button class="btn btn-primary" onclick="searchNearby()">🔍 ค้นหา</button>
+        </div>
+        <div id="nearbyResults"></div>
+      </div>
+    </div>
+
+    <!-- MY APPLICATIONS -->
+    <div class="page" id="page-myapps">
+      <div style="padding:32px">
+        <div class="page-title">ประวัติการสมัครงาน</div>
+        <div class="page-sub">ติดตามสถานะใบสมัครของคุณ</div>
+        <div id="myAppsContent"></div>
+      </div>
+    </div>
+
+    <!-- WORKER PROFILE -->
+    <div class="page" id="page-workerprofile">
+      <div style="padding:32px">
+        <div class="page-title">โปรไฟล์ของฉัน</div>
+        <div class="page-sub">ข้อมูลส่วนตัวและทักษะ</div>
+        <div id="workerProfileContent"></div>
+      </div>
+    </div>
+
+    <!-- POST JOB -->
+    <div class="page" id="page-postjob">
+      <div style="padding:32px">
+        <div class="page-title">โพสต์งานใหม่</div>
+        <div class="page-sub">ระบุรายละเอียดงานที่ต้องการ</div>
+        <div id="alertPostJob"></div>
+        <div id="employerProfileCheck"></div>
+        <div class="card" id="postJobForm">
+          <div class="form-group">
+            <label>ชื่อตำแหน่ง</label>
+            <input type="text" id="jobTitle" placeholder="เช่น พนักงานแพ็คสินค้า">
+          </div>
+          <div class="form-group">
+            <label>รายละเอียด</label>
+            <textarea id="jobDesc" placeholder="รายละเอียดงาน..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>ค่าแรง (฿/วัน)</label>
+              <input type="number" id="jobWage" placeholder="500">
+            </div>
+            <div class="form-group">
+              <label>จำนวนวัน</label>
+              <input type="number" id="jobDays" placeholder="5">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>จำนวนคน</label>
+              <input type="number" id="jobSlots" value="1">
+            </div>
+            <div class="form-group">
+              <label>วันเริ่มงาน</label>
+              <input type="date" id="jobStartDate">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>ทักษะที่ต้องการ (คั่นด้วยจุลภาค)</label>
+            <div class="form-row">
+              <div class="form-group">
+                <label>หมวดงาน</label>
+                <select id="jobCategory" onchange="loadJobTitles('jobCategory','jobSkillSelect')">
+                  <option value="">— เลือกหมวดงาน —</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>ตำแหน่งงาน</label>
+                <select id="jobSkillSelect" onchange="syncSkillCode('jobSkillSelect','jobSkills')">
+                  <option value="">— เลือกตำแหน่ง —</option>
+                </select>
+              </div>
+            </div>
+            <input type="hidden" id="jobSkills" value="">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>ชื่อสถานที่</label>
+              <input type="text" id="jobLocation" placeholder="เช่น โรงงาน A อ่อนนุช">
+            </div>
+            <div class="form-group">
+              <label>Zone</label>
+              <select id="jobZone">
+                <option value="TH-BKK-LATKRABANG">ลาดกระบัง</option>
+                <option value="TH-BKK-BANGPLEE">บางพลี</option>
+                <option value="TH-BKK-BANGCHAN">บางชัน</option>
+                <option value="TH-BKK-MINBURI">มีนบุรี</option>
+                <option value="TH-BKK-BANGNA">บางนา</option>
+                <option value="TH-BKK-PRAWET">ประเวศ</option>
+                <option value="TH-BKK-ONNUT" selected>อ่อนนุช</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>ที่ตั้งงาน</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="jobPlaceInput" placeholder="พิมพ์ที่อยู่หรือชื่อสถานที่..." style="flex:1">
+              <button class="btn btn-secondary btn-sm" onclick="useMyLocationForJob()" style="white-space:nowrap">📍 GPS</button>
+            </div>
+            <div id="jobLocationDisplay" style="font-size:12px;color:var(--accent);margin-top:6px;font-family:'IBM Plex Mono',monospace;min-height:18px"></div>
+            <div id="jobMapPreview" style="display:none;border-radius:8px;overflow:hidden;margin-top:8px;height:160px;"></div>
+          </div>
+          <input type="hidden" id="jobLat" value="13.7018">
+          <input type="hidden" id="jobLng" value="100.6011">
+          <button class="btn btn-primary" onclick="doPostJob()">📋 โพสต์งาน</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MY JOBS -->
+    <div class="page" id="page-myjobs">
+      <div style="padding:32px">
+        <div class="page-title">งานของฉัน</div>
+        <div class="page-sub">จัดการงานที่โพสต์ไว้</div>
+        <div id="myJobsContent"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATIONS -->
+    <div class="page" id="page-notifications">
+      <div style="padding:32px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div class="page-title">การแจ้งเตือน</div>
+          <button class="btn btn-secondary btn-sm" onclick="markAllRead()">อ่านทั้งหมด</button>
+        </div>
+        <div class="page-sub">การอัปเดตล่าสุด</div>
+        <div id="notificationsContent"></div>
+      </div>
+    </div>
+
+<!-- MY REVIEWS -->
+    <div class="page" id="page-myreviews">
+      <div style="padding:32px">
+        <div class="page-title">รีวิวของฉัน</div>
+        <div class="page-sub">รีวิวที่รอดำเนินการ และรีวิวที่ได้รับ</div>
+        <div id="myReviewsContent"></div>
+      </div>
+    </div>
+
+<!-- REPORT MODAL -->
+<div id="reportModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9998;display:none;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:360px;max-width:90vw">
+    <div style="font-weight:700;font-size:16px;margin-bottom:16px">🚩 รายงานผู้ใช้</div>
+    <input type="hidden" id="reportTargetId">
+    <div class="form-group">
+      <label>เหตุผล</label>
+      <select id="reportReason">
+        <option value="spam">สแปม / โฆษณาหลอกลวง</option>
+        <option value="fake">บัญชีปลอม</option>
+        <option value="harassment">คุกคาม / ข่มขู่</option>
+        <option value="payment_fraud">โกงค่าแรง</option>
+        <option value="other">อื่นๆ</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>รายละเอียด (ไม่บังคับ)</label>
+      <textarea id="reportDetail" placeholder="อธิบายเพิ่มเติม..." style="min-height:60px"></textarea>
+    </div>
+    <div id="alertReport"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-secondary" onclick="closeReportModal()" style="flex:1">ยกเลิก</button>
+      <button class="btn btn-danger" onclick="submitReport()" style="flex:1">ส่งรายงาน</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEBUG PANEL -->
+<div id="debugPanel">
+  <div id="debugHeader" onclick="toggleDebug()">
+    <span id="debugTitle">🐛 DEBUG CONSOLE</span>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span id="debugBadge">0 calls</span>
+      <span id="debugToggleIcon" style="font-size:11px;color:var(--muted)">▼</span>
+    </div>
+  </div>
+  <div id="debugLogs" style="display:none"></div>
+</div>
+
+<script>
+const API = 'http://127.0.0.1:8000';
+let token = localStorage.getItem('wh_token') || '';
+let userRole = localStorage.getItem('wh_role') || '';
+let userId = localStorage.getItem('wh_uid') || '';
+let callCount = 0;
+let debugOpen = false;
+
+// ─── DEBUG ─────────────────────────────────────────────────
+function log(type, msg) {
+  const el = document.getElementById('debugLogs');
+  const time = new Date().toTimeString().slice(0,8);
+  const div = document.createElement('div');
+  div.className = `log ${type}`;
+  div.textContent = `[${time}] ${msg}`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+  if(type === 'err' && !debugOpen) {
+    debugOpen = true;
+    document.getElementById('debugLogs').style.display = 'block';
+    document.getElementById('debugToggleIcon').textContent = '▲';
+  }
+}
+function toggleDebug() {
+  debugOpen = !debugOpen;
+  document.getElementById('debugLogs').style.display = debugOpen ? 'block' : 'none';
+  document.getElementById('debugToggleIcon').textContent = debugOpen ? '▲' : '▼';
+}
+
+// ─── API ───────────────────────────────────────────────────
+function headers() {
+  const h = { 'Content-Type': 'application/json' };
+  if (token) h['Authorization'] = `Bearer ${token}`;
+  return h;
+}
+
+async function api(method, path, body) {
+  callCount++;
+  document.getElementById('debugBadge').textContent = `${callCount} calls`;
+  log('info', `→ ${method} ${path}`);
+  try {
+    const res = await fetch(API + path, {
+      method,
+      headers: headers(),
+      body: body ? JSON.stringify(body) : undefined
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const errMsg = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
+      log('err', `✗ ${res.status} ${errMsg}`);
+      throw new Error(errMsg);
+    }
+    log('ok', `✓ ${res.status} ${path}`);
+    return data;
+  } catch(e) {
+    if (e.message === 'Failed to fetch') {
+      log('err', '✗ ไม่สามารถเชื่อมต่อ API — uvicorn รันอยู่ไหม? และ CORS เปิดไหม?');
+    }
+    throw e;
+  }
+}
+
+function showAlert(id, msg, type='error') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  setTimeout(() => { if(el) el.innerHTML=''; }, 5000);
+}
+
+// ─── AUTH ──────────────────────────────────────────────────
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) =>
+    t.classList.toggle('active', (tab==='login'&&i===0)||(tab==='register'&&i===1)));
+  document.getElementById('loginForm').style.display    = tab==='login'    ? 'block' : 'none';
+  document.getElementById('registerForm').style.display = tab==='register' ? 'block' : 'none';
+}
+
+function selectRole(role, el) {
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('regRole').value = role;
+}
+
+const SUPABASE_URL = 'https://wexupoegrynxbhdzioym.supabase.co';
+const GOOGLE_CLIENT_ID = '807994998594-93uua15ohoj76mmvam1tk6uetd4567su.apps.googleusercontent.com';
+
+async function doGoogleLogin(role) {
+  try {
+    // ขอ URL จาก backend แล้ว redirect
+    const data = await api('GET', `/auth/google/url?role=${role}`);
+    window.location.href = data.url;
+  } catch(e) {
+    showAlert('alertAuth', e.message);
+  }
+}
+
+async function handleGoogleCallback() {
+  // Supabase redirect กลับมาพร้อม hash fragment: #access_token=...
+  const hash = window.location.hash;
+  if (!hash || !hash.includes('access_token')) return false;
+
+  const params = new URLSearchParams(hash.replace('#', ''));
+  const accessToken = params.get('access_token');
+  const role = new URLSearchParams(window.location.search).get('role') || 'worker';
+
+  if (!accessToken) return false;
+
+  log('info', `Google callback — role: ${role}`);
+
+  try {
+    // ส่ง Supabase token ให้ backend verify แล้วออก JWT ของเรา
+    const data = await api('POST', '/auth/google/callback', {
+      access_token: accessToken,
+      role,
+    });
+    saveSession(data);
+    // ล้าง hash ออกจาก URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+    initApp();
+    return true;
+  } catch(e) {
+    showAlert('alertAuth', `Google login ล้มเหลว: ${e.message}`);
+    return false;
+  }
+}
+
+
+async function doLogin() {
+  const btn = document.getElementById('loginBtn');
+  btn.innerHTML = '<span class="loading"></span> กำลังเข้าสู่ระบบ...';
+  btn.disabled = true;
+  try {
+    const data = await api('POST', '/auth/login', {
+      email:    document.getElementById('loginEmail').value.trim(),
+      password: document.getElementById('loginPassword').value
+    });
+    saveSession(data);
+    initApp();
+  } catch(e) {
+    showAlert('alertAuth', e.message);
+    btn.innerHTML = 'เข้าสู่ระบบ';
+    btn.disabled = false;
+  }
+}
+
+async function doRegister() {
+  try {
+    const phone = document.getElementById('regPhone').value.trim();
+    const body = {
+      email:    document.getElementById('regEmail').value.trim(),
+      password: document.getElementById('regPassword').value,
+      role:     document.getElementById('regRole').value
+    };
+    if (phone) body.phone = phone;
+    const data = await api('POST', '/auth/register', body);
+    saveSession(data);
+    initApp();
+  } catch(e) {
+    showAlert('alertAuth', e.message);
+  }
+}
+
+function saveSession(data) {
+  token   = data.access_token;
+  userRole = data.role;
+  userId  = data.user_id;
+  localStorage.setItem('wh_token', token);
+  localStorage.setItem('wh_role', userRole);
+  localStorage.setItem('wh_uid', userId);
+  log('ok', `✓ Session saved — role: ${userRole}`);
+}
+
+function doLogout() {
+  localStorage.clear();
+  token = ''; userRole = ''; userId = '';
+  document.getElementById('authPage').style.display = 'flex';
+  document.getElementById('mainApp').style.display  = 'none';
+  log('info', 'Logged out');
+}
+
+function copyToken() {
+  navigator.clipboard.writeText(token).then(() => {
+    const btn = document.querySelector('.token-box .btn-secondary');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+}
+
+// ─── INIT ──────────────────────────────────────────────────
+function initApp() {
+  document.getElementById('authPage').style.display = 'none';
+  document.getElementById('mainApp').style.display  = 'flex';
+  document.getElementById('sidebarToken').textContent = token ? token.substring(0,36)+'...' : '—';
+  document.getElementById('sidebarRole').innerHTML =
+    `<span class="token-role role-${userRole}">${userRole.toUpperCase()}</span>`;
+
+  const isWorker = userRole === 'worker';
+  // Shared nav — แสดงทุก role
+  ['nav-notifications'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'flex';
+  });
+  ['navWorkerSection','nav-nearby','nav-myapps','nav-workerprofile','nav-myreviews-worker']
+    .forEach(id => document.getElementById(id).style.display = isWorker ? (id.startsWith('nav-') ? 'flex' : 'block') : 'none');
+  ['navEmployerSection','nav-postjob','nav-myjobs','nav-myreviews-employer']
+    .forEach(id => document.getElementById(id).style.display = !isWorker ? (id.startsWith('nav-') ? 'flex' : 'block') : 'none');
+
+  showPage('dashboard');
+  loadDashboard();
+  initCategoryDropdowns();
+  startNotifPolling();
+}
+
+// ─── NAV ───────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById('page-'+name);
+  const nav  = document.getElementById('nav-'+name);
+  if (page) page.classList.add('active');
+  if (nav)  nav.classList.add('active');
+
+  if (name === 'myapps')        loadMyApps();
+  if (name === 'myjobs')        loadMyJobs();
+  if (name === 'workerprofile') loadWorkerProfile();
+  if (name === 'postjob')       checkEmployerProfile();
+  if (name === 'myreviews')     loadMyReviews();
+  if (name === 'notifications') loadNotifications();
+}
+
+// ─── DASHBOARD ─────────────────────────────────────────────
+async function loadDashboard() {
+  document.getElementById('dashGreeting').textContent =
+    userRole === 'worker' ? 'หางานรายวันในกรุงเทพฯ' : 'จัดการงานและผู้สมัคร';
+
+  if (userRole === 'worker') {
+    document.getElementById('dashStats').innerHTML = `
+      <div class="stat"><div class="stat-num">BKK</div><div class="stat-label">พื้นที่ให้บริการ</div></div>
+      <div class="stat"><div class="stat-num">7</div><div class="stat-label">เขตที่ครอบคลุม</div></div>
+      <div class="stat"><div class="stat-num">15km</div><div class="stat-label">รัศมีสูงสุด</div></div>`;
+    document.getElementById('dashContent').innerHTML = `
+      <div class="card" style="cursor:pointer;border:1px solid rgba(0,229,160,.2)" onclick="showPage('nearby')">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="font-size:32px">🔍</div>
+          <div>
+            <div style="font-weight:600;font-size:16px">ค้นหางานใกล้บ้าน</div>
+            <div style="color:var(--muted);font-size:13px;margin-top:2px">ดูงานที่ match กับทักษะของคุณ</div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="cursor:pointer" onclick="showPage('workerprofile')">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="font-size:32px">👤</div>
+          <div>
+            <div style="font-weight:600;font-size:16px">โปรไฟล์ของฉัน</div>
+            <div style="color:var(--muted);font-size:13px;margin-top:2px">ตั้งค่าทักษะและข้อมูลส่วนตัว</div>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    document.getElementById('dashContent').innerHTML = `
+      <div class="card" style="cursor:pointer;border:1px solid rgba(0,153,255,.2)" onclick="showPage('postjob')">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="font-size:32px">📋</div>
+          <div>
+            <div style="font-weight:600;font-size:16px">โพสต์งานใหม่</div>
+            <div style="color:var(--muted);font-size:13px;margin-top:2px">หาพนักงานรายวันที่ตรงสาย</div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="cursor:pointer" onclick="showPage('myjobs')">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="font-size:32px">📁</div>
+          <div>
+            <div style="font-weight:600;font-size:16px">งานของฉัน</div>
+            <div style="color:var(--muted);font-size:13px;margin-top:2px">ดูผู้สมัครและจัดการงาน</div>
+          </div>
+        </div>
+      </div>`;
+  }
+}
+
+// ─── WORKER PROFILE ────────────────────────────────────────
+async function loadWorkerProfile() {
+  const el = document.getElementById('workerProfileContent');
+  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
+  try {
+    const p = await api('GET', '/workers/profile/me');
+    const bgColor = { pending:'badge-warn', verified:'badge-green', failed:'badge-danger', expired:'badge-gray' };
+    el.innerHTML = `
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+          <div class="avatar" style="width:56px;height:56px;font-size:20px">${p.full_name.charAt(0).toUpperCase()}</div>
+          <div>
+            <div style="font-size:18px;font-weight:700">${p.full_name}</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:2px">${p.location_name||'ไม่ระบุสถานที่'}</div>
+            <div style="margin-top:6px">
+              <span class="badge ${bgColor[p.background_check_status]||'badge-gray'}">${p.background_check_status}</span>
+              ${p.background_check_status !== 'verified' ? `
+              <button class="btn btn-secondary btn-sm" onclick="requestBackgroundCheck(this)" style="margin-left:8px;font-size:11px">
+                🔍 ขอ Verify ตัวตน
+              </button>` : '<span style="font-size:12px;color:var(--accent);margin-left:8px">✅ Verified</span>'}
+            </div>
+            <div id="workerReviewSummary"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:24px;margin-bottom:16px">
+          <div><div style="font-size:11px;color:var(--muted)">ประสบการณ์</div><div style="font-weight:600">${p.experience_years} ปี</div></div>
+          <div><div style="font-size:11px;color:var(--muted)">ค่าแรงที่คาด</div><div style="font-weight:600">฿${p.daily_rate_expected||'-'}/วัน</div></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">ทักษะ</div>
+        <div class="tags">${p.skills.length ? p.skills.map(s=>`<span class="tag tag-match">${s}</span>`).join('') : '<span style="font-size:13px;color:var(--muted)">ยังไม่มีทักษะ</span>'}</div>
+        <div class="divider"></div>
+        <button class="btn btn-secondary btn-sm" onclick="showEditProfile()">✏️ แก้ไขโปรไฟล์</button>
+      </div>
+      <div id="editProfileForm" style="display:none">
+        <div class="card">
+          <div style="font-weight:600;margin-bottom:16px">แก้ไขโปรไฟล์</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>หมวดงาน</label>
+              <select id="editCategory" onchange="loadJobTitles('editCategory','editSkillSelect')">
+                <option value="">— เลือกหมวดงาน —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>ตำแหน่งงาน</label>
+              <select id="editSkillSelect" onchange="syncSkillCode('editSkillSelect','editSkills')">
+                <option value="${p.skills[0]||''}">${p.skills[0]||'— เลือกตำแหน่ง —'}</option>
+              </select>
+            </div>
+          </div>
+          <input type="hidden" id="editSkills" value="${p.skills.join(',')}">
+          <div class="form-row">
+            <div class="form-group"><label>ประสบการณ์ (ปี)</label><input type="number" id="editExp" value="${p.experience_years}"></div>
+            <div class="form-group"><label>ค่าแรงที่คาด (฿/วัน)</label><input type="number" id="editRate" value="${p.daily_rate_expected||''}"></div>
+          </div>
+          <div class="form-group"><label>ชื่อสถานที่</label><input type="text" id="editLocation" value="${p.location_name||''}"></div>
+          <div id="alertEditProfile"></div>
+          <button class="btn btn-primary" onclick="doUpdateProfile()">บันทึก</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('editProfileForm').style.display='none'" style="margin-left:8px">ยกเลิก</button>
+        </div>
+      </div>`;
+    // โหลด review summary async
+    loadReviewSummary(userId, 'worker', 'workerReviewSummary');
+  } catch(e) {
+    // ยังไม่มีโปรไฟล์ — แสดงฟอร์มสร้าง
+    if (e.message.includes('ไม่พบโปรไฟล์') || e.message.includes('404')) {
+      el.innerHTML = `
+        <div class="alert alert-info">ยังไม่มีโปรไฟล์ — กรุณากรอกข้อมูลด้านล่าง</div>
+        <div class="card">
+          <div style="font-weight:600;margin-bottom:16px">สร้างโปรไฟล์</div>
+          <div class="form-group"><label>ชื่อ-นามสกุล</label><input type="text" id="createName" placeholder="สมชาย ใจดี"></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>หมวดงาน</label>
+              <select id="createCategory" onchange="loadJobTitles('createCategory','createSkillSelect')">
+                <option value="">— เลือกหมวดงาน —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>ตำแหน่งงาน</label>
+              <select id="createSkillSelect" onchange="syncSkillCode('createSkillSelect','createSkills')">
+                <option value="">— เลือกตำแหน่ง —</option>
+              </select>
+            </div>
+          </div>
+          <input type="hidden" id="createSkills" value="">
+          <div class="form-row">
+            <div class="form-group"><label>ประสบการณ์ (ปี)</label><input type="number" id="createExp" value="0"></div>
+            <div class="form-group"><label>ค่าแรงที่คาด (฿/วัน)</label><input type="number" id="createRate" placeholder="500"></div>
+          </div>
+          <div class="form-group">
+            <label>ที่อยู่ / สถานที่</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="createPlaceInput" placeholder="พิมพ์ที่อยู่ของคุณ เช่น อ่อนนุช กรุงเทพ..." style="flex:1">
+              <button class="btn btn-secondary btn-sm" onclick="useMyLocationForProfile()" style="white-space:nowrap">📍 GPS</button>
+            </div>
+            <div id="createLocationDisplay" style="font-size:12px;color:var(--accent);margin-top:6px;font-family:'IBM Plex Mono',monospace;min-height:18px"></div>
+            <div id="createMapPreview" style="display:none;border-radius:8px;overflow:hidden;margin-top:8px;height:140px;"></div>
+          </div>
+          <input type="hidden" id="createLat" value="13.7018">
+          <input type="hidden" id="createLng" value="100.6011">
+          <div class="form-group"><label>ชื่อสถานที่ (แสดงใน profile)</label><input type="text" id="createLocation" placeholder="อ่อนนุช, กรุงเทพฯ"></div>
+          <div id="alertCreateProfile"></div>
+          <button class="btn btn-primary" onclick="doCreateProfile()">✅ สร้างโปรไฟล์</button>
+        </div>`;
+    } else {
+      el.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+    }
+  }
+}
+
+function showEditProfile() {
+  const f = document.getElementById('editProfileForm');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+async function doCreateProfile() {
+  try {
+    const skills = document.getElementById('createSkills').value.split(',').map(s=>s.trim()).filter(Boolean);
+    await api('POST', '/workers/profile', {
+      full_name:           document.getElementById('createName').value.trim(),
+      skills,
+      experience_years:    parseInt(document.getElementById('createExp').value) || 0,
+      daily_rate_expected: parseFloat(document.getElementById('createRate').value) || undefined,
+      lat:                 parseFloat(document.getElementById('createLat').value),
+      lng:                 parseFloat(document.getElementById('createLng').value),
+      location_name:       document.getElementById('createLocation').value.trim() || undefined,
+    });
+    showAlert('alertCreateProfile','✅ สร้างโปรไฟล์สำเร็จ!','success');
+    setTimeout(() => loadWorkerProfile(), 1000);
+  } catch(e) {
+    showAlert('alertCreateProfile', e.message);
+  }
+}
+
+async function doUpdateProfile() {
+  try {
+    const skills = document.getElementById('editSkills').value.split(',').map(s=>s.trim()).filter(Boolean);
+    await api('PATCH', '/workers/profile', {
+      skills,
+      experience_years:    parseInt(document.getElementById('editExp').value),
+      daily_rate_expected: parseFloat(document.getElementById('editRate').value) || undefined,
+      location_name:       document.getElementById('editLocation').value.trim() || undefined,
+    });
+    showAlert('alertEditProfile','✅ อัปเดตสำเร็จ!','success');
+    setTimeout(() => loadWorkerProfile(), 1000);
+  } catch(e) {
+    showAlert('alertEditProfile', e.message);
+  }
+}
+
+// ─── NEARBY JOBS ───────────────────────────────────────────
+async function searchNearby() {
+  const lat = parseFloat(document.getElementById('searchLat').value);
+  const lng = parseFloat(document.getElementById('searchLng').value);
+  const r   = document.getElementById('searchRadius').value;
+  const el  = document.getElementById('nearbyResults');
+  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div><div class="empty-text" style="margin-top:12px">กำลังค้นหา...</div></div>';
+  try {
+    const data = await api('GET', `/jobs/nearby?lat=${lat}&lng=${lng}&radius_km=${r}`);
+    if (!data.jobs.length) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">ไม่พบงานในรัศมีที่กำหนด<br><small style="color:var(--muted)">ลองเพิ่มรัศมีหรือตรวจสอบ skills ใน profile</small></div></div>';
+      return;
+    }
+    el.innerHTML = `<div style="font-size:13px;color:var(--muted);margin-bottom:12px">พบ ${data.count} งาน</div>` +
+      data.jobs.map(j => `
+        <div class="job-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="font-weight:600;font-size:16px">${j.title}</div>
+            <span class="badge badge-green">฿${Number(j.daily_wage_rate).toLocaleString()}/วัน</span>
+          </div>
+          <div class="job-meta" style="margin-top:8px">
+            <span>📍 ${j.location_name||j.zone_name||'-'}</span>
+            <span>📏 ${j.distance_km} กม.</span>
+            <span>📅 ${j.duration_days} วัน</span>
+            <span>👥 เหลือ ${j.slots_remaining} ที่</span>
+          </div>
+          <div class="tags">
+            ${j.matched_skills.map(s=>`<span class="tag tag-match">✓ ${s}</span>`).join('')}
+            ${j.missing_skills.map(s=>`<span class="tag">${s}</span>`).join('')}
+          </div>
+          <div class="match-bar"><div class="match-fill" style="width:${j.match_score}%"></div></div>
+          <div class="match-label">
+            <span style="font-size:11px;color:var(--muted)">Match Score</span>
+            <span class="match-score">${j.match_score}/100</span>
+          </div>
+          <div style="margin-top:12px">
+            <button class="btn btn-primary btn-sm" onclick="applyJob('${j.job_id}',${lat},${lng},this)">สมัครงานนี้</button>
+          </div>
+        </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+  }
+}
+
+async function applyJob(jobId, lat, lng, btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span>';
+  try {
+    const data = await api('POST', `/jobs/${jobId}/apply`, { lat, lng });
+    btn.innerHTML = `✅ สมัครแล้ว (${data.match_score}/100)`;
+    btn.style.background = 'rgba(0,229,160,.15)';
+    btn.style.color = 'var(--accent)';
+    btn.style.border = '1px solid rgba(0,229,160,.3)';
+  } catch(e) {
+    btn.innerHTML = `❌ ${e.message}`;
+    btn.disabled = false;
+    btn.style.background = '';
+  }
+}
+
+// ─── MY APPLICATIONS ───────────────────────────────────────
+async function loadMyApps() {
+  const el = document.getElementById('myAppsContent');
+  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
+  try {
+    const data = await api('GET', '/workers/applications');
+    if (!data.length) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">ยังไม่มีประวัติการสมัคร</div></div>';
+      return;
+    }
+    const sColor = { applied:'badge-blue', shortlisted:'badge-warn', hired:'badge-green', rejected:'badge-danger', withdrawn:'badge-gray' };
+    const sTH    = { applied:'รอพิจารณา', shortlisted:'อยู่ในรายชื่อ', hired:'ได้รับการจ้าง', rejected:'ไม่ผ่าน', withdrawn:'ถอน' };
+    el.innerHTML = data.map(a => `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div>
+            <div style="font-weight:600;font-size:15px">${a.job.title}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${a.job.location_name||'-'} • ฿${a.job.daily_wage_rate}/วัน • ${a.job.duration_days} วัน</div>
+          </div>
+          <span class="badge ${sColor[a.status]||'badge-gray'}">${sTH[a.status]||a.status}</span>
+        </div>
+        <div style="display:flex;gap:16px;font-size:12px;color:var(--muted)">
+          <span>Match: <strong style="color:var(--accent)">${a.match_score}/100</strong></span>
+          <span>ระยะ: ${a.distance_km} กม.</span>
+          <span>สมัคร: ${new Date(a.applied_at).toLocaleDateString('th-TH')}</span>
+        </div>
+        ${a.employer_note ? `<div style="margin-top:10px;font-size:13px;color:var(--muted);font-style:italic">"${a.employer_note}"</div>` : ''}
+        ${a.status === 'hired' && a.maps_link ? `
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <a href="${a.maps_link}" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+              🗺️ นำทางไปงาน
+            </a>
+            <button class="btn btn-secondary btn-sm" onclick="showContact('${a.id}',this)">📞 ดูเบอร์ติดต่อ</button>
+          </div>
+          <div id="contact-${a.id}" style="display:none;margin-top:10px"></div>` : ''}
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+  }
+}
+
+// ─── EMPLOYER PROFILE CHECK ────────────────────────────────
+async function checkEmployerProfile() {
+  const el = document.getElementById('employerProfileCheck');
+  const form = document.getElementById('postJobForm');
+  try {
+    const emp = await api('GET', '/employers/profile/me');
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px 16px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+        <div style="flex:1">
+          <div style="font-weight:600">${emp.company_name}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${emp.contact_person} · ${emp.business_type||''}</div>
+        </div>
+        ${emp.verified_status === 'verified'
+          ? '<span class="badge badge-green">✅ Verified</span>'
+          : `<button class="btn btn-secondary btn-sm" onclick="requestEmployerVerify(this)" style="font-size:11px">🏢 ขอ Verify บริษัท</button>`
+        }
+      </div>`;
+    form.style.display = 'block';
+  } catch(e) {
+    form.style.display = 'none';
+    el.innerHTML = `
+      <div class="alert alert-info" style="margin-bottom:16px">ยังไม่มี Employer Profile — กรุณาสร้างก่อน</div>
+      <div class="card">
+        <div style="font-weight:600;margin-bottom:16px">สร้าง Employer Profile</div>
+        <div class="form-group"><label>ชื่อบริษัท/ร้าน</label><input type="text" id="empCompany" placeholder="บริษัท ABC จำกัด"></div>
+        <div class="form-group"><label>ประเภทธุรกิจ</label>
+          <select id="empBizType">
+            <option value="factory">โรงงาน</option>
+            <option value="grocery">ร้านขายของ</option>
+            <option value="sme">SME</option>
+            <option value="warehouse">คลังสินค้า</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="form-group"><label>ชื่อผู้ติดต่อ</label><input type="text" id="empContact" placeholder="คุณสมชาย"></div>
+        <div id="alertCreateEmp"></div>
+        <button class="btn btn-primary" onclick="doCreateEmployerProfile()">✅ สร้าง Profile</button>
+      </div>`;
+  }
+}
+
+async function doCreateEmployerProfile() {
+  try {
+    await api('POST', '/employers/profile', {
+      company_name:   document.getElementById('empCompany').value.trim(),
+      business_type:  document.getElementById('empBizType').value,
+      contact_person: document.getElementById('empContact').value.trim(),
+    });
+    showAlert('alertCreateEmp','✅ สร้าง Profile สำเร็จ!','success');
+    setTimeout(() => checkEmployerProfile(), 1000);
+  } catch(e) {
+    showAlert('alertCreateEmp', e.message);
+  }
+}
+
+// ─── POST JOB ──────────────────────────────────────────────
+async function doPostJob() {
+  const alertEl = 'alertPostJob';
+  try {
+    const skills = document.getElementById('jobSkills').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const wage   = parseFloat(document.getElementById('jobWage').value);
+    const days   = parseInt(document.getElementById('jobDays').value);
+    if (!document.getElementById('jobTitle').value.trim()) throw new Error('กรุณาระบุชื่อตำแหน่ง');
+    if (!wage || wage <= 0)  throw new Error('กรุณาระบุค่าแรงที่ถูกต้อง');
+    if (!days || days <= 0)  throw new Error('กรุณาระบุจำนวนวันที่ถูกต้อง');
+    const body = {
+      title:           document.getElementById('jobTitle').value.trim(),
+      description:     document.getElementById('jobDesc').value.trim() || undefined,
+      required_skills: skills,
+      daily_wage_rate: wage,
+      duration_days:   days,
+      slots_available: parseInt(document.getElementById('jobSlots').value) || 1,
+      lat:             parseFloat(document.getElementById('jobLat').value),
+      lng:             parseFloat(document.getElementById('jobLng').value),
+      location_name:   document.getElementById('jobLocation').value.trim() || undefined,
+      zone_name:       document.getElementById('jobZone').value,
+    };
+    const sd = document.getElementById('jobStartDate').value;
+    if (sd) body.start_date = sd;
+    await api('POST', '/jobs', body);
+    showAlert(alertEl,'✅ โพสต์งานสำเร็จ!','success');
+    document.getElementById('jobTitle').value = '';
+    document.getElementById('jobDesc').value  = '';
+    document.getElementById('jobSkills').value= '';
+    document.getElementById('jobCategory').value = '';
+    document.getElementById('jobSkillSelect').innerHTML = '<option value="">— เลือกตำแหน่ง —</option>';
+    setTimeout(() => showPage('myjobs'), 1200);
+  } catch(e) {
+    showAlert(alertEl, e.message);
+  }
+}
+
+// ─── MY JOBS ───────────────────────────────────────────────
+async function loadMyJobs() {
+  const el = document.getElementById('myJobsContent');
+  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
+  try {
+    const data = await api('GET', '/jobs/mine');
+    if (!data.length) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">ยังไม่มีงานที่โพสต์<br><button class="btn btn-primary btn-sm" onclick="showPage(\'postjob\')" style="margin-top:12px">โพสต์งานแรก</button></div></div>';
+      return;
+    }
+    const sColor = { open:'badge-green', closed:'badge-gray', filled:'badge-blue', draft:'badge-warn', expired:'badge-danger' };
+    el.innerHTML = data.map(j => `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+          <div>
+            <div style="font-weight:600;font-size:16px">${j.title}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${j.location_name||'-'} • ฿${j.daily_wage_rate}/วัน • ${j.duration_days} วัน</div>
+          </div>
+          <span class="badge ${sColor[j.status]||'badge-gray'}">${j.status}</span>
+        </div>
+        <div style="display:flex;gap:12px;font-size:12px;color:var(--muted);margin-bottom:14px">
+          <span>ที่ว่าง: ${j.slots_available - j.slots_filled}/${j.slots_available}</span>
+          <span>โพสต์: ${new Date(j.created_at).toLocaleDateString('th-TH')}</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="loadCandidates('${j.id}','${j.title}')">👥 ดูผู้สมัคร</button>
+          ${j.status==='open' ? `<button class="btn btn-danger btn-sm" onclick="closeJob('${j.id}')">ปิดงาน</button>` : ''}
+          ${j.status==='closed' ? `<button class="btn btn-secondary btn-sm" onclick="reopenJob('${j.id}')">เปิดงานใหม่</button>` : ''}
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+  }
+}
+
+async function closeJob(jobId) {
+  if (!confirm('ปิดงานนี้?')) return;
+  try {
+    await api('PATCH', `/jobs/${jobId}/status`, { status:'closed' });
+    loadMyJobs();
+  } catch(e) { alert(e.message); }
+}
+
+async function reopenJob(jobId) {
+  try {
+    await api('PATCH', `/jobs/${jobId}/status`, { status:'open' });
+    loadMyJobs();
+  } catch(e) { alert(e.message); }
+}
+
+async function loadCandidates(jobId, jobTitle) {
+  const el = document.getElementById('myJobsContent');
+  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
+  try {
+    const data = await api('GET', `/jobs/${jobId}/candidates`);
+    const back = `<button class="btn btn-secondary btn-sm" onclick="loadMyJobs()" style="margin-bottom:16px">← กลับ</button>`;
+    if (!data.length) {
+      el.innerHTML = back + '<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">ยังไม่มีผู้สมัคร</div></div>';
+      return;
+    }
+    const bgColor = { pending:'badge-warn', verified:'badge-green', failed:'badge-danger' };
+    el.innerHTML = back +
+      `<div style="font-size:16px;font-weight:600;margin-bottom:16px">${jobTitle} — ${data.length} คนสมัคร</div>` +
+      data.map(c => `
+        <div class="candidate">
+          <div class="avatar">${c.full_name.charAt(0).toUpperCase()}</div>
+          <div class="candidate-info">
+            <div class="candidate-name">${c.full_name}</div>
+            <div class="candidate-meta">
+              Match: <strong style="color:var(--accent)">${c.match_score}/100</strong> •
+              ${c.distance_km} กม. •
+              <span class="badge ${bgColor[c.background_check_status]||'badge-gray'}" style="font-size:10px">${c.background_check_status}</span>
+            </div>
+            <div class="tags" style="margin-top:6px">
+              ${c.matched_skills.map(s=>`<span class="tag tag-match" style="font-size:10px">✓ ${s}</span>`).join('')}
+            </div>
+          </div>
+          <div class="candidate-actions" style="flex-direction:column;gap:6px;align-items:flex-end">
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-danger btn-sm" onclick="decide('${c.application_id}','rejected',this)">ปฏิเสธ</button>
+              <button class="btn btn-primary btn-sm" onclick="decide('${c.application_id}','hired',this)">จ้าง ✓</button>
+            </div>
+            ${c.status === 'hired' ? `
+            <button class="btn btn-secondary btn-sm" onclick="showContact('${c.application_id}',this)" style="font-size:11px">📞 ดูเบอร์</button>
+            <div id="contact-${c.application_id}" style="display:none;font-size:11px;text-align:right;margin-top:4px"></div>` : ''}
+            <button onclick="showReportModal('${c.worker_id}')" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:2px 0">🚩 รายงาน</button>
+          </div>
+        </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+  }
+}
+
+async function decide(appId, decision, btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span>';
+  try {
+    const data = await api('PATCH', `/applications/${appId}/decide`, {
+      decision,
+      note: decision === 'hired' ? 'ยินดีต้อนรับ!' : 'ขอบคุณที่สมัคร'
+    });
+    btn.innerHTML = decision === 'hired' ? '✅ จ้างแล้ว' : '❌ ปฏิเสธแล้ว';
+
+    // แสดง contact ทันทีหลัง hired ไม่ต้อง reload
+    if (decision === 'hired' && data.contact) {
+      const c = data.contact;
+      const candidateEl = btn.closest('.candidate');
+      if (candidateEl) {
+        const contactDiv = document.createElement('div');
+        contactDiv.style.cssText = 'margin-top:8px;padding:8px 12px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:8px;font-size:12px;width:100%';
+        contactDiv.innerHTML = `
+          <div style="font-weight:600">${c.contact_name}</div>
+          ${c.phone ? `<a href="tel:${c.phone}" style="color:var(--accent);text-decoration:none;font-family:'IBM Plex Mono',monospace">📱 ${c.phone}</a>` : ''}
+          <div style="color:var(--muted)">${c.email}</div>`;
+        candidateEl.appendChild(contactDiv);
+      }
+    }
+  } catch(e) {
+    btn.innerHTML = decision === 'hired' ? 'จ้าง ✓' : 'ปฏิเสธ';
+    btn.disabled = false;
+    alert(e.message);
+  }
+}
+
+// ─── GOOGLE MAPS ───────────────────────────────────────────
+let autocompletes = {};
+
+function initPlacesAutocomplete(inputId, latId, lngId, displayId, mapPreviewId) {
+  const input = document.getElementById(inputId);
+  if (!input || !window.google) return;
+  const ac = new google.maps.places.Autocomplete(input, {
+    componentRestrictions: { country: 'th' },
+    fields: ['geometry', 'name', 'formatted_address'],
+    types: ['geocode', 'establishment'],
+  });
+  ac.addListener('place_changed', () => {
+    const place = ac.getPlace();
+    if (!place.geometry) return;
+    const lat = place.geometry.location.lat();
+    const lng = place.geometry.location.lng();
+    document.getElementById(latId).value = lat;
+    document.getElementById(lngId).value = lng;
+    const display = document.getElementById(displayId);
+    if (display) display.textContent = `📍 ${place.name || place.formatted_address} (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+    showMapPreview(mapPreviewId, lat, lng, place.name || place.formatted_address);
+    log('ok', `📍 Place selected: ${place.name} (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+  });
+  autocompletes[inputId] = ac;
+}
+
+function showMapPreview(containerId, lat, lng, label) {
+  const el = document.getElementById(containerId);
+  if (!el || !window.google) return;
+  el.style.display = 'block';
+  const map = new google.maps.Map(el, {
+    center: { lat, lng },
+    zoom: 15,
+    disableDefaultUI: true,
+    styles: [
+      { elementType: 'geometry', stylers: [{ color: '#1e232b' }] },
+      { elementType: 'labels.text.fill', stylers: [{ color: '#6b7a94' }] },
+      { elementType: 'labels.text.stroke', stylers: [{ color: '#161a20' }] },
+      { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2a3040' }] },
+      { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca3af' }] },
+      { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+      { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0d1117' }] },
+    ],
+  });
+  new google.maps.Marker({
+    position: { lat, lng },
+    map,
+    title: label,
+    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#00e5a0', fillOpacity: 1, strokeColor: '#0d0f12', strokeWeight: 2 },
+  });
+}
+
+function setLocationFromGPS(latId, lngId, displayId, mapPreviewId, inputId) {
+  if (!navigator.geolocation) {
+    alert('Browser ไม่รองรับ GPS');
+    return;
+  }
+  const display = document.getElementById(displayId);
+  if (display) display.textContent = '⏳ กำลังค้นหาตำแหน่ง...';
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      document.getElementById(latId).value = lat;
+      document.getElementById(lngId).value = lng;
+      // Reverse geocode
+      const geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ location: { lat, lng }, language: 'th' }, (results, status) => {
+        const name = status === 'OK' && results[0] ? results[0].formatted_address : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        if (display) display.textContent = `📍 ${name}`;
+        if (inputId) document.getElementById(inputId).value = name;
+        showMapPreview(mapPreviewId, lat, lng, 'ตำแหน่งของฉัน');
+        log('ok', `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+      });
+    },
+    (err) => {
+      if (display) display.textContent = '❌ ไม่สามารถค้นหาตำแหน่งได้';
+      log('err', `GPS error: ${err.message}`);
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+function useMyLocation()           { setLocationFromGPS('searchLat','searchLng','searchLocationDisplay','searchMapPreview','searchPlaceInput'); }
+function useMyLocationForJob()     { setLocationFromGPS('jobLat','jobLng','jobLocationDisplay','jobMapPreview','jobPlaceInput'); }
+function useMyLocationForProfile() { setLocationFromGPS('createLat','createLng','createLocationDisplay','createMapPreview','createPlaceInput'); }
+
+// init autocomplete เมื่อ Google Maps โหลดเสร็จ
+function initAllAutocompletes() {
+  if (!window.google) { setTimeout(initAllAutocompletes, 500); return; }
+  initPlacesAutocomplete('searchPlaceInput','searchLat','searchLng','searchLocationDisplay','searchMapPreview');
+  initPlacesAutocomplete('jobPlaceInput','jobLat','jobLng','jobLocationDisplay','jobMapPreview');
+  initPlacesAutocomplete('createPlaceInput','createLat','createLng','createLocationDisplay','createMapPreview');
+  log('info', '✓ Google Maps Places ready');
+}
+initAllAutocompletes();
+
+async function showContact(appId, btn) {
+  const el = document.getElementById(`contact-${appId}`);
+  if (!el) return;
+  if (el.style.display !== 'none') {
+    el.style.display = 'none';
+    btn.textContent = userRole === 'worker' ? '📞 ดูเบอร์ติดต่อ' : '📞 ดูเบอร์';
+    return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span>';
+  try {
+    const c = await api('GET', `/applications/${appId}/contact`);
+    el.innerHTML = `
+      <div style="background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:8px;padding:10px 14px;margin-top:8px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">📞 ข้อมูลติดต่อ</div>
+        <div style="font-weight:600">${c.contact_name}${c.company_name ? ' · ' + c.company_name : ''}</div>
+        ${c.phone ? `<div style="margin-top:4px"><a href="tel:${c.phone}" style="color:var(--accent);text-decoration:none;font-family:'IBM Plex Mono',monospace">📱 ${c.phone}</a></div>` : ''}
+        <div style="margin-top:2px;font-size:12px;color:var(--muted)">${c.email}</div>
+      </div>`;
+    el.style.display = 'block';
+    btn.innerHTML = '🙈 ซ่อน';
+    btn.disabled = false;
+  } catch(e) {
+    el.innerHTML = `<div class="alert alert-error" style="margin-top:8px">${e.message}</div>`;
+    el.style.display = 'block';
+    btn.innerHTML = userRole === 'worker' ? '📞 ดูเบอร์ติดต่อ' : '📞 ดูเบอร์';
+    btn.disabled = false;
+  }
+}
+
+// ─── TRUST & SAFETY ────────────────────────────────────────
+
+async function requestBackgroundCheck(btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span> กำลังตรวจสอบ...';
+  try {
+    await api('POST', '/workers/background-check/request');
+    btn.parentElement.innerHTML = '<span class="badge badge-green">✅ Verified</span>';
+    setTimeout(() => loadWorkerProfile(), 800);
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '🔍 ขอ Verify ตัวตน';
+    alert(e.message);
+  }
+}
+
+async function requestEmployerVerify(btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span>';
+  try {
+    await api('POST', '/employers/verify/request');
+    btn.outerHTML = '<span class="badge badge-green">✅ Verified</span>';
+    setTimeout(() => checkEmployerProfile(), 800);
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '🏢 ขอ Verify บริษัท';
+    alert(e.message);
+  }
+}
+
+function showReportModal(targetUserId) {
+  document.getElementById('reportTargetId').value = targetUserId;
+  document.getElementById('reportDetail').value = '';
+  document.getElementById('alertReport').innerHTML = '';
+  document.getElementById('reportModal').style.display = 'flex';
+}
+
+function closeReportModal() {
+  document.getElementById('reportModal').style.display = 'none';
+}
+
+async function submitReport() {
+  const targetId = document.getElementById('reportTargetId').value;
+  const reason   = document.getElementById('reportReason').value;
+  const detail   = document.getElementById('reportDetail').value.trim();
+  try {
+    await api('POST', '/users/report', {
+      reported_user_id: targetId,
+      reason,
+      detail: detail || undefined,
+    });
+    showAlert('alertReport', '✅ ส่งรายงานแล้ว ทีมงานจะตรวจสอบ', 'success');
+    setTimeout(() => closeReportModal(), 1500);
+  } catch(e) {
+    showAlert('alertReport', e.message);
+  }
+}
+
+// ─── NOTIFICATIONS ─────────────────────────────────────────
+
+let _notifTimer = null;
+
+async function startNotifPolling() {
+  await refreshNotifBadge();
+  // poll ทุก 30 วิ
+  _notifTimer = setInterval(refreshNotifBadge, 30000);
+}
+
+async function refreshNotifBadge() {
+  try {
+    const data = await api('GET', '/notifications/unread-count');
+    const badge = document.getElementById('notifBadge');
+    if (!badge) return;
+    if (data.count > 0) {
+      badge.textContent = data.count > 99 ? '99+' : data.count;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+async function loadNotifications() {
+  const el = document.getElementById('notificationsContent');
+  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
+  try {
+    // mark all read เมื่อเปิดหน้า
+    await api('PATCH', '/notifications/read-all');
+    refreshNotifBadge();
+
+    const data = await api('GET', '/notifications?limit=50');
+    if (!data.length) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div><div class="empty-text">ยังไม่มีการแจ้งเตือน</div></div>';
+      return;
+    }
+    const iconMap = {
+      new_applicant: '👤',
+      hired:         '✅',
+      rejected:      '❌',
+      shortlisted:   '📋',
+      new_applicant: '🔔',
+    };
+    el.innerHTML = data.map(n => `
+      <div class="card" style="padding:14px 18px;${!n.is_read ? 'border-left:3px solid var(--accent)' : ''}">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="font-size:22px;margin-top:2px">${iconMap[n.type] || '🔔'}</div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:14px">${n.title}</div>
+            ${n.body ? `<div style="font-size:13px;color:var(--muted);margin-top:4px;white-space:pre-line">${n.body}</div>` : ''}
+            <div style="font-size:11px;color:var(--muted);margin-top:6px;font-family:'IBM Plex Mono',monospace">
+              ${new Date(n.created_at).toLocaleString('th-TH')}
+            </div>
+          </div>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+  }
+}
+
+async function markAllRead() {
+  try {
+    await api('PATCH', '/notifications/read-all');
+    refreshNotifBadge();
+    loadNotifications();
+  } catch(e) {}
+}
+
+// ─── REVIEW SUMMARY ────────────────────────────────────────
+
+async function loadReviewSummary(userIdForReview, role, containerId) {
+  try {
+    const path = role === 'worker'
+      ? `/workers/${userIdForReview}/review-summary`
+      : `/employers/${userIdForReview}/review-summary`;
+    const s = await api('GET', path);
+    const el = document.getElementById(containerId);
+    if (!el || !s.total_reviews) return;
+
+    const stars = s.avg_stars
+      ? '⭐'.repeat(Math.round(s.avg_stars)) + ` ${s.avg_stars.toFixed(1)}`
+      : '';
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px">
+        ${stars ? `<span style="font-size:14px">${stars}</span>` : ''}
+        <span style="font-size:12px;color:var(--muted)">${s.total_reviews} รีวิว</span>
+        ${s.rehire_pct != null ? `<span style="font-size:12px;color:var(--accent)">👍 ${s.rehire_pct}% รับอีก</span>` : ''}
+      </div>
+      ${s.top_tags?.length ? `<div class="tags" style="margin-top:6px">${s.top_tags.map(t=>`<span class="tag tag-match" style="font-size:11px">${t}</span>`).join('')}</div>` : ''}`;
+  } catch(e) {}
+}
+
+// ─── JOB CATEGORIES CASCADE ────────────────────────────────
+
+let _categoriesCache = null;
+
+async function loadCategories() {
+  if (_categoriesCache) return _categoriesCache;
+  try {
+    _categoriesCache = await api('GET', '/job-categories');
+    return _categoriesCache;
+  } catch(e) {
+    log('err', `loadCategories: ${e.message}`);
+    return [];
+  }
+}
+
+async function initCategoryDropdowns() {
+  const cats = await loadCategories();
+  const opts = `<option value="">— เลือกหมวดงาน —</option>` +
+    cats.map(c => `<option value="${c.code}">${c.icon} ${c.name_th}</option>`).join('');
+  ['jobCategory','createCategory','editCategory'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = opts;
+  });
+}
+
+async function loadJobTitles(categorySelectId, titleSelectId) {
+  const catCode = document.getElementById(categorySelectId)?.value;
+  const titleEl = document.getElementById(titleSelectId);
+  if (!titleEl) return;
+  if (!catCode) {
+    titleEl.innerHTML = '<option value="">— เลือกตำแหน่ง —</option>';
+    return;
+  }
+  titleEl.innerHTML = '<option value="">กำลังโหลด...</option>';
+  try {
+    const titles = await api('GET', `/job-categories/${catCode}/titles`);
+    titleEl.innerHTML = '<option value="">— เลือกตำแหน่ง —</option>' +
+      titles.map(t => `<option value="${t.code}">${t.name_th}</option>`).join('');
+  } catch(e) {
+    titleEl.innerHTML = '<option value="">โหลดไม่ได้</option>';
+  }
+}
+
+function syncSkillCode(titleSelectId, hiddenInputId) {
+  const val = document.getElementById(titleSelectId)?.value || '';
+  const hidden = document.getElementById(hiddenInputId);
+  if (hidden) hidden.value = val;
+}
+
+// ─── REVIEWS ───────────────────────────────────────────────
+
+async function loadMyReviews() {
+  const el = document.getElementById('myReviewsContent');
+  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
+  try {
+    const [pending, received] = await Promise.all([
+      api('GET', '/reviews/pending'),
+      api('GET', '/reviews/me'),
+    ]);
+
+    let html = '';
+
+    // --- Pending reviews ---
+    if (pending.length) {
+      html += `<div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:12px;font-family:'IBM Plex Mono',monospace">รอรีวิว (${pending.length})</div>`;
+      html += pending.map(p => `
+        <div class="card" id="reviewCard-${p.application_id}">
+          <div style="font-weight:600;margin-bottom:4px">${p.job_title}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:14px">
+            ${p.review_target === 'employer' ? '🏭 ' + p.company_name : '👷 ' + p.worker_name}
+          </div>
+          <div id="reviewForm-${p.application_id}">
+            <!-- Stars -->
+            <div style="margin-bottom:12px">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-family:'IBM Plex Mono',monospace">คะแนน</div>
+              <div class="star-group" id="stars-${p.application_id}" style="display:flex;gap:6px">
+                ${[1,2,3,4,5].map(n => `
+                  <span onclick="setStar('${p.application_id}',${n})"
+                    id="star-${p.application_id}-${n}"
+                    style="font-size:28px;cursor:pointer;opacity:.3;transition:opacity .15s">⭐</span>
+                `).join('')}
+              </div>
+              <input type="hidden" id="starVal-${p.application_id}" value="0">
+            </div>
+            <!-- Tags -->
+            <div id="tagArea-${p.application_id}" style="margin-bottom:14px">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-family:'IBM Plex Mono',monospace">เลือก tags (ได้หลายอัน)</div>
+              <div id="tags-${p.application_id}" class="tags" style="gap:8px">
+                <div class="loading"></div>
+              </div>
+            </div>
+            ${p.review_target === 'worker' ? `
+            <div style="margin-bottom:14px">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-family:'IBM Plex Mono',monospace">จะรับอีกไหม?</div>
+              <div style="display:flex;gap:8px">
+                <button onclick="setRehire('${p.application_id}',true,this)" id="rehire-yes-${p.application_id}"
+                  class="btn btn-secondary btn-sm">👍 รับอีกแน่นอน</button>
+                <button onclick="setRehire('${p.application_id}',false,this)" id="rehire-no-${p.application_id}"
+                  class="btn btn-secondary btn-sm">👎 ไม่รับอีก</button>
+              </div>
+              <input type="hidden" id="rehireVal-${p.application_id}" value="">
+            </div>` : ''}
+            <div id="alertReview-${p.application_id}"></div>
+            <button class="btn btn-primary btn-sm" onclick="submitReview('${p.application_id}','${p.review_target}')">
+              ส่งรีวิว ✓
+            </button>
+          </div>
+        </div>`).join('');
+
+      // Load tags async
+      pending.forEach(p => loadTagsForReview(p.application_id, p.review_target));
+    }
+
+    // --- Received reviews ---
+    if (received.length) {
+      html += `<div class="divider"></div>
+        <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:12px;font-family:'IBM Plex Mono',monospace">รีวิวที่ได้รับ (${received.length})</div>`;
+      html += received.map(r => `
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+            <div>
+              <div style="font-weight:600">${r.job_title}</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px">จาก ${r.reviewer_role === 'employer' ? 'Employer' : 'Worker'}</div>
+            </div>
+            <div style="font-size:22px">${'⭐'.repeat(r.star_rating)}${'☆'.repeat(5-r.star_rating)}</div>
+          </div>
+          <div class="tags">
+            ${r.tags.map(t => `<span class="tag tag-match">${t}</span>`).join('')}
+          </div>
+          ${r.would_rehire !== null && r.would_rehire !== undefined ? `
+            <div style="margin-top:10px;font-size:12px;color:var(--muted)">
+              ${r.would_rehire ? '👍 จะรับอีกแน่นอน' : '👎 ไม่รับอีก'}
+            </div>` : ''}
+        </div>`).join('');
+    }
+
+    if (!pending.length && !received.length) {
+      html = '<div class="empty"><div class="empty-icon">⭐</div><div class="empty-text">ยังไม่มีรีวิว<br><small style="color:var(--muted)">รีวิวจะปรากฏหลังจากงานเสร็จสิ้น</small></div></div>';
+    }
+
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+  }
+}
+
+async function loadTagsForReview(appId, targetRole) {
+  try {
+    const tags = await api('GET', `/review-tags?target_role=${targetRole}`);
+    const el = document.getElementById(`tags-${appId}`);
+    if (!el) return;
+    el.innerHTML = tags.map(t => `
+      <span onclick="toggleTag('${appId}','${t.tag_key}',this)"
+        data-tag="${t.tag_key}"
+        class="tag"
+        style="cursor:pointer;font-size:12px;padding:6px 12px">${t.tag_label}</span>
+    `).join('');
+  } catch(e) {}
+}
+
+function setStar(appId, val) {
+  document.getElementById(`starVal-${appId}`).value = val;
+  for (let i = 1; i <= 5; i++) {
+    const s = document.getElementById(`star-${appId}-${i}`);
+    if (s) s.style.opacity = i <= val ? '1' : '0.3';
+  }
+}
+
+function toggleTag(appId, tagKey, el) {
+  el.classList.toggle('tag-match');
+}
+
+function setRehire(appId, val, btn) {
+  document.getElementById(`rehireVal-${appId}`).value = val ? 'true' : 'false';
+  document.getElementById(`rehire-yes-${appId}`).style.borderColor = val ? 'var(--accent)' : '';
+  document.getElementById(`rehire-no-${appId}`).style.borderColor  = !val ? 'var(--danger)' : '';
+}
+
+async function submitReview(appId, targetRole) {
+  const starVal = parseInt(document.getElementById(`starVal-${appId}`).value);
+  if (!starVal) {
+    showAlert(`alertReview-${appId}`, 'กรุณาให้คะแนนดาวก่อน');
+    return;
+  }
+
+  const tagEls  = document.querySelectorAll(`#tags-${appId} span.tag-match`);
+  const tagKeys = Array.from(tagEls).map(el => el.dataset.tag);
+
+  const body = {
+    application_id: appId,
+    star_rating:    starVal,
+    tag_keys:       tagKeys,
+  };
+
+  if (targetRole === 'worker') {
+    const rehireVal = document.getElementById(`rehireVal-${appId}`)?.value;
+    if (rehireVal !== '') body.would_rehire = rehireVal === 'true';
+  }
+
+  try {
+    await api('POST', '/reviews', body);
+    const card = document.getElementById(`reviewCard-${appId}`);
+    if (card) card.innerHTML = `
+      <div class="alert alert-success">✅ ส่งรีวิวเรียบร้อย! จะเปิดเผยเมื่ออีกฝ่ายส่งด้วย หรือครบ 7 วัน</div>`;
+  } catch(e) {
+    showAlert(`alertReview-${appId}`, e.message);
+  }
+}
+
+// ─── START ─────────────────────────────────────────────────
+if (token && userRole) {
+  log('info', `Auto-login: ${userRole}`);
+  initApp();
+} else {
+  // ตรวจสอบ Google OAuth callback ก่อน
+  handleGoogleCallback().then(handled => {
+    if (!handled) {
+      document.getElementById('authPage').style.display = 'flex';
+      log('info', 'Ready — waiting for login');
+    }
+  });
+}
+</script>
+</body>
+</html>
