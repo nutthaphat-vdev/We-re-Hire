@@ -81,7 +81,7 @@
 
 ## 🔧 ต้องทำต่อ (ก่อน Present)
 
-- [ ] เพิ่ม zones กรุงเทพ 50 เขต + ปริมณฑล — INSERT ใน Supabase โดยตรง ไม่แก้ code
+- [x] เพิ่ม zones กรุงเทพ 50 เขต + ปริมณฑล — INSERT ใน Supabase แล้ว
 - [ ] Review summary (ดาวเฉลี่ย + top tags) บน profile card
 - [ ] ปุ่ม 📞 โผล่ทันทีหลังกด hired โดยไม่ต้อง reload
 - [ ] Google Maps API Key — restrict domain ใน Google Console
