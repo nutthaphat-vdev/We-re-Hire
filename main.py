@@ -1095,6 +1095,13 @@ async def get_job_titles(
         raise HTTPException(status_code=404, detail="ไม่พบ category นี้")
     return [dict(r) for r in rows]
 
+@app.get("/zones", tags=["Master Data"])
+async def get_zones(db: asyncpg.Connection = Depends(get_db)):
+    rows = await db.fetch(
+        "SELECT code, name_th FROM zones WHERE is_active = TRUE ORDER BY name_th"
+    )
+    return [dict(r) for r in rows]
+
 
 # ============================================================
 # CONTACT REVEAL — เปิดเผยเบอร์โทรเฉพาะคู่ที่ hired แล้ว

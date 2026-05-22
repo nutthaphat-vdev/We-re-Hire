@@ -363,13 +363,7 @@
             <div class="form-group">
               <label>Zone</label>
               <select id="jobZone">
-                <option value="TH-BKK-LATKRABANG">ลาดกระบัง</option>
-                <option value="TH-BKK-BANGPLEE">บางพลี</option>
-                <option value="TH-BKK-BANGCHAN">บางชัน</option>
-                <option value="TH-BKK-MINBURI">มีนบุรี</option>
-                <option value="TH-BKK-BANGNA">บางนา</option>
-                <option value="TH-BKK-PRAWET">ประเวศ</option>
-                <option value="TH-BKK-ONNUT" selected>อ่อนนุช</option>
+                <option value="">กำลังโหลด...</option>
               </select>
             </div>
           </div>
@@ -1619,13 +1613,23 @@ async function loadCategories() {
 }
 
 async function initCategoryDropdowns() {
-  const cats = await loadCategories();
-  const opts = `<option value="">— เลือกหมวดงาน —</option>` +
+  const [cats, zones] = await Promise.all([
+    loadCategories(),
+    api('GET', '/zones').catch(() => []),
+  ]);
+
+  const catOpts = `<option value="">— เลือกหมวดงาน —</option>` +
     cats.map(c => `<option value="${c.code}">${c.icon} ${c.name_th}</option>`).join('');
   ['jobCategory','createCategory','editCategory'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.innerHTML = opts;
+    if (el) el.innerHTML = catOpts;
   });
+
+  const zoneEl = document.getElementById('jobZone');
+  if (zoneEl && zones.length) {
+    zoneEl.innerHTML = `<option value="">— เลือกเขต/โซน —</option>` +
+      zones.map(z => `<option value="${z.code}">${z.name_th}</option>`).join('');
+  }
 }
 
 async function loadJobTitles(categorySelectId, titleSelectId) {
