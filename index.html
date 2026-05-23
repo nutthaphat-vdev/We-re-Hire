@@ -117,7 +117,7 @@
 <body>
 
 <!-- LANDING PAGE -->
-<div id="landingPage" style="min-height:100vh;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;text-align:center">
+<div id="landingPage" style="min-height:100vh;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;text-align:center">
   <div style="max-width:560px;width:100%">
     <div style="font-size:42px;font-weight:800;color:var(--accent);letter-spacing:-1px;margin-bottom:6px">We're Hired</div>
     <div style="font-size:14px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:40px">แพลตฟอร์มจ้างงานรายวัน • กรุงเทพฯ MVP</div>
@@ -2048,10 +2048,9 @@ if (token && userRole) {
   log('info', `Auto-login: ${userRole}`);
   initApp();
 } else {
-  // ตรวจสอบ Google OAuth callback ก่อน
   handleGoogleCallback().then(handled => {
     if (!handled) {
-      document.getElementById('authPage').style.display = 'flex';
+      document.getElementById('landingPage').style.display = 'flex';
       log('info', 'Ready — waiting for login');
     }
   });
