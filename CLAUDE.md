@@ -291,8 +291,11 @@ NIXPACKS_INSTALL_CMD= pip install -r requirements.txt
 ## 📋 TODO ที่ต้องทำต่อ
 
 ### ด่วน (ก่อน Pitch)
+- [x] ตั้ง `ADMIN_SECRET` ใน Railway env vars ✅ 2026-05-23
+- [x] เพิ่ม zones กรุงเทพ 50 เขต + ปริมณฑล (INSERT ใน Supabase) ✅ 2026-05-23
 - [ ] หน้า Notifications UI
-- [ ] เพิ่ม zones กรุงเทพ 50 เขต + ปริมณฑล (INSERT ใน Supabase เท่านั้น ไม่แก้ code)
+- [ ] Upload index.html → Cloudflare Workers (ทุกครั้งที่ frontend เปลี่ยน จนกว่าจะ set wrangler)
+- [ ] ตั้ง wrangler CLI สำหรับ Cloudflare auto-deploy (หลัง Pitch)
 
 ### Phase 3 — Wallet & Payment
 - [ ] Escrow system
