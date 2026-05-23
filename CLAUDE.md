@@ -299,7 +299,7 @@ NIXPACKS_INSTALL_CMD= pip install -r requirements.txt
 - [x] Google OAuth Consent Screen → Published ✅ 2026-05-23
 - [x] Restrict Google Maps API Key ให้ใช้แค่ domain We're Hired ✅ 2026-05-23
 - [ ] หน้า Notifications UI
-- [ ] Upload index.html → Cloudflare Workers (ทุกครั้งที่ frontend เปลี่ยน จนกว่าจะ set wrangler)
+- [x] Upload index.html → Cloudflare Workers ✅ 2026-05-23
 - [ ] ตั้ง wrangler CLI สำหรับ Cloudflare auto-deploy (หลัง Pitch)
 
 ### Phase 3 — Wallet & Payment
