@@ -675,12 +675,15 @@ async def post_job(
         except ValueError:
             raise HTTPException(status_code=400, detail="start_date format ไม่ถูกต้อง (YYYY-MM-DD)")
 
+    # แปลง string "HH:MM" → datetime.time ก่อนส่ง asyncpg (asyncpg ไม่รับ string สำหรับ TIME column)
+    from datetime import time as time_type
+    work_start_t = time_type.fromisoformat(body.work_start) if body.work_start else None
+    work_end_t   = time_type.fromisoformat(body.work_end)   if body.work_end   else None
+
     # Validate work hours ≤ 8
-    if body.work_start and body.work_end:
-        sh, sm = map(int, body.work_start.split(':'))
-        eh, em = map(int, body.work_end.split(':'))
-        start_min = sh * 60 + sm
-        end_min   = eh * 60 + em
+    if work_start_t and work_end_t:
+        start_min = work_start_t.hour * 60 + work_start_t.minute
+        end_min   = work_end_t.hour   * 60 + work_end_t.minute
         if end_min <= start_min:
             end_min += 24 * 60  # ข้ามคืน
         if (end_min - start_min) > 8 * 60:
@@ -700,7 +703,7 @@ async def post_job(
         emp_id, body.title, body.description, clean_skills,
         body.daily_wage_rate, body.duration_days, body.slots_available,
         body.lng, body.lat, body.location_name, body.zone_name, start_date,
-        body.work_start, body.work_end, body.ot_rate,
+        work_start_t, work_end_t, body.ot_rate,
     )
     return dict(row)
 
