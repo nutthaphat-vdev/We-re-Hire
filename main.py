@@ -1715,6 +1715,15 @@ async def request_background_check(
     return {"status": "pending", "message": "ส่งคำขอแล้ว รอ admin อนุมัติ"}
 
 
+@app.post("/admin/cron/trigger", tags=["Admin"], include_in_schema=False)
+async def trigger_cron(x_admin_secret: str = Header(default="")):
+    """Test-only: manually trigger auto_verify cron (guarded by admin_secret)"""
+    if not settings.admin_secret or x_admin_secret != settings.admin_secret:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    await auto_verify_completed_jobs()
+    return {"ok": True}
+
+
 @app.patch("/admin/workers/{worker_user_id}/verify", tags=["Admin"])
 async def admin_verify_worker(
     worker_user_id: UUID,
