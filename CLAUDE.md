@@ -164,6 +164,7 @@ payload = {"sub": user_id, "role": "worker"|"employer", "exp": ...}
 
 ```
 hired → checked_in → working → completed → verified → (review)
+                                        ↘ disputed (< 90% ทุก 2 ชม.)
 ```
 
 | Step | ใคร | Endpoint | Condition |
@@ -177,17 +178,85 @@ hired → checked_in → working → completed → verified → (review)
 **Auto-verify (Cron ทุก 30 นาที):**
 - `work_ended_at IS NOT NULL` AND employer ไม่กด verify ภายใน 2 ชม.
 - AND `actual_duration ≥ 90%` ของ expected shift → auto verify + notify ทั้งคู่ → trigger review
-- `< 90%`: ห้าม auto-verify — ส่ง admin ตัดสิน ห้ามระบบตัดสินเรื่องเงินเอง
+- `< 90%` AND ไม่มีการกระทำใน 2 ชม. → status = `disputed` → admin ตัดสิน
+
+**Dispute Flow (< 90% duration — Phase 3 full implementation):**
+```
+Worker กด complete (ชม. ไม่ครบ 90%)
+→ notify Employer ทันที: "งานอาจไม่ครบ กรุณาตรวจสอบ"
+→ Employer มี 2 ชม. ตัดสิน:
+   ✅ กด verify ปกติ → จ่ายเต็ม (Employer ยอมรับ)
+   ⚠️  กด dispute → ส่ง admin พร้อม evidence
+→ ถ้าไม่กดอะไรใน 2 ชม. → auto escalate admin (status = disputed)
+→ Admin เห็น evidence ทั้งสองฝั่ง → ตัดสิน ratio
+```
+⚠️ **MVP Current**: cron auto-disputed ตาม 2 ชม. อย่างเดียว (ยังไม่มี employer dispute button)
+ปุ่ม "Dispute" ฝั่ง Employer + endpoint `POST /applications/{id}/dispute` → TODO Phase 3
 
 **GPS Checkin:**
 - Radius: 150 เมตร (ใช้ PostGIS ST_Distance — ไม่มี cost เพิ่ม)
 - Worker ส่ง lat/lng จาก `navigator.geolocation`
 - เกิน 150m → 400 error พร้อมบอก distance จริง
+- GPS Spoofing: ยอมรับ risk ใน MVP → Phase ถัดไปเพิ่ม Selfie checkin
 
 **Work Hours:**
 - `work_start`, `work_end` อยู่ใน `job_postings` (TIME column)
+- asyncpg ต้องการ `datetime.time` object ไม่ใช่ string — ต้อง `time_type.fromisoformat()` ก่อน INSERT
 - Max 8 ชม./วัน (enforce ทั้ง frontend + backend)
 - OT แยก: `ot_rate` (฿/ชม.)
+
+---
+
+## 💰 Phase 3 — Escrow & Pro-rata Settlement
+
+> ยังไม่ implement — เป็น moat หลักของ WeHire
+
+**Pro-rata สูตร (เมื่อ Dispute):**
+```
+total_locked      = ค่าจ้างทั้งหมดที่ lock ไว้
+actual_work_ratio = เวลาจริง / เวลาที่ตกลง  (เช่น 0.70)
+
+worker_gross         = total_locked × ratio           (420)
+platform_penalty_fee = worker_gross × 10%             (42)   ← penalty สำหรับ worker ทำไม่ครบ
+worker_payout_net    = worker_gross - platform_penalty (378)
+employer_refund_net  = total_locked × (1 - ratio)     (180)
+
+✅ Balance: worker_payout_net + employer_refund_net + platform_fee = total_locked
+```
+
+**Edge cases:**
+- ratio = 1.0 → Worker ได้เต็ม, employer คืน 0, platform_fee = 0
+- ratio = 0.0 → Worker ได้ 0, employer คืนเต็ม, platform_fee = 0
+- Worker ออกเพราะ employer (สั่งหยุด/อันตราย) → admin กำหนด ratio = 1.0
+
+**Tables ที่ต้องสร้าง (Phase 3):**
+```sql
+escrow_locks        -- amount, status, worker_pct, settled_by, admin_note
+wallets             -- available, locked per user
+wallet_transactions -- audit log ทุก movement
+```
+
+---
+
+## 🪪 KYC System (Phase 2 — Level 1 Free)
+
+> Manual admin verify — ฟรี 100% ใช้ Supabase Storage
+
+**Flow:** Worker upload รูปบัตรประชาชน (หน้า-หลัง) + Selfie คู่บัตร → Admin กด Approve/Reject
+
+**Migration (ยังไม่รัน — ใช้ชื่อ 010_kyc.sql เพราะ 009 ถูก disputed_status ใช้แล้ว):**
+```sql
+ALTER TABLE worker_profiles
+  ADD COLUMN IF NOT EXISTS id_card_front_url TEXT,
+  ADD COLUMN IF NOT EXISTS id_card_back_url  TEXT,
+  ADD COLUMN IF NOT EXISTS selfie_url        TEXT,
+  ADD COLUMN IF NOT EXISTS kyc_submitted_at  TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS kyc_reviewed_by   UUID REFERENCES users(id),
+  ADD COLUMN IF NOT EXISTS kyc_note          TEXT;
+```
+- `background_check_status` ที่มีอยู่แล้วใช้ได้เลย
+- Scale ได้ถึง ~1,000 workers โดยไม่มีปัญหา
+- ถ้า volume เกิน → upgrade iDenfy (~$0.5/verification)
 
 ---
 

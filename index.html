@@ -1322,7 +1322,8 @@ async function loadCandidates(jobId, jobTitle) {
               <button class="btn btn-secondary btn-sm" onclick="showContact('${c.application_id}',this)" style="font-size:11px">📞 ดูเบอร์</button>
               <div id="contact-${c.application_id}" style="display:none;font-size:11px;text-align:right;margin-top:4px"></div>` : ''}
             ${c.status === 'completed' ? `
-              <button class="btn btn-primary btn-sm" onclick="doVerify('${c.application_id}',this)">✅ ยืนยันจบงาน</button>` : ''}
+              <button class="btn btn-primary btn-sm" onclick="doVerify('${c.application_id}',this)">✅ ยืนยันจบงาน</button>
+              <button class="btn btn-secondary btn-sm" style="font-size:11px;color:#e65100;border-color:#e65100" onclick="doDispute('${c.application_id}',this)">⚠️ โต้แย้ง</button>` : ''}
             ${c.status === 'verified' ? `
               <span class="badge badge-green" style="font-size:10px">✅ สำเร็จแล้ว</span>` : ''}
             ${c.status === 'disputed' ? `
@@ -1553,6 +1554,23 @@ async function doVerify(appId, btn) {
     btn.disabled = false;
     btn.innerHTML = '✅ ยืนยันจบงาน';
     alert(e.message);
+  }
+}
+
+async function doDispute(appId, btn) {
+  const reason = prompt('ระบุเหตุผลที่โต้แย้ง (เช่น Worker ออกก่อนเวลา / งานไม่ผ่านมาตรฐาน):');
+  if (!reason) return;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>';
+  try {
+    await api('POST', `/applications/${appId}/dispute`, { reason });
+    btn.closest('.candidate-actions').innerHTML =
+      `<span style="font-size:11px;color:#e65100">⚠️ ส่งเรื่องให้ admin ตรวจสอบแล้ว</span>`;
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '⚠️ โต้แย้ง';
+    // endpoint ยังไม่มีใน MVP — แจ้ง user
+    alert('ฟีเจอร์ Dispute จะพร้อมใช้งาน Phase 3\nตอนนี้ระบบจะ auto-escalate ให้ admin หลัง 2 ชั่วโมง');
   }
 }
 
