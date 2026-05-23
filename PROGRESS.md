@@ -1,128 +1,176 @@
-# WeHire — Progress & Roadmap
-อัปเดต: 21 พฤษภาคม 2568
+# We're Hired — Progress & Roadmap
+อัปเดต: 24 พฤษภาคม 2568
 
 ---
 
-## ✅ สิ่งที่ทำเสร็จแล้ว
+## ✅ Production — Live แล้ว
 
-### Infrastructure
-- [x] Supabase PostgreSQL + PostGIS setup (supabase_setup_full.sql)
-- [x] FastAPI + asyncpg connection pool (lifespan)
-- [x] JWT Auth (register / login / middleware)
+### 🔧 Infrastructure
+- [x] Supabase PostgreSQL + PostGIS setup
+- [x] FastAPI + asyncpg connection pool (PgBouncer transaction mode)
+- [x] JWT Auth middleware (HS256 — token ของเราเอง)
+- [x] Google OAuth via Supabase — verify ด้วย JWKS + ES256
 - [x] bcrypt password hashing (cost=12)
 - [x] CORS configuration
-- [x] .env management (pydantic-settings)
 - [x] Health check endpoint
+- [x] Deploy: Railway (backend) + Cloudflare Workers (frontend)
+- [x] GitHub Actions auto-deploy — push → Cloudflare อัตโนมัติ *(รอเพิ่ม GitHub Secrets)*
 
-### Auth
+### 🔐 Auth
 - [x] POST /auth/register (worker / employer)
 - [x] POST /auth/login
 - [x] GET /auth/me
+- [x] GET /auth/google/url + POST /auth/google/callback
+- [x] Google OAuth Consent Screen → Published
 
-### Worker
+### 👷 Worker
 - [x] GET/POST/PATCH /workers/profile/me
-- [x] GET /workers/applications (พร้อม maps_link ถ้า hired)
+- [x] GET /workers/applications (พร้อม maps_link + contact เมื่อ hired)
+- [x] ปุ่ม 🗺️ นำทางไปที่ทำงาน (เฉพาะ hired)
+- [x] ปุ่ม 📞 ดูเบอร์ + email employer (เฉพาะ hired)
 
-### Employer
+### 🏭 Employer
 - [x] GET/POST/PATCH /employers/profile/me
+- [x] ปุ่ม 📞 ดูเบอร์ worker (เฉพาะ hired)
 
-### Jobs
+### 💼 Jobs
 - [x] POST /jobs
 - [x] GET /jobs/mine
-- [x] PATCH /jobs/{id}/status (open/closed)
+- [x] PATCH /jobs/{id}/status (open / closed)
+- [x] Job categories cascade dropdown (4 หมวด, 16 ตำแหน่ง)
+- [x] GET /zones (50 เขตกรุงเทพ + ปริมณฑล)
 
-### Matching Engine
-- [x] GET /jobs/nearby (PostGIS radius + skill filter + scoring)
-- [x] POST /jobs/{id}/apply (match score: skills 60% / distance 25% / rate 15%)
+### 🎯 Matching Engine
+- [x] GET /jobs/nearby — PostGIS ST_DWithin radius filter (1–30km)
+- [x] Skill filter แก้แล้ว — รองรับ worker ที่ไม่มี skills (cardinality fix)
+- [x] POST /jobs/{id}/apply — match score: skills 60% / distance 25% / rate 15%
 - [x] GET /jobs/{id}/candidates (ranked list)
-- [x] PATCH /applications/{id}/decide (hired/rejected/shortlisted)
-- [x] Auto-generate Google Maps navigation link เมื่อ hired
-- [x] Notification system (insert to notifications table)
+- [x] PATCH /applications/{id}/decide (hired / rejected / shortlisted)
+- [x] Auto Google Maps navigation link เมื่อ hired
 
-### Review System
-- [x] DB schema (reviews, review_tags, review_tag_selections, summaries)
-- [x] Migration: 004_review_star_rating.sql
-- [x] GET /review-tags
-- [x] POST /reviews (blind review, auto-reveal เมื่อทั้งคู่ส่ง)
-- [x] GET /reviews/me
-- [x] GET /reviews/pending
+### 🔒 Contact Reveal
+- [x] GET /applications/{id}/contact
+- [x] เปิดเผยเบอร์โทร + email เฉพาะคู่ที่ hired เท่านั้น (Contact Lock)
 
-### Frontend (index.html)
-- [x] Auth page (login / register)
-- [x] Worker flow: หางานใกล้บ้าน, ประวัติสมัคร, โปรไฟล์
-- [x] Employer flow: โพสต์งาน, งานของฉัน, ดูผู้สมัคร, จ้าง/ปฏิเสธ
-- [x] Google Maps Places autocomplete
-- [x] GPS location
-- [x] Review UI (⭐ ดาว + tag buttons + blind review)
-- [x] Debug console
+### 📋 Job Lifecycle
+- [x] hired → checked_in → working → completed → verified / disputed
+- [x] POST /applications/{id}/checkin — GPS ≤ 150m (PostGIS)
+- [x] POST /applications/{id}/start — ±30 นาที จาก work_start
+- [x] POST /applications/{id}/complete
+- [x] POST /applications/{id}/verify
+- [x] Auto-verify cron ทุก 30 นาที (≥ 90% duration → verified, < 90% → disputed)
+- [x] Migrations: 007_work_hours, 008_job_lifecycle, 009_disputed_status ✅ run แล้ว
+
+### ⭐ Review System
+- [x] Blind review — ซ่อนจนทั้งคู่ส่ง หรือครบ 7 วัน
+- [x] 1–5 ดาว + tag buttons
+- [x] GET /review-tags, POST /reviews, GET /reviews/me, GET /reviews/pending
+- [x] Migrations: 003_review_system, 004_review_star_rating ✅ run แล้ว
+
+### 🛡️ Trust & Safety
+- [x] POST /reports, POST /blocks
+- [x] ปุ่ม 🚩 Report ใน frontend
+- [x] Migration: 006_trust_safety ✅ run แล้ว
+
+### 🔔 Notifications
+- [x] Notification badge (unread count) ใน sidebar — poll ทุก 30 วิ
+- [x] cache: no-store fix — ป้องกัน browser cache ทำให้ list ว่าง
+- [x] หน้า Notifications list พร้อม filter ทั้งหมด / ยังไม่อ่าน
+- [x] Smart date labels (วันนี้ / เมื่อวาน / full Thai date)
+- [x] Type badges + icon ต่างกันตามประเภท
+- [x] ปุ่มอ่านแล้ว ทีละอัน + อ่านทั้งหมด
+- [x] Deep-link navigation — กดการ์ดแล้วไปหน้าที่เกี่ยวข้อง
+  - hired / rejected / shortlisted → หน้าใบสมัคร
+  - new_applicant → หน้างานของฉัน
+  - review_pending → หน้ารีวิว
+- [x] Auto-mark as read เมื่อกดการ์ดนำทาง
+
+### 🗄️ Database Migrations (run ครบแล้วทุกอัน)
+| ไฟล์ | สถานะ |
+|------|--------|
+| supabase_setup_full.sql | ✅ |
+| 003_review_system.sql | ✅ |
+| 004_review_star_rating.sql | ✅ |
+| 005_job_categories.sql | ✅ |
+| 006_trust_safety.sql | ✅ |
+| 007_work_hours.sql | ✅ |
+| 008_job_lifecycle.sql | ✅ |
+| 009_disputed_status.sql | ✅ |
 
 ---
 
-## 🔧 กำลังทำ / แก้ไขต่อไป
+## 🔧 ต้องทำต่อ (งาน Manual)
 
-### UX Improvements (ตกลงในแชทนี้)
-- [ ] Skills input เปลี่ยนเป็น dropdown (skill 1, 2, 3 แยก field)
-- [ ] หน้า "หางานใกล้บ้าน" — zone dropdown แทน free text
-- [ ] Carrier/ประเภทงาน dropdown
+- [ ] **GitHub Secrets** — เพิ่ม `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` ใน repo settings
+- [ ] **GitHub PAT** — เพิ่ม scope `workflow` แล้ว push อีกครั้ง (CI pipeline จะ active)
+- [ ] **Review summary** — ดาวเฉลี่ย + top tags แสดงบน profile card
+- [ ] **Contact button reload** — ปุ่ม 📞 โผล่ทันทีหลังกด hired โดยไม่ต้อง refresh
 
 ---
 
-## 📋 Roadmap ที่แนะนำ
+## 📋 Roadmap
 
-### Phase 1 — UX Polish (ทำต่อเลย)
-- [ ] Skills dropdown (3 slots) แทน free-text input
-- [ ] Zone/area dropdown ในหน้าค้นหางาน
-- [ ] Job category dropdown (โรงงาน / คลังสินค้า / ร้านค้า / ก่อสร้าง / อื่นๆ)
-- [ ] Worker profile — เพิ่มรูปโปรไฟล์ (Supabase Storage)
-- [ ] Notification badge ใน sidebar (แสดงจำนวนที่ยังไม่อ่าน)
-
-### Phase 2 — Trust & Safety
-- [ ] Background check flow (mock → real integration)
+### Phase 2 — KYC & Trust (Level 1 Free)
+- [ ] Worker upload รูปบัตรประชาชน (หน้า-หลัง) + Selfie คู่บัตร
+- [ ] Admin approve/reject KYC — manual via Supabase Storage
+- [ ] Badge ✓ verified บน worker profile
+- [ ] Migration: 010_kyc.sql
 - [ ] Employer verification flow
-- [ ] Report/block user system
-- [ ] Review summary แสดงบน worker/employer profile card
 
-### Phase 3 — Wallet & Payment
-- [ ] Wallet schema (transactions, balances)
-- [ ] Escrow flow: employer deposit → release เมื่องานเสร็จ
+### Phase 3 — Wallet & Escrow 💰
+> นี่คือ moat หลักของ We're Hired — ถ้าเงินอยู่ในแอพ ไม่มีใครอยากโทรตรง
+- [ ] Wallet schema (wallets, escrow_locks, wallet_transactions)
+- [ ] Employer deposit → lock เมื่อ hired
+- [ ] Release อัตโนมัติเมื่อ verified
+- [ ] Pro-rata payout เมื่อ disputed (worker_pct × ค่าจ้าง)
 - [ ] Worker withdrawal request
-- [ ] PromptPay integration (หรือ Omise/2C2P)
+- [ ] PromptPay / Omise / 2C2P integration
+- [ ] Dispute button ฝั่ง Employer + POST /applications/{id}/dispute
 
-### Phase 4 — Scale & Production
-- [ ] Dockerize (Dockerfile + docker-compose)
-- [ ] Deploy to Railway / Render / AWS
-- [ ] Custom domain + HTTPS
-- [ ] pg_cron: reveal reviews hourly, expire old jobs
+### Phase 4 — Notifications & Communication
+- [ ] Push notifications (LINE Notify หรือ Firebase FCM)
+- [ ] Worker ↔ Employer in-app chat (เฉพาะหลัง hired)
+- [ ] Email notification backup
+
+### Phase 5 — Scale & Production
 - [ ] Rate limiting (per IP / per user)
 - [ ] Logging + monitoring (Sentry / Grafana)
-- [ ] Push notifications (LINE Notify หรือ Firebase FCM)
+- [ ] pg_cron: reveal reviews hourly, expire old jobs
+- [ ] Custom domain + HTTPS
+- [ ] Dockerize (Dockerfile + docker-compose)
 
-### Phase 5 — Growth Features
-- [ ] Worker แชทกับ Employer (หลัง hired เท่านั้น)
-- [ ] Job recommendation engine (ML-based)
+### Phase 6 — Growth
+- [ ] Landing page / Marketing site
+- [ ] Job recommendation engine (ML-based matching)
 - [ ] Worker availability calendar
 - [ ] Multi-zone posting
 - [ ] Referral system
+- [ ] Mobile App (React Native)
+- [ ] ขยายนอก BKK
 
 ---
 
 ## 🗂️ ไฟล์ปัจจุบัน
 
-| ไฟล์ | สถานะ |
-|------|--------|
-| main.py | ✅ production-ready |
-| index.html | ✅ MVP complete |
-| supabase_setup_full.sql | ✅ run แล้ว |
-| 003_review_system.sql | ✅ run แล้ว |
-| 004_review_star_rating.sql | ⚠️ ยังไม่ได้ run — ต้อง run ใน Supabase |
-| requirements.txt | ✅ |
-| .env | ✅ (ไม่ commit ขึ้น git) |
+| ไฟล์ | คำอธิบาย | สถานะ |
+|------|----------|--------|
+| main.py | FastAPI backend — 39+ endpoints | ✅ live |
+| index.html | Single-file frontend (Vanilla JS) | ✅ live |
+| worker.js | Cloudflare Worker entry point (serve HTML) | ✅ |
+| wrangler.toml | Cloudflare Workers config | ✅ |
+| .github/workflows/deploy-frontend.yml | GitHub Actions auto-deploy | ✅ รอ Secrets |
+| requirements.txt | Python dependencies | ✅ |
+| Procfile | Railway start command | ✅ |
+| .env | Env vars (ไม่ commit) | ✅ |
 
 ---
 
-## ⚠️ สิ่งที่ต้องระวัง
+## 💡 Key Business Logic
 
-1. **004_review_star_rating.sql** — ยังไม่ได้ run ใน Supabase → Review system จะยังใช้ไม่ได้
-2. **Google Maps API Key** — อยู่ใน index.html แบบ hardcode → ควรย้ายไป backend หรือ restrict domain ใน Google Console
-3. **JWT Secret** — ต้องแข็งแรงพอ (32+ chars) และไม่ leak
-4. **bcrypt** — ถ้า user เก่า (ก่อน main.py ใหม่) password hash อาจเสีย → ให้ register ใหม่
+| หลักการ | วิธีทำ |
+|---------|--------|
+| **Contact Lock** | เบอร์โทร/email เปิดเผยเฉพาะคู่ที่ `hired` — ป้องกัน bypass แอพ |
+| **Blind Review** | review ซ่อนจนทั้งคู่ส่ง หรือครบ 7 วัน — ป้องกัน bias |
+| **Wallet Escrow** *(Phase 3)* | เงินอยู่ในแอพ — ไม่มีใครอยากออกนอกระบบ |
+| **GPS Checkin** | ต้องอยู่ภายใน 150m จากสถานที่งานถึงจะ checkin ได้ |
+| **Auto-verify** | ≥ 90% ชั่วโมง + ไม่มีการกระทำใน 2 ชม. → system verify อัตโนมัติ |
