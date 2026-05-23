@@ -55,12 +55,13 @@ pool: asyncpg.Pool | None = None
 
 
 async def auto_verify_completed_jobs():
-    """Cron ทุก 30 นาที: auto-verify งานที่ employer ไม่ยืนยันภายใน 2 ชม."""
+    """Cron ทุก 30 นาที: auto-verify หรือ disputed งานที่ employer ไม่ยืนยันภายใน 2 ชม."""
     if pool is None:
         return
     try:
         async with pool.acquire() as db:
-            rows = await db.fetch(
+            # ── Case 1: duration ≥ 90% → auto-verify ──────────────────────────
+            verified_rows = await db.fetch(
                 """
                 SELECT
                     ja.id,
@@ -88,8 +89,7 @@ async def auto_verify_completed_jobs():
                   )
                 """
             )
-
-            for row in rows:
+            for row in verified_rows:
                 await db.execute(
                     "UPDATE job_applications SET status='verified', employer_verified_at=NOW() WHERE id=$1",
                     row["id"],
@@ -105,8 +105,53 @@ async def auto_verify_completed_jobs():
                 )
                 logger.info(f"[auto_verify] auto-verified application {row['id']}")
 
-            if rows:
-                logger.info(f"[auto_verify] total {len(rows)} applications auto-verified")
+            # ── Case 2: duration < 90% → disputed (ส่ง admin ตัดสิน) ─────────
+            disputed_rows = await db.fetch(
+                """
+                SELECT
+                    ja.id,
+                    jp.title        AS job_title,
+                    wp.user_id      AS worker_user_id,
+                    ep.user_id      AS employer_user_id
+                FROM   job_applications ja
+                JOIN   job_postings      jp ON jp.id  = ja.job_id
+                JOIN   employer_profiles ep ON ep.id  = jp.employer_id
+                JOIN   worker_profiles   wp ON wp.id  = ja.worker_id
+                WHERE  ja.status          = 'completed'
+                  AND  ja.work_ended_at  IS NOT NULL
+                  AND  ja.work_started_at IS NOT NULL
+                  AND  NOW() - ja.work_ended_at >= INTERVAL '2 hours'
+                  AND  jp.work_start IS NOT NULL
+                  AND  jp.work_end   IS NOT NULL
+                  AND  EXTRACT(EPOCH FROM (ja.work_ended_at - ja.work_started_at)) <
+                       0.9 * (
+                         CASE WHEN jp.work_end >= jp.work_start
+                              THEN EXTRACT(EPOCH FROM (jp.work_end - jp.work_start))
+                              ELSE EXTRACT(EPOCH FROM (jp.work_end - jp.work_start)) + 86400
+                         END
+                       )
+                """
+            )
+            for row in disputed_rows:
+                await db.execute(
+                    "UPDATE job_applications SET status='disputed' WHERE id=$1",
+                    row["id"],
+                )
+                msg_w = f"งาน {row['job_title']} อยู่ระหว่างการตรวจสอบ (ชั่วโมงทำงานน้อยกว่า 90%) ทีมงานจะติดต่อกลับ"
+                msg_e = f"งาน {row['job_title']} อยู่ระหว่างการตรวจสอบ (Worker ทำงานน้อยกว่า 90% ของเวลาที่กำหนด) ทีมงานจะติดต่อกลับ"
+                await db.execute(
+                    "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, 'application_update', '⚠️ งานอยู่ระหว่างตรวจสอบ', $2)",
+                    row["worker_user_id"], msg_w,
+                )
+                await db.execute(
+                    "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, 'application_update', '⚠️ งานอยู่ระหว่างตรวจสอบ', $2)",
+                    row["employer_user_id"], msg_e,
+                )
+                logger.info(f"[auto_verify] disputed application {row['id']}")
+
+            total = len(verified_rows) + len(disputed_rows)
+            if total:
+                logger.info(f"[auto_verify] verified={len(verified_rows)} disputed={len(disputed_rows)}")
 
     except Exception as e:
         logger.error(f"[auto_verify] cron error: {e}")

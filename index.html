@@ -1032,12 +1032,13 @@ async function loadMyApps() {
     const sColor = {
       applied:'badge-blue', shortlisted:'badge-warn', hired:'badge-green',
       rejected:'badge-danger', withdrawn:'badge-gray',
-      checked_in:'badge-blue', working:'badge-warn', completed:'badge-blue', verified:'badge-green'
+      checked_in:'badge-blue', working:'badge-warn', completed:'badge-blue', verified:'badge-green', disputed:'badge-danger'
     };
     const sTH = {
       applied:'รอพิจารณา', shortlisted:'อยู่ในรายชื่อ', hired:'ได้รับการจ้าง',
       rejected:'ไม่ผ่าน', withdrawn:'ถอน',
-      checked_in:'เช็คอินแล้ว', working:'กำลังทำงาน ▶️', completed:'งานเสร็จ ⏳', verified:'ยืนยันแล้ว ✅'
+      checked_in:'เช็คอินแล้ว', working:'กำลังทำงาน ▶️', completed:'งานเสร็จ ⏳', verified:'ยืนยันแล้ว ✅',
+      disputed:'อยู่ระหว่างตรวจสอบ ⚠️'
     };
     const ACTIVE = ['hired','checked_in','working','completed','verified'];
     el.innerHTML = data.map(a => `
@@ -1063,13 +1064,18 @@ async function loadMyApps() {
           <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <a href="${a.maps_link}" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">🗺️ นำทาง</a>
             <button class="btn btn-secondary btn-sm" onclick="showContact('${a.id}',this)">📞 ดูเบอร์</button>
-            ${a.status === 'hired' ? `<button class="btn btn-primary btn-sm" onclick="doCheckin('${a.id}',this)">📍 เช็คอิน</button>` : ''}
-            ${a.status === 'working' ? `<button class="btn btn-primary btn-sm" onclick="doComplete('${a.id}',this)">✅ งานเสร็จแล้ว</button>` : ''}
+            ${a.status === 'hired' ? `<button class="btn btn-primary btn-sm" onclick="doCheckin('${a.id}',this)">มาถึงแล้ว 📍</button>` : ''}
+            ${a.status === 'working' ? `<button class="btn btn-primary btn-sm" onclick="doComplete('${a.id}',this)">งานเสร็จแล้ว ✅</button>` : ''}
             ${a.status === 'checked_in' ? `<span style="font-size:12px;color:var(--muted)">⏳ รอ Employer ยืนยันเริ่มงาน</span>` : ''}
             ${a.status === 'completed' ? `<span style="font-size:12px;color:var(--muted)">⏳ รอ Employer ยืนยันจบงาน</span>` : ''}
             ${a.status === 'verified' ? `<span style="font-size:12px;color:var(--accent)">🎉 งานสำเร็จ! อย่าลืมรีวิว</span>` : ''}
           </div>
           <div id="contact-${a.id}" style="display:none;margin-top:10px"></div>` : ''}
+        ${a.status === 'disputed' ? `
+          <div style="margin-top:12px;padding:10px 12px;background:#fff3e0;border-radius:8px;border-left:3px solid #e65100">
+            <div style="font-size:13px;font-weight:600;color:#e65100">⚠️ อยู่ระหว่างตรวจสอบ</div>
+            <div style="font-size:12px;color:#bf360c;margin-top:2px">ทีมงานจะตรวจสอบและติดต่อกลับภายใน 1-2 วันทำการ</div>
+          </div>` : ''}
       </div>`).join('');
   } catch(e) {
     el.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
@@ -1319,6 +1325,8 @@ async function loadCandidates(jobId, jobTitle) {
               <button class="btn btn-primary btn-sm" onclick="doVerify('${c.application_id}',this)">✅ ยืนยันจบงาน</button>` : ''}
             ${c.status === 'verified' ? `
               <span class="badge badge-green" style="font-size:10px">✅ สำเร็จแล้ว</span>` : ''}
+            ${c.status === 'disputed' ? `
+              <span style="font-size:11px;color:#e65100">⚠️ อยู่ระหว่างตรวจสอบ</span>` : ''}
             <button onclick="showReportModal('${c.worker_id}')" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:2px 0">🚩 รายงาน</button>
           </div>
         </div>`).join('');
@@ -1499,12 +1507,12 @@ async function doCheckin(appId, btn) {
       btn.outerHTML = `<span style="font-size:12px;color:var(--muted)">⏳ รอ Employer ยืนยันเริ่มงาน</span>`;
     } catch(e) {
       btn.disabled = false;
-      btn.innerHTML = '📍 เช็คอิน';
+      btn.innerHTML = 'มาถึงแล้ว 📍';
       alert(e.message);
     }
   }, err => {
     btn.disabled = false;
-    btn.innerHTML = '📍 เช็คอิน';
+    btn.innerHTML = 'มาถึงแล้ว 📍';
     alert('ไม่สามารถเข้าถึง GPS: ' + err.message);
   }, { enableHighAccuracy: true, timeout: 10000 });
 }
