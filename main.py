@@ -15,6 +15,7 @@ import bcrypt
 import httpx
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from typing import Optional
 from uuid import UUID
 
@@ -52,6 +53,65 @@ settings = Settings()
 
 pool: asyncpg.Pool | None = None
 
+
+async def auto_verify_completed_jobs():
+    """Cron ทุก 30 นาที: auto-verify งานที่ employer ไม่ยืนยันภายใน 2 ชม."""
+    if pool is None:
+        return
+    try:
+        async with pool.acquire() as db:
+            rows = await db.fetch(
+                """
+                SELECT
+                    ja.id,
+                    jp.title        AS job_title,
+                    wp.user_id      AS worker_user_id,
+                    ep.user_id      AS employer_user_id
+                FROM   job_applications ja
+                JOIN   job_postings      jp ON jp.id  = ja.job_id
+                JOIN   employer_profiles ep ON ep.id  = jp.employer_id
+                JOIN   worker_profiles   wp ON wp.id  = ja.worker_id
+                WHERE  ja.status          = 'completed'
+                  AND  ja.work_ended_at  IS NOT NULL
+                  AND  ja.work_started_at IS NOT NULL
+                  AND  NOW() - ja.work_ended_at >= INTERVAL '2 hours'
+                  AND  (
+                    jp.work_start IS NULL
+                    OR jp.work_end IS NULL
+                    OR EXTRACT(EPOCH FROM (ja.work_ended_at - ja.work_started_at)) >=
+                       0.9 * (
+                         CASE WHEN jp.work_end >= jp.work_start
+                              THEN EXTRACT(EPOCH FROM (jp.work_end - jp.work_start))
+                              ELSE EXTRACT(EPOCH FROM (jp.work_end - jp.work_start)) + 86400
+                         END
+                       )
+                  )
+                """
+            )
+
+            for row in rows:
+                await db.execute(
+                    "UPDATE job_applications SET status='verified', employer_verified_at=NOW() WHERE id=$1",
+                    row["id"],
+                )
+                msg = f"งาน {row['job_title']} ได้รับการยืนยันอัตโนมัติ (2 ชม. หลังงานเสร็จ) กรุณาให้คะแนนและรีวิว"
+                await db.execute(
+                    "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, 'review_pending', '⭐ ให้คะแนนงาน', $2)",
+                    row["worker_user_id"], msg,
+                )
+                await db.execute(
+                    "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, 'review_pending', '⭐ ให้คะแนน Worker', $2)",
+                    row["employer_user_id"], msg,
+                )
+                logger.info(f"[auto_verify] auto-verified application {row['id']}")
+
+            if rows:
+                logger.info(f"[auto_verify] total {len(rows)} applications auto-verified")
+
+    except Exception as e:
+        logger.error(f"[auto_verify] cron error: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global pool
@@ -63,7 +123,15 @@ async def lifespan(app: FastAPI):
         statement_cache_size=0,  # Required for Supabase PgBouncer transaction mode
     )
     print("✅ DB pool connected")
+
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(auto_verify_completed_jobs, "interval", minutes=30)
+    scheduler.start()
+    print("⏰ Auto-verify cron started (every 30 min)")
+
     yield
+
+    scheduler.shutdown(wait=False)
     await pool.close()
     print("🔌 DB pool closed")
 
