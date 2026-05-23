@@ -758,8 +758,8 @@ async function loadDashboard() {
   if (userRole === 'worker') {
     document.getElementById('dashStats').innerHTML = `
       <div class="stat"><div class="stat-num">BKK</div><div class="stat-label">พื้นที่ให้บริการ</div></div>
-      <div class="stat"><div class="stat-num">7</div><div class="stat-label">เขตที่ครอบคลุม</div></div>
-      <div class="stat"><div class="stat-num">15km</div><div class="stat-label">รัศมีสูงสุด</div></div>`;
+      <div class="stat"><div class="stat-num">50+</div><div class="stat-label">เขตที่ครอบคลุม</div></div>
+      <div class="stat"><div class="stat-num">30km</div><div class="stat-label">รัศมีสูงสุด</div></div>`;
     document.getElementById('dashContent').innerHTML = `
       <div class="card" style="cursor:pointer;border:1px solid rgba(0,229,160,.2)" onclick="showPage('nearby')">
         <div style="display:flex;align-items:center;gap:16px">
@@ -1665,6 +1665,16 @@ const _notifLabelMap = {
   employer_verified:  { text: 'Verified',        color: 'badge-blue'  },
 };
 
+// Map notification type → page to navigate to on tap
+const _notifNavMap = {
+  hired:              'myapps',
+  rejected:           'myapps',
+  shortlisted:        'myapps',
+  application_update: 'myapps',
+  new_applicant:      'myjobs',
+  review_pending:     'myreviews',
+};
+
 function _notifDateLabel(dateStr) {
   const d = new Date(dateStr);
   const today = new Date(); today.setHours(0,0,0,0);
@@ -1745,7 +1755,8 @@ async function loadNotifications() {
           const time  = new Date(n.created_at).toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'});
           const unread = !n.is_read;
           return `
-          <div class="notif-card card" data-id="${n.id}" style="padding:14px 16px;margin-bottom:8px;transition:all .2s;${unread ? 'border-left:3px solid var(--accent);background:rgba(0,229,160,.04)' : ''}">
+          <div class="notif-card card" data-id="${n.id}" onclick="notifOpen('${n.id}','${n.type}',this)"
+            style="padding:14px 16px;margin-bottom:8px;transition:all .2s;cursor:${_notifNavMap[n.type] ? 'pointer' : 'default'};${unread ? 'border-left:3px solid var(--accent);background:rgba(0,229,160,.04)' : ''}">
             <div style="display:flex;gap:12px;align-items:flex-start">
               <div style="font-size:22px;line-height:1.3;flex-shrink:0">${icon}</div>
               <div style="flex:1;min-width:0">
@@ -1758,8 +1769,11 @@ async function loadNotifications() {
                 </div>
                 ${n.body ? `<div style="font-size:13px;color:var(--muted);margin-bottom:8px;white-space:pre-wrap;word-break:break-word">${n.body}</div>` : ''}
                 <div style="display:flex;justify-content:space-between;align-items:center">
-                  <div style="font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace">${time}</div>
-                  ${unread ? `<button class="btn btn-secondary btn-sm" onclick="markNotifRead('${n.id}',this)" style="font-size:11px">อ่านแล้ว</button>` : '<span style="font-size:11px;color:var(--muted)">อ่านแล้ว ✓</span>'}
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div style="font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace">${time}</div>
+                    ${_notifNavMap[n.type] ? '<span style="font-size:11px;color:var(--accent)">ดูรายละเอียด →</span>' : ''}
+                  </div>
+                  ${unread ? `<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();markNotifRead('${n.id}',this)" style="font-size:11px">อ่านแล้ว</button>` : '<span style="font-size:11px;color:var(--muted)">อ่านแล้ว ✓</span>'}
                 </div>
               </div>
             </div>
@@ -1788,6 +1802,24 @@ async function markNotifRead(notifId, btn) {
   } catch(e) {
     alert(e.message);
   }
+}
+
+async function notifOpen(notifId, type, cardEl) {
+  const card = cardEl.closest ? cardEl.closest('.notif-card') : cardEl;
+  // Auto-mark as read if still unread (has accent border)
+  if (card && card.style.borderLeft) {
+    try {
+      await api('PATCH', `/notifications/${notifId}/read`);
+      card.style.borderLeft = '';
+      card.style.background = '';
+      card.querySelectorAll('.badge-blue').forEach(b => b.remove());
+      const markBtn = card.querySelector('button[onclick*="markNotifRead"]');
+      if (markBtn) markBtn.outerHTML = '<span style="font-size:11px;color:var(--muted)">อ่านแล้ว ✓</span>';
+      refreshNotifBadge();
+    } catch(e) {}
+  }
+  const page = _notifNavMap[type];
+  if (page) showPage(page);
 }
 
 async function markAllRead() {
