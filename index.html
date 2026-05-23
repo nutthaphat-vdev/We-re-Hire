@@ -1029,14 +1029,27 @@ async function loadMyApps() {
       el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">ยังไม่มีประวัติการสมัคร</div></div>';
       return;
     }
-    const sColor = { applied:'badge-blue', shortlisted:'badge-warn', hired:'badge-green', rejected:'badge-danger', withdrawn:'badge-gray' };
-    const sTH    = { applied:'รอพิจารณา', shortlisted:'อยู่ในรายชื่อ', hired:'ได้รับการจ้าง', rejected:'ไม่ผ่าน', withdrawn:'ถอน' };
+    const sColor = {
+      applied:'badge-blue', shortlisted:'badge-warn', hired:'badge-green',
+      rejected:'badge-danger', withdrawn:'badge-gray',
+      checked_in:'badge-blue', working:'badge-warn', completed:'badge-blue', verified:'badge-green'
+    };
+    const sTH = {
+      applied:'รอพิจารณา', shortlisted:'อยู่ในรายชื่อ', hired:'ได้รับการจ้าง',
+      rejected:'ไม่ผ่าน', withdrawn:'ถอน',
+      checked_in:'เช็คอินแล้ว', working:'กำลังทำงาน ▶️', completed:'งานเสร็จ ⏳', verified:'ยืนยันแล้ว ✅'
+    };
+    const ACTIVE = ['hired','checked_in','working','completed','verified'];
     el.innerHTML = data.map(a => `
-      <div class="card">
+      <div class="card" id="appcard-${a.id}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
           <div>
             <div style="font-weight:600;font-size:15px">${a.job.title}</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">${a.job.location_name||'-'} • ฿${a.job.daily_wage_rate}/วัน • ${a.job.duration_days} วัน</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">
+              ${a.job.location_name||'-'} • ฿${a.job.daily_wage_rate}/วัน • ${a.job.duration_days} วัน
+              ${a.job.work_start ? `• ⏰ ${a.job.work_start}–${a.job.work_end}` : ''}
+              ${a.job.ot_rate ? `• 💰 OT ${a.job.ot_rate}฿/ชม.` : ''}
+            </div>
           </div>
           <span class="badge ${sColor[a.status]||'badge-gray'}">${sTH[a.status]||a.status}</span>
         </div>
@@ -1046,12 +1059,15 @@ async function loadMyApps() {
           <span>สมัคร: ${new Date(a.applied_at).toLocaleDateString('th-TH')}</span>
         </div>
         ${a.employer_note ? `<div style="margin-top:10px;font-size:13px;color:var(--muted);font-style:italic">"${a.employer_note}"</div>` : ''}
-        ${a.status === 'hired' && a.maps_link ? `
-          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-            <a href="${a.maps_link}" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">
-              🗺️ นำทางไปงาน
-            </a>
-            <button class="btn btn-secondary btn-sm" onclick="showContact('${a.id}',this)">📞 ดูเบอร์ติดต่อ</button>
+        ${ACTIVE.includes(a.status) && a.maps_link ? `
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <a href="${a.maps_link}" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">🗺️ นำทาง</a>
+            <button class="btn btn-secondary btn-sm" onclick="showContact('${a.id}',this)">📞 ดูเบอร์</button>
+            ${a.status === 'hired' ? `<button class="btn btn-primary btn-sm" onclick="doCheckin('${a.id}',this)">📍 เช็คอิน</button>` : ''}
+            ${a.status === 'working' ? `<button class="btn btn-primary btn-sm" onclick="doComplete('${a.id}',this)">✅ งานเสร็จแล้ว</button>` : ''}
+            ${a.status === 'checked_in' ? `<span style="font-size:12px;color:var(--muted)">⏳ รอ Employer ยืนยันเริ่มงาน</span>` : ''}
+            ${a.status === 'completed' ? `<span style="font-size:12px;color:var(--muted)">⏳ รอ Employer ยืนยันจบงาน</span>` : ''}
+            ${a.status === 'verified' ? `<span style="font-size:12px;color:var(--accent)">🎉 งานสำเร็จ! อย่าลืมรีวิว</span>` : ''}
           </div>
           <div id="contact-${a.id}" style="display:none;margin-top:10px"></div>` : ''}
       </div>`).join('');
@@ -1282,13 +1298,27 @@ async function loadCandidates(jobId, jobTitle) {
             </div>
           </div>
           <div class="candidate-actions" style="flex-direction:column;gap:6px;align-items:flex-end">
+            ${['applied','shortlisted'].includes(c.status) ? `
             <div style="display:flex;gap:6px">
               <button class="btn btn-danger btn-sm" onclick="decide('${c.application_id}','rejected',this)">ปฏิเสธ</button>
               <button class="btn btn-primary btn-sm" onclick="decide('${c.application_id}','hired',this)">จ้าง ✓</button>
-            </div>
+            </div>` : ''}
             ${c.status === 'hired' ? `
-            <button class="btn btn-secondary btn-sm" onclick="showContact('${c.application_id}',this)" style="font-size:11px">📞 ดูเบอร์</button>
-            <div id="contact-${c.application_id}" style="display:none;font-size:11px;text-align:right;margin-top:4px"></div>` : ''}
+              <span class="badge badge-green" style="font-size:10px">รอ Worker เช็คอิน</span>
+              <button class="btn btn-secondary btn-sm" onclick="showContact('${c.application_id}',this)" style="font-size:11px">📞 ดูเบอร์</button>
+              <div id="contact-${c.application_id}" style="display:none;font-size:11px;text-align:right;margin-top:4px"></div>` : ''}
+            ${c.status === 'checked_in' ? `
+              <button class="btn btn-primary btn-sm" onclick="doStart('${c.application_id}',this)">▶️ เริ่มงาน</button>
+              <button class="btn btn-secondary btn-sm" onclick="showContact('${c.application_id}',this)" style="font-size:11px">📞 ดูเบอร์</button>
+              <div id="contact-${c.application_id}" style="display:none;font-size:11px;text-align:right;margin-top:4px"></div>` : ''}
+            ${c.status === 'working' ? `
+              <span class="badge badge-warn" style="font-size:10px">▶️ กำลังทำงาน</span>
+              <button class="btn btn-secondary btn-sm" onclick="showContact('${c.application_id}',this)" style="font-size:11px">📞 ดูเบอร์</button>
+              <div id="contact-${c.application_id}" style="display:none;font-size:11px;text-align:right;margin-top:4px"></div>` : ''}
+            ${c.status === 'completed' ? `
+              <button class="btn btn-primary btn-sm" onclick="doVerify('${c.application_id}',this)">✅ ยืนยันจบงาน</button>` : ''}
+            ${c.status === 'verified' ? `
+              <span class="badge badge-green" style="font-size:10px">✅ สำเร็จแล้ว</span>` : ''}
             <button onclick="showReportModal('${c.worker_id}')" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:2px 0">🚩 รายงาน</button>
           </div>
         </div>`).join('');
@@ -1452,6 +1482,69 @@ async function showContact(appId, btn) {
     el.style.display = 'block';
     btn.innerHTML = userRole === 'worker' ? '📞 ดูเบอร์ติดต่อ' : '📞 ดูเบอร์';
     btn.disabled = false;
+  }
+}
+
+// ─── JOB LIFECYCLE ─────────────────────────────────────────
+
+async function doCheckin(appId, btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>';
+  navigator.geolocation.getCurrentPosition(async pos => {
+    try {
+      const data = await api('POST', `/applications/${appId}/checkin`, {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+      });
+      btn.outerHTML = `<span style="font-size:12px;color:var(--muted)">⏳ รอ Employer ยืนยันเริ่มงาน</span>`;
+    } catch(e) {
+      btn.disabled = false;
+      btn.innerHTML = '📍 เช็คอิน';
+      alert(e.message);
+    }
+  }, err => {
+    btn.disabled = false;
+    btn.innerHTML = '📍 เช็คอิน';
+    alert('ไม่สามารถเข้าถึง GPS: ' + err.message);
+  }, { enableHighAccuracy: true, timeout: 10000 });
+}
+
+async function doComplete(appId, btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>';
+  try {
+    await api('POST', `/applications/${appId}/complete`);
+    btn.outerHTML = `<span style="font-size:12px;color:var(--muted)">⏳ รอ Employer ยืนยันจบงาน</span>`;
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '✅ งานเสร็จแล้ว';
+    alert(e.message);
+  }
+}
+
+async function doStart(appId, btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>';
+  try {
+    await api('POST', `/applications/${appId}/start`);
+    btn.outerHTML = `<span class="badge badge-warn" style="font-size:10px">▶️ กำลังทำงาน</span>`;
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '▶️ เริ่มงาน';
+    alert(e.message);
+  }
+}
+
+async function doVerify(appId, btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>';
+  try {
+    await api('POST', `/applications/${appId}/verify`);
+    btn.outerHTML = `<span class="badge badge-green" style="font-size:10px">✅ สำเร็จแล้ว</span>`;
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '✅ ยืนยันจบงาน';
+    alert(e.message);
   }
 }
 

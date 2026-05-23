@@ -658,11 +658,13 @@ async def get_my_applications(
         SELECT
             ja.id, ja.status, ja.match_score, ja.distance_km,
             ja.matched_skills, ja.employer_note, ja.applied_at,
+            ja.checkin_at, ja.work_started_at, ja.work_ended_at, ja.employer_verified_at,
             jp.id          AS job_id,
             jp.title       AS job_title,
             jp.daily_wage_rate,
             jp.duration_days,
             jp.location_name,
+            jp.work_start, jp.work_end, jp.ot_rate,
             ST_Y(jp.location::geometry) AS job_lat,
             ST_X(jp.location::geometry) AS job_lng
         FROM   job_applications ja
@@ -672,25 +674,33 @@ async def get_my_applications(
         """,
         worker_id,
     )
+    MAPS_STATUSES = {"hired", "checked_in", "working", "completed", "verified"}
     return [
         {
-            "id":           str(r["id"]),
-            "status":       r["status"],
-            "match_score":  float(r["match_score"] or 0),
-            "distance_km":  float(r["distance_km"] or 0),
-            "matched_skills": r["matched_skills"] or [],
-            "employer_note": r["employer_note"],
-            "applied_at":   r["applied_at"].isoformat(),
-            "maps_link":    (
+            "id":                    str(r["id"]),
+            "status":                r["status"],
+            "match_score":           float(r["match_score"] or 0),
+            "distance_km":           float(r["distance_km"] or 0),
+            "matched_skills":        r["matched_skills"] or [],
+            "employer_note":         r["employer_note"],
+            "applied_at":            r["applied_at"].isoformat(),
+            "checkin_at":            r["checkin_at"].isoformat() if r["checkin_at"] else None,
+            "work_started_at":       r["work_started_at"].isoformat() if r["work_started_at"] else None,
+            "work_ended_at":         r["work_ended_at"].isoformat() if r["work_ended_at"] else None,
+            "employer_verified_at":  r["employer_verified_at"].isoformat() if r["employer_verified_at"] else None,
+            "maps_link":             (
                 f"https://www.google.com/maps/dir/?api=1&destination={r['job_lat']},{r['job_lng']}"
-                if r["status"] == "hired" else None
+                if r["status"] in MAPS_STATUSES else None
             ),
             "job": {
-                "id":             str(r["job_id"]),
-                "title":          r["job_title"],
+                "id":              str(r["job_id"]),
+                "title":           r["job_title"],
                 "daily_wage_rate": float(r["daily_wage_rate"]),
-                "duration_days":  r["duration_days"],
-                "location_name":  r["location_name"],
+                "duration_days":   r["duration_days"],
+                "location_name":   r["location_name"],
+                "work_start":      str(r["work_start"])[:5] if r["work_start"] else None,
+                "work_end":        str(r["work_end"])[:5]   if r["work_end"]   else None,
+                "ot_rate":         float(r["ot_rate"]) if r["ot_rate"] else None,
             }
         }
         for r in rows
@@ -943,12 +953,14 @@ async def get_candidates(
             ja.distance_km,
             ja.matched_skills,
             ja.status,
-            jp.required_skills
+            ja.checkin_at, ja.work_started_at, ja.work_ended_at, ja.employer_verified_at,
+            jp.required_skills,
+            jp.work_start, jp.work_end
         FROM   job_applications ja
         JOIN   worker_profiles  wp ON wp.id = ja.worker_id
         JOIN   job_postings     jp ON jp.id = ja.job_id
         WHERE  ja.job_id = $1
-          AND  ja.status IN ('applied', 'shortlisted')
+          AND  ja.status NOT IN ('rejected', 'withdrawn')
         ORDER  BY ja.match_score DESC, ja.distance_km ASC
         """,
         job_id,
@@ -967,7 +979,13 @@ async def get_candidates(
                 set(s.lower() for s in (r["required_skills"] or [])) -
                 set(s.lower() for s in (r["matched_skills"] or []))
             ),
-            "status": r["status"],
+            "status":                  r["status"],
+            "checkin_at":              r["checkin_at"].isoformat() if r["checkin_at"] else None,
+            "work_started_at":         r["work_started_at"].isoformat() if r["work_started_at"] else None,
+            "work_ended_at":           r["work_ended_at"].isoformat() if r["work_ended_at"] else None,
+            "employer_verified_at":    r["employer_verified_at"].isoformat() if r["employer_verified_at"] else None,
+            "work_start":              str(r["work_start"])[:5] if r["work_start"] else None,
+            "work_end":                str(r["work_end"])[:5]   if r["work_end"]   else None,
         }
         for r in rows
     ]
@@ -1008,8 +1026,8 @@ async def decide_application(
     if row["employer_id"] != emp_id:
         raise HTTPException(status_code=403, detail="ไม่มีสิทธิ์ตัดสินใจงานนี้")
 
-    if row["status"] in ("hired", "rejected"):
-        raise HTTPException(status_code=409, detail=f"ใบสมัครนี้ {row['status']} แล้ว")
+    if row["status"] not in ("applied", "shortlisted"):
+        raise HTTPException(status_code=409, detail=f"ใบสมัครนี้ {row['status']} แล้ว ไม่สามารถเปลี่ยนได้")
 
     if body.decision == "hired" and row["slots_filled"] >= row["slots_available"]:
         raise HTTPException(status_code=409, detail="ที่นั่งเต็มแล้ว")
@@ -1084,6 +1102,222 @@ async def decide_application(
         "new_status":     body.decision,
         "contact":        contact,
     }
+
+
+# ============================================================
+# JOB LIFECYCLE — checkin / start / complete / verify
+# ============================================================
+
+class CheckinRequest(BaseModel):
+    lat: float = Field(..., ge=-90,  le=90)
+    lng: float = Field(..., ge=-180, le=180)
+
+async def _get_app_for_worker(app_id: UUID, user: dict, db) -> dict:
+    worker_id = await db.fetchval(
+        "SELECT id FROM worker_profiles WHERE user_id=$1", UUID(user["sub"])
+    )
+    row = await db.fetchrow(
+        """
+        SELECT ja.id, ja.status, ja.job_id,
+               jp.title AS job_title,
+               jp.work_start,
+               ST_Y(jp.location::geometry) AS job_lat,
+               ST_X(jp.location::geometry) AS job_lng,
+               ep.user_id AS employer_user_id
+        FROM   job_applications ja
+        JOIN   job_postings     jp ON jp.id = ja.job_id
+        JOIN   employer_profiles ep ON ep.id = jp.employer_id
+        WHERE  ja.id = $1 AND ja.worker_id = $2
+        """,
+        app_id, worker_id,
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="ไม่พบใบสมัคร")
+    return row
+
+async def _get_app_for_employer(app_id: UUID, user: dict, db) -> dict:
+    emp_id = await db.fetchval(
+        "SELECT id FROM employer_profiles WHERE user_id=$1", UUID(user["sub"])
+    )
+    row = await db.fetchrow(
+        """
+        SELECT ja.id, ja.status, ja.worker_id,
+               jp.title AS job_title, jp.work_start,
+               wp.user_id AS worker_user_id
+        FROM   job_applications ja
+        JOIN   job_postings     jp ON jp.id = ja.job_id
+        JOIN   worker_profiles  wp ON wp.id = ja.worker_id
+        WHERE  ja.id = $1 AND jp.employer_id = $2
+        """,
+        app_id, emp_id,
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="ไม่พบใบสมัคร")
+    return row
+
+
+@app.post("/applications/{app_id}/checkin", tags=["Job Lifecycle"])
+async def worker_checkin(
+    app_id: UUID,
+    body:   CheckinRequest,
+    user:   dict = Depends(require_worker),
+    db:     asyncpg.Connection = Depends(get_db),
+):
+    """Worker กด มาถึงแล้ว — ตรวจ GPS ≤ 150 เมตร"""
+    row = await _get_app_for_worker(app_id, user, db)
+    if row["status"] != "hired":
+        raise HTTPException(status_code=409, detail=f"สถานะปัจจุบัน: {row['status']}")
+
+    # ตรวจ GPS distance
+    dist_m = await db.fetchval(
+        """
+        SELECT ST_Distance(
+            ST_MakePoint($1, $2)::geography,
+            jp.location
+        )
+        FROM job_applications ja
+        JOIN job_postings jp ON jp.id = ja.job_id
+        WHERE ja.id = $3
+        """,
+        body.lng, body.lat, app_id,
+    )
+    if dist_m is None:
+        raise HTTPException(status_code=400, detail="ไม่สามารถคำนวณระยะทางได้")
+    if float(dist_m) > 150:
+        raise HTTPException(
+            status_code=400,
+            detail=f"คุณอยู่ห่างจากสถานที่งาน {round(float(dist_m))} เมตร (ต้องอยู่ในระยะ 150 เมตร)"
+        )
+
+    await db.execute(
+        """
+        UPDATE job_applications
+        SET    status = 'checked_in', checkin_at = NOW(),
+               checkin_lat = $2, checkin_lng = $3
+        WHERE  id = $1
+        """,
+        app_id, body.lat, body.lng,
+    )
+    try:
+        await db.execute(
+            """
+            INSERT INTO notifications (user_id, type, title, body)
+            VALUES ($1, 'application_update', '👷 Worker มาถึงแล้ว',
+                    $2)
+            """,
+            row["employer_user_id"],
+            f"Worker เช็คอินที่ {row['job_title']} แล้ว กรุณากด 'เริ่มงาน'",
+        )
+    except Exception:
+        pass
+    return {"status": "checked_in", "distance_m": round(float(dist_m))}
+
+
+@app.post("/applications/{app_id}/start", tags=["Job Lifecycle"])
+async def employer_start_work(
+    app_id: UUID,
+    user:   dict = Depends(require_employer),
+    db:     asyncpg.Connection = Depends(get_db),
+):
+    """Employer กด ยืนยันเริ่มงาน — เช็ค ±30 นาที จาก work_start"""
+    from datetime import datetime, timezone, timedelta
+    row = await _get_app_for_employer(app_id, user, db)
+    if row["status"] != "checked_in":
+        raise HTTPException(status_code=409, detail=f"Worker ยังไม่ได้เช็คอิน (สถานะ: {row['status']})")
+
+    # Time window check (ถ้ากำหนด work_start ไว้)
+    if row["work_start"]:
+        TH_TZ = timezone(timedelta(hours=7))
+        now_th = datetime.now(TH_TZ)
+        ws = row["work_start"]
+        start_min = ws.hour * 60 + ws.minute
+        now_min   = now_th.hour * 60 + now_th.minute
+        diff = abs(now_min - start_min)
+        diff = min(diff, 1440 - diff)  # handle midnight wrap
+        if diff > 30:
+            raise HTTPException(
+                status_code=400,
+                detail=f"นอกช่วงเวลาเริ่มงาน (work_start: {ws.strftime('%H:%M')}, ตอนนี้: {now_th.strftime('%H:%M')}, ±30 นาที)"
+            )
+
+    await db.execute(
+        "UPDATE job_applications SET status='working', work_started_at=NOW() WHERE id=$1",
+        app_id,
+    )
+    try:
+        await db.execute(
+            """
+            INSERT INTO notifications (user_id, type, title, body)
+            VALUES ($1, 'application_update', '▶️ เริ่มงานแล้ว', $2)
+            """,
+            row["worker_user_id"],
+            f"Employer ยืนยันเริ่มงาน {row['job_title']} แล้ว ขอให้โชคดี!",
+        )
+    except Exception:
+        pass
+    return {"status": "working"}
+
+
+@app.post("/applications/{app_id}/complete", tags=["Job Lifecycle"])
+async def worker_complete(
+    app_id: UUID,
+    user:   dict = Depends(require_worker),
+    db:     asyncpg.Connection = Depends(get_db),
+):
+    """Worker กด งานเสร็จแล้ว"""
+    row = await _get_app_for_worker(app_id, user, db)
+    if row["status"] != "working":
+        raise HTTPException(status_code=409, detail=f"สถานะปัจจุบัน: {row['status']}")
+
+    await db.execute(
+        "UPDATE job_applications SET status='completed', work_ended_at=NOW() WHERE id=$1",
+        app_id,
+    )
+    try:
+        await db.execute(
+            """
+            INSERT INTO notifications (user_id, type, title, body)
+            VALUES ($1, 'application_update', '✅ Worker แจ้งงานเสร็จ', $2)
+            """,
+            row["employer_user_id"],
+            f"Worker แจ้งเสร็จงาน {row['job_title']} แล้ว กรุณากด 'ยืนยันจบงาน'",
+        )
+    except Exception:
+        pass
+    return {"status": "completed"}
+
+
+@app.post("/applications/{app_id}/verify", tags=["Job Lifecycle"])
+async def employer_verify_complete(
+    app_id: UUID,
+    user:   dict = Depends(require_employer),
+    db:     asyncpg.Connection = Depends(get_db),
+):
+    """Employer กด ยืนยันจบงาน → trigger ให้ทั้งคู่ไป review"""
+    row = await _get_app_for_employer(app_id, user, db)
+    if row["status"] != "completed":
+        raise HTTPException(status_code=409, detail=f"Worker ยังไม่ได้แจ้งเสร็จงาน (สถานะ: {row['status']})")
+
+    await db.execute(
+        "UPDATE job_applications SET status='verified', employer_verified_at=NOW() WHERE id=$1",
+        app_id,
+    )
+    review_msg = f"งาน {row['job_title']} เสร็จสิ้นแล้ว! กรุณาให้คะแนนและรีวิว"
+    try:
+        # Notify worker
+        await db.execute(
+            "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, 'review_pending', '⭐ ให้คะแนนงาน', $2)",
+            row["worker_user_id"], review_msg,
+        )
+        # Notify employer (ตัวเอง)
+        emp_user_id = UUID(user["sub"])
+        await db.execute(
+            "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, 'review_pending', '⭐ ให้คะแนน Worker', $2)",
+            emp_user_id, review_msg,
+        )
+    except Exception:
+        pass
+    return {"status": "verified"}
 
 
 # ============================================================
