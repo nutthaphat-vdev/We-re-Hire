@@ -607,8 +607,7 @@ const GOOGLE_CLIENT_ID = '807994998594-93uua15ohoj76mmvam1tk6uetd4567su.apps.goo
 
 async function doGoogleLogin(role) {
   try {
-    // ขอ URL จาก backend แล้ว redirect
-    const data = await api('GET', `/auth/google/url?role=${role}`);
+    const data = await api('GET', `/auth/google/url?role=${encodeURIComponent(role)}`);
     window.location.href = data.url;
   } catch(e) {
     showAlert('alertAuth', e.message);
@@ -616,30 +615,28 @@ async function doGoogleLogin(role) {
 }
 
 async function handleGoogleCallback() {
-  // Supabase redirect กลับมาพร้อม hash fragment: #access_token=...
-  const hash = window.location.hash;
-  if (!hash || !hash.includes('access_token')) return false;
+  const hash   = window.location.hash;
+  const search = window.location.search;
 
-  const params = new URLSearchParams(hash.replace('#', ''));
-  const accessToken = params.get('access_token');
-  const role = new URLSearchParams(window.location.search).get('role') || 'worker';
+  // รองรับทั้ง implicit (#access_token=) และ PKCE (?code=) flow
+  const hashParams   = new URLSearchParams(hash.replace('#', ''));
+  const searchParams = new URLSearchParams(search);
+
+  const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+  const role        = searchParams.get('role') || hashParams.get('role') || 'worker';
 
   if (!accessToken) return false;
 
-  log('info', `Google callback — role: ${role}`);
+  log('info', `Google callback — role: ${role}, token: ${accessToken.substring(0,20)}...`);
 
   try {
-    // ส่ง Supabase token ให้ backend verify แล้วออก JWT ของเรา
-    const data = await api('POST', '/auth/google/callback', {
-      access_token: accessToken,
-      role,
-    });
+    const data = await api('POST', '/auth/google/callback', { access_token: accessToken, role });
     saveSession(data);
-    // ล้าง hash ออกจาก URL
     window.history.replaceState({}, document.title, window.location.pathname);
     initApp();
     return true;
   } catch(e) {
+    log('error', `Google callback failed: ${e.message}`);
     showAlert('alertAuth', `Google login ล้มเหลว: ${e.message}`);
     return false;
   }
@@ -710,8 +707,9 @@ function copyToken() {
 
 // ─── INIT ──────────────────────────────────────────────────
 function initApp() {
-  document.getElementById('authPage').style.display = 'none';
-  document.getElementById('mainApp').style.display  = 'flex';
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('authPage').style.display    = 'none';
+  document.getElementById('mainApp').style.display     = 'flex';
   document.getElementById('sidebarToken').textContent = token ? token.substring(0,36)+'...' : '—';
   document.getElementById('sidebarRole').innerHTML =
     `<span class="token-role role-${userRole}">${userRole.toUpperCase()}</span>`;

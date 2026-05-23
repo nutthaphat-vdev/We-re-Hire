@@ -266,7 +266,7 @@ async def google_login_url(role: str = "worker"):
     url = (
         f"{settings.supabase_url}/auth/v1/authorize"
         f"?provider=google"
-        f"&redirect_to={settings.frontend_url or 'http://127.0.0.1:5500'}/index.html?role={role}"
+        f"&redirect_to={settings.frontend_url or 'http://127.0.0.1:5500'}/index.html%3Frole%3D{role}"
     )
     return {"url": url}
 
