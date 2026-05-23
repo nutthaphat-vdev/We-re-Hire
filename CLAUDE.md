@@ -160,6 +160,37 @@ payload = {"sub": user_id, "role": "worker"|"employer", "exp": ...}
 
 ---
 
+## 🔄 Job Lifecycle Flow
+
+```
+hired → checked_in → working → completed → verified → (review)
+```
+
+| Step | ใคร | Endpoint | Condition |
+|------|-----|----------|-----------|
+| hired | Employer | PATCH /applications/{id}/decide | slot available |
+| checked_in | Worker | POST /applications/{id}/checkin | GPS ≤ 150m (PostGIS) |
+| working | Employer | POST /applications/{id}/start | ±30 นาที จาก work_start |
+| completed | Worker | POST /applications/{id}/complete | status = working |
+| verified | Employer | POST /applications/{id}/verify | status = completed |
+
+**Auto-verify (Cron ทุก 30 นาที):**
+- `work_ended_at IS NOT NULL` AND employer ไม่กด verify ภายใน 2 ชม.
+- AND `actual_duration ≥ 90%` ของ expected shift → auto verify + notify ทั้งคู่ → trigger review
+- `< 90%`: ห้าม auto-verify — ส่ง admin ตัดสิน ห้ามระบบตัดสินเรื่องเงินเอง
+
+**GPS Checkin:**
+- Radius: 150 เมตร (ใช้ PostGIS ST_Distance — ไม่มี cost เพิ่ม)
+- Worker ส่ง lat/lng จาก `navigator.geolocation`
+- เกิน 150m → 400 error พร้อมบอก distance จริง
+
+**Work Hours:**
+- `work_start`, `work_end` อยู่ใน `job_postings` (TIME column)
+- Max 8 ชม./วัน (enforce ทั้ง frontend + backend)
+- OT แยก: `ot_rate` (฿/ชม.)
+
+---
+
 ## 🚫 Pitfalls ที่เคยเจอ — ห้ามทำซ้ำ
 
 | ปัญหา | สาเหตุ | วิธีแก้ |
