@@ -995,6 +995,7 @@ async def get_nearby_jobs(
             ) / 1000.0 AS distance_km
         FROM   job_postings jp
         WHERE  jp.status = 'open'
+          AND  jp.location IS NOT NULL
           AND  (jp.expires_at IS NULL OR jp.expires_at > NOW())
           AND  jp.slots_filled < jp.slots_available
           AND  ST_DWithin(
@@ -1002,7 +1003,11 @@ async def get_nearby_jobs(
                    ST_MakePoint($1, $2)::geography,
                    $3 * 1000
                )
-          AND  (jp.required_skills = '{}' OR jp.required_skills && $4)
+          AND  (
+                 cardinality($4::text[]) = 0
+                 OR jp.required_skills = '{}'
+                 OR jp.required_skills && $4::text[]
+               )
         ORDER  BY distance_km ASC
         LIMIT  50
         """,

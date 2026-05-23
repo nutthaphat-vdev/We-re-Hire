@@ -304,7 +304,7 @@
           <div id="searchMapPreview" style="display:none;border-radius:8px;overflow:hidden;margin-bottom:16px;height:160px;"></div>
           <div class="form-group">
             <label>รัศมี (กม.) — <span id="radiusVal">10</span> กม.</label>
-            <input type="range" id="searchRadius" min="1" max="15" value="10" oninput="document.getElementById('radiusVal').textContent=this.value" style="padding:0;background:none;border:none;">
+            <input type="range" id="searchRadius" min="1" max="30" value="10" oninput="document.getElementById('radiusVal').textContent=this.value" style="padding:0;background:none;border:none;">
           </div>
           <input type="hidden" id="searchLat" value="13.7018">
           <input type="hidden" id="searchLng" value="100.6011">
@@ -746,6 +746,7 @@ function showPage(name) {
   if (name === 'workerprofile') loadWorkerProfile();
   if (name === 'postjob')       checkEmployerProfile();
   if (name === 'myreviews')     loadMyReviews();
+  if (name === 'nearby')        searchNearby();
   if (name === 'notifications') { _notifFilter = 'all'; setNotifFilter('all'); }
 }
 
@@ -960,7 +961,12 @@ async function doUpdateProfile() {
 async function searchNearby() {
   const lat = parseFloat(document.getElementById('searchLat').value);
   const lng = parseFloat(document.getElementById('searchLng').value);
-  const r   = document.getElementById('searchRadius').value;
+  const r   = parseFloat(document.getElementById('searchRadius').value);
+  if (isNaN(lat) || isNaN(lng) || isNaN(r)) {
+    document.getElementById('nearbyResults').innerHTML =
+      '<div class="alert alert-error">กรุณาระบุตำแหน่งก่อนค้นหา</div>';
+    return;
+  }
   const el  = document.getElementById('nearbyResults');
   el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div><div class="empty-text" style="margin-top:12px">กำลังค้นหา...</div></div>';
   try {
