@@ -532,6 +532,9 @@ class JobCreate(BaseModel):
     location_name:   Optional[str] = Field(None, max_length=255)
     zone_name:       Optional[str] = Field(None, max_length=30)
     start_date:      Optional[str] = None   # ISO date string
+    work_start:      Optional[str] = Field(None, pattern=r"^\d{2}:\d{2}$")  # "08:00"
+    work_end:        Optional[str] = Field(None, pattern=r"^\d{2}:\d{2}$")  # "17:00"
+    ot_rate:         Optional[float] = Field(None, ge=0)  # ฿/ชม. OT
 
 class JobStatusUpdate(BaseModel):
     status: str = Field(..., pattern="^(open|closed|draft)$")
@@ -559,19 +562,32 @@ async def post_job(
         except ValueError:
             raise HTTPException(status_code=400, detail="start_date format ไม่ถูกต้อง (YYYY-MM-DD)")
 
+    # Validate work hours ≤ 8
+    if body.work_start and body.work_end:
+        sh, sm = map(int, body.work_start.split(':'))
+        eh, em = map(int, body.work_end.split(':'))
+        start_min = sh * 60 + sm
+        end_min   = eh * 60 + em
+        if end_min <= start_min:
+            end_min += 24 * 60  # ข้ามคืน
+        if (end_min - start_min) > 8 * 60:
+            raise HTTPException(status_code=400, detail="ช่วงเวลาทำงานต้องไม่เกิน 8 ชั่วโมง")
+
     row = await db.fetchrow(
         """
         INSERT INTO job_postings
             (employer_id, title, description, required_skills, daily_wage_rate,
-             duration_days, slots_available, location, location_name, zone_name, start_date)
+             duration_days, slots_available, location, location_name, zone_name,
+             start_date, work_start, work_end, ot_rate)
         VALUES
             ($1, $2, $3, $4, $5, $6, $7,
-             ST_MakePoint($8, $9)::geography, $10, $11, $12)
+             ST_MakePoint($8, $9)::geography, $10, $11, $12, $13, $14, $15)
         RETURNING id, title, status, created_at
         """,
         emp_id, body.title, body.description, clean_skills,
         body.daily_wage_rate, body.duration_days, body.slots_available,
         body.lng, body.lat, body.location_name, body.zone_name, start_date,
+        body.work_start, body.work_end, body.ot_rate,
     )
     return dict(row)
 
@@ -846,6 +862,7 @@ async def get_nearby_jobs(
             jp.duration_days,
             jp.slots_available - jp.slots_filled AS slots_remaining,
             jp.location_name, jp.zone_name, jp.start_date,
+            jp.work_start, jp.work_end, jp.ot_rate,
             ST_Distance(
                 ST_MakePoint($1, $2)::geography,
                 jp.location
@@ -885,6 +902,9 @@ async def get_nearby_jobs(
             "location_name":   row["location_name"],
             "zone_name":       row["zone_name"],
             "start_date":      str(row["start_date"]) if row["start_date"] else None,
+            "work_start":      str(row["work_start"])[:5] if row["work_start"] else None,
+            "work_end":        str(row["work_end"])[:5]   if row["work_end"]   else None,
+            "ot_rate":         float(row["ot_rate"]) if row["ot_rate"] else None,
             "distance_km":     round(float(row["distance_km"]), 2),
             "match_score":     score,
             "matched_skills":  matched,

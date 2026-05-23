@@ -368,6 +368,27 @@
               <input type="date" id="jobStartDate">
             </div>
           </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>เริ่มงานกี่โมง</label>
+              <input type="time" id="jobStartTime" oninput="updateHoursSummary()">
+            </div>
+            <div class="form-group">
+              <label>เลิกงานกี่โมง</label>
+              <input type="time" id="jobEndTime" oninput="updateHoursSummary()">
+            </div>
+          </div>
+          <div id="jobHoursSummary" style="display:none;font-size:12px;font-family:'IBM Plex Mono',monospace;margin-bottom:12px;padding:8px 12px;border-radius:6px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);color:var(--accent)"></div>
+          <div class="form-row" style="align-items:center">
+            <div class="form-group" style="display:flex;align-items:center;gap:8px;margin-bottom:0">
+              <input type="checkbox" id="jobOTCheck" onchange="toggleJobOT()" style="width:auto;accent-color:var(--accent)">
+              <label style="margin:0;font-size:13px;color:var(--text);cursor:pointer" for="jobOTCheck">มีงาน OT (คิดรายชั่วโมง)</label>
+            </div>
+            <div class="form-group" id="jobOTGroup" style="display:none;margin-bottom:0">
+              <label>ค่า OT (฿/ชม.)</label>
+              <input type="number" id="jobOTRate" placeholder="เช่น 75" min="0">
+            </div>
+          </div>
           <div class="form-group">
             <label>ทักษะที่ต้องการ (คั่นด้วยจุลภาค)</label>
             <div class="form-row">
@@ -961,6 +982,8 @@ async function searchNearby() {
             <span>📏 ${j.distance_km} กม.</span>
             <span>📅 ${j.duration_days} วัน</span>
             <span>👥 เหลือ ${j.slots_remaining} ที่</span>
+            ${j.work_start && j.work_end ? `<span style="color:var(--accent);font-weight:600">⏰ ${j.work_start}–${j.work_end}</span>` : ''}
+            ${j.ot_rate ? `<span style="color:var(--warn)">💰 OT ${j.ot_rate}฿/ชม.</span>` : ''}
           </div>
           <div class="tags">
             ${j.matched_skills.map(s=>`<span class="tag tag-match">✓ ${s}</span>`).join('')}
@@ -1099,6 +1122,39 @@ async function doCreateEmployerProfile() {
 }
 
 // ─── POST JOB ──────────────────────────────────────────────
+function calcWorkHours(start, end) {
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  let startMin = sh * 60 + sm, endMin = eh * 60 + em;
+  if (endMin <= startMin) endMin += 24 * 60;
+  return (endMin - startMin) / 60;
+}
+
+function updateHoursSummary() {
+  const start = document.getElementById('jobStartTime').value;
+  const end   = document.getElementById('jobEndTime').value;
+  const el    = document.getElementById('jobHoursSummary');
+  if (!start || !end) { el.style.display = 'none'; return; }
+  const hrs = calcWorkHours(start, end);
+  if (hrs > 8) {
+    el.style.background = 'rgba(255,71,87,.08)';
+    el.style.borderColor = 'rgba(255,71,87,.3)';
+    el.style.color = 'var(--danger)';
+    el.textContent = `⚠️ ${start} – ${end} = ${hrs.toFixed(1)} ชม. (เกิน 8 ชม.)`;
+  } else {
+    el.style.background = 'rgba(0,229,160,.08)';
+    el.style.borderColor = 'rgba(0,229,160,.2)';
+    el.style.color = 'var(--accent)';
+    el.textContent = `⏰ ${start} – ${end}  (${hrs % 1 === 0 ? hrs : hrs.toFixed(1)} ชม.)`;
+  }
+  el.style.display = 'block';
+}
+
+function toggleJobOT() {
+  const show = document.getElementById('jobOTCheck').checked;
+  document.getElementById('jobOTGroup').style.display = show ? 'block' : 'none';
+}
+
 async function doPostJob() {
   const alertEl = 'alertPostJob';
   try {
@@ -1108,6 +1164,13 @@ async function doPostJob() {
     if (!document.getElementById('jobTitle').value.trim()) throw new Error('กรุณาระบุชื่อตำแหน่ง');
     if (!wage || wage <= 0)  throw new Error('กรุณาระบุค่าแรงที่ถูกต้อง');
     if (!days || days <= 0)  throw new Error('กรุณาระบุจำนวนวันที่ถูกต้อง');
+    const workStart = document.getElementById('jobStartTime').value;
+    const workEnd   = document.getElementById('jobEndTime').value;
+    if ((workStart && !workEnd) || (!workStart && workEnd)) throw new Error('กรุณาระบุเวลาเริ่ม-เลิกงานให้ครบ');
+    if (workStart && workEnd) {
+      const hrs = calcWorkHours(workStart, workEnd);
+      if (hrs > 8) throw new Error('ช่วงเวลาทำงานต้องไม่เกิน 8 ชั่วโมง');
+    }
     const body = {
       title:           document.getElementById('jobTitle').value.trim(),
       description:     document.getElementById('jobDesc').value.trim() || undefined,
@@ -1120,6 +1183,12 @@ async function doPostJob() {
       location_name:   document.getElementById('jobLocation').value.trim() || undefined,
       zone_name:       document.getElementById('jobZone').value,
     };
+    if (workStart) body.work_start = workStart;
+    if (workEnd)   body.work_end   = workEnd;
+    if (document.getElementById('jobOTCheck').checked) {
+      const otRate = parseFloat(document.getElementById('jobOTRate').value);
+      if (otRate > 0) body.ot_rate = otRate;
+    }
     const sd = document.getElementById('jobStartDate').value;
     if (sd) body.start_date = sd;
     await api('POST', '/jobs', body);
