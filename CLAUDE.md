@@ -293,6 +293,11 @@ NIXPACKS_INSTALL_CMD= pip install -r requirements.txt
 ### ด่วน (ก่อน Pitch)
 - [x] ตั้ง `ADMIN_SECRET` ใน Railway env vars ✅ 2026-05-23
 - [x] เพิ่ม zones กรุงเทพ 50 เขต + ปริมณฑล (INSERT ใน Supabase) ✅ 2026-05-23
+- [x] Run migration 004_review_star_rating.sql ✅ 2026-05-23
+- [x] Run migration 008_job_lifecycle.sql ✅ 2026-05-23
+- [x] Run migration 009_disputed_status.sql ✅ 2026-05-23
+- [x] Google OAuth Consent Screen → Published ✅ 2026-05-23
+- [x] Restrict Google Maps API Key ให้ใช้แค่ domain We're Hired ✅ 2026-05-23
 - [ ] หน้า Notifications UI
 - [ ] Upload index.html → Cloudflare Workers (ทุกครั้งที่ frontend เปลี่ยน จนกว่าจะ set wrangler)
 - [ ] ตั้ง wrangler CLI สำหรับ Cloudflare auto-deploy (หลัง Pitch)
