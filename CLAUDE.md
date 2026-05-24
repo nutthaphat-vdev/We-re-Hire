@@ -300,7 +300,7 @@ NIXPACKS_INSTALL_CMD= pip install -r requirements.txt
 - [x] Restrict Google Maps API Key ให้ใช้แค่ domain We're Hired ✅ 2026-05-23
 - [ ] หน้า Notifications UI
 - [x] Upload index.html → Cloudflare Workers ✅ 2026-05-23
-- [ ] ตั้ง wrangler CLI สำหรับ Cloudflare auto-deploy (หลัง Pitch)
+- [x] ตั้ง wrangler CLI สำหรับ Cloudflare auto-deploy ✅ 2026-05-24
 
 ### Phase 3 — Wallet & Payment
 - [ ] Escrow system
