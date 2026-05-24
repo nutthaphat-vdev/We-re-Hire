@@ -173,6 +173,28 @@ AND (
 - รวม PROGRESS.md + PROGRESS2.md เป็นไฟล์เดียว
 - CHANGELOG.md ไฟล์นี้
 
+### · 🚀 CI/CD Live
+- อัปเดต GitHub PAT ให้มี `workflow` scope
+- เพิ่ม GitHub Secrets: `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`
+- Push → GitHub Actions รัน → Cloudflare deploy อัตโนมัติ ✅
+- ตั้งแต่นี้ไปแก้ `index.html` แล้ว push ขึ้น production ใน ~30 วินาที
+
+### · 📋 Roadmap KYC + NDID
+- เพิ่ม Phase 2 — KYC Level 1 (Free): รูปโปรไฟล์ + บัตรประชาชน + Selfie + admin verify
+- เพิ่ม Phase 3.5 — NDID Integration: ยืนยันผ่านแอพธนาคาร + ประวัติอาชญากรรมจากราชการ
+- Worker Tier System: Unverified / KYC / NDID
+
+### · 🐛 Bug #6 — Notifications HTML Structure (3 รอบ)
+```
+อาการ: content จมลงไปข้างล่างมาก เกือบไม่เห็น
+```
+
+รอบที่ 1 — วินิจฉัยผิด: เห็น `<div style="padding:32px">` ซ้อนใน `.page{padding:32px}` คิดว่า double padding → ลบ wrapper ออก  
+รอบที่ 2 — ยังไม่หาย: พบว่า `#page-notifications` อยู่นอก `.main` container ทั้งหมด → ย้ายเข้ามาแต่วาง closing div ผิดที่  
+รอบที่ 3 — root cause จริง: การวางผิดทำให้ `#page-notifications` ถูก nest ใน `#page-myjobs` และ `#page-myreviews` หลุดออกนอก `.app` ด้วย → แก้ structure ทั้งหมดในครั้งเดียว
+
+บทเรียน: HTML structure bug ที่ซ้อนกันหลายชั้น ต้อง trace closing div ทุกตัวก่อนแก้
+
 ---
 
 ## Stats
@@ -180,10 +202,10 @@ AND (
 | | จำนวน |
 |--|--|
 | วันที่ใช้สร้าง | **3 วัน** |
-| Commits | **40+** |
+| Commits | **50+** |
 | Endpoints | **39+** |
 | Database migrations | **9 ไฟล์** |
-| Bugs ที่เจอและแก้ | **5+ critical** |
+| Bugs ที่เจอและแก้ | **8 critical** |
 | Lines of code (approx) | **~5,000+** |
 
 ---
@@ -197,5 +219,6 @@ AND (
 | 3 | Google OAuth ES256 vs HS256 vs RS256 | **~8 ชม.** | JWKS + `kid` matching |
 | 4 | Browser cache notifications `[]` | ~2 ชม. | `cache: 'no-store'` |
 | 5 | asyncpg `datetime.time` ไม่รับ string | ~30 นาที | `fromisoformat()` before INSERT |
+| 6 | Notifications HTML nest + อยู่นอก `.main` | ~1 ชม. (3 รอบ) | trace closing div ทุกตัว |
 
 > Bug #3 (Google OAuth) กินเวลาข้ามคืน — debug ตั้งแต่บ่ายวันที่ 22 จนถึงตี 1 วันที่ 23

@@ -14,7 +14,7 @@
 - [x] CORS configuration
 - [x] Health check endpoint
 - [x] Deploy: Railway (backend) + Cloudflare Workers (frontend)
-- [x] GitHub Actions auto-deploy — push → Cloudflare อัตโนมัติ *(รอเพิ่ม GitHub Secrets)*
+- [x] GitHub Actions auto-deploy — push → Cloudflare อัตโนมัติ ✅ live
 
 ### 🔐 Auth
 - [x] POST /auth/register (worker / employer)
@@ -171,7 +171,7 @@
 | index.html | Single-file frontend (Vanilla JS) | ✅ live |
 | worker.js | Cloudflare Worker entry point (serve HTML) | ✅ |
 | wrangler.toml | Cloudflare Workers config | ✅ |
-| .github/workflows/deploy-frontend.yml | GitHub Actions auto-deploy | ✅ รอ Secrets |
+| .github/workflows/deploy-frontend.yml | GitHub Actions auto-deploy | ✅ live |
 | requirements.txt | Python dependencies | ✅ |
 | Procfile | Railway start command | ✅ |
 | .env | Env vars (ไม่ commit) | ✅ |
