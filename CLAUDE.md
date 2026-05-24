@@ -124,6 +124,10 @@ user_blocks
 - 004_review_star_rating.sql
 - 005_job_categories.sql
 - 006_trust_safety.sql
+- 007_work_hours.sql
+- 008_job_lifecycle.sql
+- 009_disputed_status.sql
+- 011_job_categories_expanded.sql (เพิ่ม factory/event/interpreter/caregiver + is_special column)
 
 ---
 

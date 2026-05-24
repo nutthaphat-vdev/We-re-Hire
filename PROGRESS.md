@@ -96,6 +96,7 @@
 | 007_work_hours.sql | ✅ |
 | 008_job_lifecycle.sql | ✅ |
 | 009_disputed_status.sql | ✅ |
+| 011_job_categories_expanded.sql | ✅ |
 
 ---
 
