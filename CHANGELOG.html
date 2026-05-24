@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>We're Hired — Changelog</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f12;
+    --surface: #161a20;
+    --surface2: #1e232b;
+    --border: #2a3040;
+    --accent: #00e5a0;
+    --blue: #0099ff;
+    --warn: #ff6b35;
+    --danger: #ff4757;
+    --text: #e8edf5;
+    --muted: #6b7a94;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Sarabun', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    padding: 32px 16px 64px;
+  }
+  .container { max-width: 820px; margin: 0 auto; }
+
+  /* Header */
+  .doc-header {
+    text-align: center;
+    padding: 48px 24px 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .doc-logo { font-size: 36px; font-weight: 800; color: var(--accent); letter-spacing: -1px; margin-bottom: 6px; }
+  .doc-subtitle { font-size: 13px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+  .doc-tagline { font-size: 18px; font-weight: 600; color: var(--text); margin-top: 14px; }
+
+  /* Day block */
+  .day-block { margin-bottom: 52px; }
+  .day-header {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 28px;
+  }
+  .day-badge {
+    font-size: 11px; font-weight: 700; font-family: 'IBM Plex Mono', monospace;
+    padding: 4px 14px; border-radius: 20px; flex-shrink: 0;
+    letter-spacing: .06em; text-transform: uppercase;
+  }
+  .day-1 { background: rgba(255,107,53,.15); color: var(--warn); border: 1px solid rgba(255,107,53,.3); }
+  .day-2 { background: rgba(0,153,255,.15); color: var(--blue); border: 1px solid rgba(0,153,255,.3); }
+  .day-3 { background: rgba(0,229,160,.15); color: var(--accent); border: 1px solid rgba(0,229,160,.3); }
+  .day-title { font-size: 20px; font-weight: 700; }
+  .day-desc { font-size: 13px; color: var(--muted); margin-top: 1px; }
+
+  /* Timeline item */
+  .timeline { position: relative; padding-left: 28px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 7px; top: 8px; bottom: 8px;
+    width: 1px; background: var(--border);
+  }
+  .tl-item { position: relative; margin-bottom: 24px; }
+  .tl-dot {
+    position: absolute; left: -24px; top: 7px;
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 2px solid var(--border); background: var(--bg);
+    flex-shrink: 0;
+  }
+  .tl-dot.feat  { border-color: var(--accent); background: rgba(0,229,160,.2); }
+  .tl-dot.bug   { border-color: var(--danger); background: rgba(255,71,87,.2); }
+  .tl-dot.fix   { border-color: var(--blue);   background: rgba(0,153,255,.2); }
+  .tl-dot.deploy{ border-color: var(--warn);   background: rgba(255,107,53,.2); }
+  .tl-dot.docs  { border-color: var(--muted);  background: var(--surface2); }
+
+  .tl-time {
+    font-size: 11px; font-family: 'IBM Plex Mono', monospace;
+    color: var(--muted); margin-bottom: 4px;
+  }
+  .tl-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .tl-body { font-size: 13px; color: var(--muted); }
+  .tl-body ul { padding-left: 18px; margin-top: 6px; }
+  .tl-body li { margin-bottom: 3px; }
+  .tl-body strong { color: var(--text); }
+
+  /* Bug card */
+  .bug-card {
+    background: rgba(255,71,87,.05);
+    border: 1px solid rgba(255,71,87,.2);
+    border-left: 3px solid var(--danger);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-top: 10px;
+    font-size: 13px;
+  }
+  .bug-symptom { color: var(--muted); margin-bottom: 8px; }
+  .bug-cause { margin-bottom: 6px; }
+  .bug-fix { color: var(--accent); }
+  .bug-label { font-size: 10px; font-family: 'IBM Plex Mono', monospace; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .bug-label.red  { color: var(--danger); }
+  .bug-label.green{ color: var(--accent); }
+
+  /* OAuth table */
+  .oauth-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+  .oauth-table th { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; }
+  .oauth-table td { padding: 7px 10px; border-bottom: 1px solid rgba(42,48,64,.4); }
+  .oauth-table td:first-child { font-family: 'IBM Plex Mono', monospace; color: var(--accent); width: 50px; }
+  .fail { color: var(--danger); }
+  .pass { color: var(--accent); }
+
+  /* Code */
+  pre {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    overflow-x: auto;
+    margin-top: 10px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  code {
+    font-family: 'IBM Plex Mono', monospace;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--accent);
+  }
+
+  /* Feature list */
+  .feat-list { list-style: none; display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+  .feat-list li::before { content: '→ '; color: var(--accent); font-family: 'IBM Plex Mono', monospace; }
+
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 32px 0;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-num { font-size: 28px; font-weight: 800; font-family: 'IBM Plex Mono', monospace; color: var(--accent); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* Bugs HOF */
+  .hof-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .hof-table th { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: .06em; }
+  .hof-table td { padding: 10px 12px; border-bottom: 1px solid rgba(42,48,64,.4); vertical-align: top; }
+  .hof-table tr:last-child td { border-bottom: none; }
+  .hof-num { font-family: 'IBM Plex Mono', monospace; color: var(--muted); font-size: 12px; }
+  .hof-bug { font-weight: 600; font-size: 13px; }
+  .hof-time { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--warn); }
+  .hof-fix { font-size: 12px; color: var(--accent); font-family: 'IBM Plex Mono', monospace; }
+  .boss { color: var(--danger); font-weight: 700; }
+
+  .quote {
+    background: var(--surface);
+    border-left: 3px solid var(--muted);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 16px;
+    font-style: italic;
+  }
+
+  /* Section divider */
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  @media print {
+    body { background: #fff; color: #111; padding: 0; }
+    :root { --bg:#fff; --surface:#f5f5f5; --surface2:#ececec; --border:#ddd; --text:#111; --muted:#555; --accent:#007a50; --blue:#005fcc; --warn:#c04000; --danger:#c00; }
+    pre { white-space: pre-wrap; }
+  }
+  @media (max-width: 600px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .hof-table { font-size: 12px; }
+    .hof-time, .hof-fix { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="doc-header">
+    <div class="doc-logo">We're Hired</div>
+    <div class="doc-subtitle">Development Changelog</div>
+    <div class="doc-tagline">จากไอเดียสู่ Production ใน 3 วัน</div>
+  </div>
+
+  <!-- DAY 1 -->
+  <div class="day-block">
+    <div class="day-header">
+      <span class="day-badge day-1">Day 1</span>
+      <div>
+        <div class="day-title">22 พฤษภาคม 2568</div>
+        <div class="day-desc">วันปล่อย MVP — Launch &amp; Debug</div>
+      </div>
+    </div>
+
+    <div class="timeline">
+
+      <div class="tl-item">
+        <div class="tl-dot feat"></div>
+        <div class="tl-time">09:36</div>
+        <div class="tl-title">🚀 Initial Commit — MVP ทั้งหมดในคราวเดียว</div>
+        <div class="tl-body">
+          ครั้งแรกที่ push ขึ้น GitHub ไม่ใช่แค่ skeleton — เป็น product ที่ทำงานได้จริง
+          <ul class="feat-list" style="margin-top:10px">
+            <li>FastAPI backend + asyncpg + Supabase PostgreSQL + PostGIS</li>
+            <li>JWT auth (register / login / middleware)</li>
+            <li>Worker &amp; Employer profile</li>
+            <li>Job posting + nearby search (PostGIS ST_DWithin)</li>
+            <li>Matching engine (skills 60% / distance 25% / rate 15%)</li>
+            <li>Review system (blind review, tags, 5 ดาว)</li>
+            <li>Notification system</li>
+            <li>Single-file frontend (Vanilla JS, ~2,000+ lines)</li>
+            <li>Deploy ready: Railway (backend) + Cloudflare Workers (frontend)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot deploy"></div>
+        <div class="tl-time">09:55–11:01</div>
+        <div class="tl-title">⚙️ Deploy Setup</div>
+        <div class="tl-body">
+          <ul>
+            <li>แยก <code>.env</code> ออกจาก git</li>
+            <li>แก้ Railway URL ที่เปลี่ยนหลัง deploy</li>
+            <li>Cloudflare Workers พยายาม install <code>requirements.txt</code> → แก้โดย rename ไฟล์</li>
+            <li>เพิ่ม <code>.cfignore</code> กัน Cloudflare อ่านไฟล์ Python</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot bug"></div>
+        <div class="tl-time">14:43</div>
+        <div class="tl-title">🔥 Critical Bug #1 — PgBouncer</div>
+        <div class="tl-body">
+          <div class="bug-card">
+            <div class="bug-label red">อาการ</div>
+            <div class="bug-symptom"><code>DuplicatePreparedStatementError</code> — ทั้งระบบพัง</div>
+            <div class="bug-label red">สาเหตุ</div>
+            <div class="bug-cause">asyncpg + Supabase PgBouncer transaction mode ไม่ compatible กับ prepared statements</div>
+            <div class="bug-label green">Fix</div>
+            <div class="bug-fix"><code>statement_cache_size=0</code> — บรรทัดเดียวกู้ชีวิตทั้ง production</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot bug"></div>
+        <div class="tl-time">14:55</div>
+        <div class="tl-title">🐛 Bug #2 — Decimal vs Float</div>
+        <div class="tl-body">
+          <div class="bug-card">
+            <div class="bug-label red">อาการ</div>
+            <div class="bug-symptom"><code>TypeError: unsupported operand type(s) for /: 'decimal.Decimal' and 'float'</code></div>
+            <div class="bug-label red">สาเหตุ</div>
+            <div class="bug-cause">asyncpg คืน DECIMAL columns เป็น <code>decimal.Decimal</code> ซึ่ง divide กับ float ตรงๆ ไม่ได้</div>
+            <div class="bug-label green">Fix</div>
+            <div class="bug-fix"><code>float(worker_rate) / float(job_rate)</code> — ต้อง explicit cast เสมอ</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot bug"></div>
+        <div class="tl-time">13:48 – 22:43</div>
+        <div class="tl-title">🔐 Google OAuth Round 1–4 (ยังไม่ได้คำตอบ)</div>
+        <div class="tl-body">
+          ใช้เวลานานสุดของวัน — debug OAuth ไปหลายรอบ:
+          <table class="oauth-table">
+            <thead><tr><th>รอบ</th><th>ลอง</th><th>ผล</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>RS256</td><td class="fail">❌ Supabase ไม่ใช้</td></tr>
+              <tr><td>2</td><td>JWKS verification</td><td class="fail">❌ signature ไม่ตรง</td></tr>
+              <tr><td>3</td><td>HS256 (legacy secret)</td><td class="fail">❌ algorithm mismatch</td></tr>
+              <tr><td>4</td><td>google-auth library</td><td class="fail">❌ wrong token type</td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top:8px;font-size:13px;color:var(--muted)">ยังไม่ได้ solution — ต้อง debug ต่อข้ามคืน</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot feat"></div>
+        <div class="tl-time">22:35</div>
+        <div class="tl-title">🔔 Notifications UI</div>
+        <div class="tl-body">
+          <ul>
+            <li>Filter tabs: ทั้งหมด / ยังไม่อ่าน</li>
+            <li>Smart date labels (วันนี้ / เมื่อวาน / full date)</li>
+            <li>Type badges สีต่างกัน (hired, rejected, ผู้สมัครใหม่...)</li>
+            <li>Unread count badge ใน sidebar</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- DAY 2 -->
+  <div class="day-block">
+    <div class="day-header">
+      <span class="day-badge day-2">Day 2</span>
+      <div>
+        <div class="day-title">23 พฤษภาคม 2568</div>
+        <div class="day-desc">วัน Feature Sprint — 20+ commits ใน 24 ชั่วโมง</div>
+      </div>
+    </div>
+
+    <div class="timeline">
+
+      <div class="tl-item">
+        <div class="tl-dot fix"></div>
+        <div class="tl-time">00:54–01:26</div>
+        <div class="tl-title">🔐 Google OAuth — Final Fix (หลัง debug ข้ามคืน)</div>
+        <div class="tl-body">
+          ค้นพบว่า Supabase ใช้ <strong>ES256 + JWKS</strong> เท่านั้น
+          <pre>header = jwt.get_unverified_header(access_token)
+for key in jwks["keys"]:
+    if key["kid"] == header["kid"]:
+        public_key = ECAlgorithm.from_jwk(key)
+payload = jwt.decode(access_token, public_key, algorithms=["ES256"])</pre>
+          <div style="margin-top:8px;font-size:13px">บทเรียน: Supabase เปลี่ยนจาก HS256 → ES256 โดยไม่ประกาศชัด — ต้องอ่าน JWKS เสมอ</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot feat"></div>
+        <div class="tl-time">01:36 – 03:44</div>
+        <div class="tl-title">🗺️ Zones API + Landing Page + Admin</div>
+        <div class="tl-body">
+          <ul>
+            <li>Zones dropdown โหลดจาก <code>GET /zones</code> แทน hardcode — รองรับ 50+ เขต</li>
+            <li>Landing page อธิบาย product สำหรับ demo</li>
+            <li>Admin endpoints: verify employer, KYC management</li>
+            <li>Review summary แสดงบน employer profile</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot feat"></div>
+        <div class="tl-time">10:13 – 11:17</div>
+        <div class="tl-title">📋 Job Lifecycle — Feature ใหญ่สุดของวัน</div>
+        <div class="tl-body">
+          สร้าง full workflow จาก hired จนถึงจ่ายเงิน:
+          <pre>hired → checked_in → working → completed → verified
+                                             ↘ disputed (&lt; 90%)</pre>
+          <ul style="margin-top:10px">
+            <li><code>POST /checkin</code> — GPS ≤ 150m (PostGIS)</li>
+            <li><code>POST /start</code> — ±30 นาที จาก work_start</li>
+            <li><code>POST /complete</code> — Worker กดเสร็จ</li>
+            <li><code>POST /verify</code> — Employer ยืนยัน</li>
+            <li>Auto-verify cron ทุก 30 นาที (APScheduler)</li>
+            <li>Migrations: 007_work_hours, 008_job_lifecycle, 009_disputed_status</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot bug"></div>
+        <div class="tl-time">13:15</div>
+        <div class="tl-title">🐛 Bug #3 — asyncpg datetime.time</div>
+        <div class="tl-body">
+          <div class="bug-card">
+            <div class="bug-label red">สาเหตุ</div>
+            <div class="bug-cause">asyncpg ต้องการ <code>datetime.time</code> object — ไม่รับ string <code>"09:00"</code></div>
+            <div class="bug-label green">Fix</div>
+            <div class="bug-fix"><code>work_start = time_type.fromisoformat(data.work_start)</code> — ต้อง convert ก่อน INSERT</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot feat"></div>
+        <div class="tl-time">15:16</div>
+        <div class="tl-title">🎨 Rebrand WeHire → We're Hired</div>
+        <div class="tl-body">เปลี่ยนชื่อทั้ง codebase — frontend, backend, docs</div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot bug"></div>
+        <div class="tl-time">20:48</div>
+        <div class="tl-title">🐛 Bug #4 — Notifications Empty (Browser Cache)</div>
+        <div class="tl-body">
+          <div class="bug-card">
+            <div class="bug-label red">อาการ</div>
+            <div class="bug-symptom">badge แสดง "2" แต่เปิดหน้า notifications ว่างเปล่า</div>
+            <div class="bug-label red">สาเหตุ</div>
+            <div class="bug-cause">Browser cache <code>GET /notifications</code> → <code>[]</code> จากครั้งแรกที่ user ไม่มี notifications</div>
+            <div class="bug-label green">Fix</div>
+            <div class="bug-fix"><code>cache: 'no-store'</code> ใน fetch() ทุก request</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot bug"></div>
+        <div class="tl-time">22:31</div>
+        <div class="tl-title">🐛 Bug #5 — Nearby Jobs ไม่ filter ระยะ</div>
+        <div class="tl-body">
+          <div class="bug-card">
+            <div class="bug-label red">อาการ</div>
+            <div class="bug-symptom">radius=1km แต่เห็นงานระยะ 31km</div>
+            <div class="bug-label red">สาเหตุจริง</div>
+            <div class="bug-cause">ST_DWithin ทำงานปกติ — bug อยู่ที่ asyncpg type inference ผิดกับ empty array <code>[]</code></div>
+            <div class="bug-label green">Fix</div>
+            <div class="bug-fix">
+              <pre style="margin-top:6px">AND (
+  cardinality($4::text[]) = 0
+  OR jp.required_skills = '{}'
+  OR jp.required_skills &amp;&amp; $4::text[]
+)</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot deploy"></div>
+        <div class="tl-time">23:40–23:48</div>
+        <div class="tl-title">🚀 CI/CD Setup</div>
+        <div class="tl-body">
+          <ul>
+            <li><code>wrangler.toml</code> — config Cloudflare Workers</li>
+            <li><code>worker.js</code> — serve index.html</li>
+            <li><code>.github/workflows/deploy-frontend.yml</code> — auto-deploy เมื่อ push</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- DAY 3 -->
+  <div class="day-block">
+    <div class="day-header">
+      <span class="day-badge day-3">Day 3</span>
+      <div>
+        <div class="day-title">24 พฤษภาคม 2568</div>
+        <div class="day-desc">วัน Polish &amp; Docs</div>
+      </div>
+    </div>
+
+    <div class="timeline">
+
+      <div class="tl-item">
+        <div class="tl-dot feat"></div>
+        <div class="tl-time">00:01</div>
+        <div class="tl-title">🔔 Notifications Deep-Link</div>
+        <div class="tl-body">
+          <ul>
+            <li>กดการ์ดแล้ว navigate ไปหน้าที่เกี่ยวข้องทันที (hired → myapps, new_applicant → myjobs...)</li>
+            <li>Auto-mark as read เมื่อนำทาง</li>
+            <li>"ดูรายละเอียด →" hint บนการ์ดที่ actionable</li>
+            <li>Dashboard stats: 7 เขต → 50+, 15km → 30km</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot deploy"></div>
+        <div class="tl-time">·</div>
+        <div class="tl-title">🚀 CI/CD Live</div>
+        <div class="tl-body">
+          <ul>
+            <li>อัปเดต GitHub PAT ให้มี <code>workflow</code> scope</li>
+            <li>เพิ่ม GitHub Secrets: <code>CLOUDFLARE_API_TOKEN</code> + <code>CLOUDFLARE_ACCOUNT_ID</code></li>
+            <li>Push → GitHub Actions รัน → Cloudflare deploy อัตโนมัติ ✅</li>
+            <li>ตั้งแต่นี้ไปแก้ <code>index.html</code> แล้ว push ขึ้น production ใน ~30 วินาที</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot docs"></div>
+        <div class="tl-time">·</div>
+        <div class="tl-title">📋 Roadmap KYC + NDID</div>
+        <div class="tl-body">
+          <ul>
+            <li>Phase 2 — KYC Level 1: รูปโปรไฟล์ + บัตรประชาชน + Selfie + admin verify</li>
+            <li>Phase 3.5 — NDID: ยืนยันผ่านแอพธนาคาร + ดึงประวัติอาชญากรรมจากราชการ</li>
+            <li>Worker Tier System: Unverified / KYC / NDID</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot bug"></div>
+        <div class="tl-time">·</div>
+        <div class="tl-title">🐛 Bug #6 — Notifications HTML Structure (3 รอบ)</div>
+        <div class="tl-body">
+          <div class="bug-card">
+            <div class="bug-label red">อาการ</div>
+            <div class="bug-symptom">content จมลงไปข้างล่างมาก เกือบไม่เห็น + หน้าอื่นพัง</div>
+            <div class="bug-label red">รอบที่ 1 — วินิจฉัยผิด</div>
+            <div class="bug-cause">เห็น double padding → ลบ wrapper ออก (แก้ผิดจุด)</div>
+            <div class="bug-label red">รอบที่ 2 — ยังไม่หาย</div>
+            <div class="bug-cause"><code>#page-notifications</code> อยู่นอก <code>.main</code> container → ย้ายเข้ามาแต่วาง closing div ผิดที่</div>
+            <div class="bug-label red">รอบที่ 3 — root cause</div>
+            <div class="bug-cause"><code>#page-notifications</code> ถูก nest ใน <code>#page-myjobs</code> และ <code>#page-myreviews</code> หลุดนอก <code>.app</code></div>
+            <div class="bug-label green">Fix</div>
+            <div class="bug-fix">trace closing div ทุกตัว แก้ structure ทั้งหมดในครั้งเดียว</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- STATS -->
+  <div style="margin-bottom:40px">
+    <div style="font-size:20px;font-weight:700;margin-bottom:20px">📊 Stats</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num">3</div><div class="stat-label">วันที่ใช้สร้าง</div></div>
+      <div class="stat-card"><div class="stat-num">50+</div><div class="stat-label">Commits</div></div>
+      <div class="stat-card"><div class="stat-num">39+</div><div class="stat-label">API Endpoints</div></div>
+      <div class="stat-card"><div class="stat-num">9</div><div class="stat-label">DB Migrations</div></div>
+      <div class="stat-card"><div class="stat-num">6</div><div class="stat-label">Critical Bugs</div></div>
+      <div class="stat-card"><div class="stat-num">5,000+</div><div class="stat-label">Lines of Code</div></div>
+    </div>
+  </div>
+
+  <!-- BUGS HOF -->
+  <div>
+    <div style="font-size:20px;font-weight:700;margin-bottom:20px">🏆 Bugs Hall of Fame</div>
+    <table class="hof-table">
+      <thead>
+        <tr><th>#</th><th>Bug</th><th>เวลาที่เสีย</th><th>วิธีแก้</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="hof-num">1</td>
+          <td class="hof-bug">PgBouncer <code>DuplicatePreparedStatement</code></td>
+          <td class="hof-time">~1 ชม.</td>
+          <td class="hof-fix">statement_cache_size=0</td>
+        </tr>
+        <tr>
+          <td class="hof-num">2</td>
+          <td class="hof-bug"><code>decimal.Decimal / float</code> TypeError</td>
+          <td class="hof-time">~30 นาที</td>
+          <td class="hof-fix">float() explicit cast</td>
+        </tr>
+        <tr>
+          <td class="hof-num">3</td>
+          <td class="hof-bug boss">Google OAuth ES256 vs HS256 vs RS256 👑</td>
+          <td class="hof-time boss">~8 ชั่วโมง</td>
+          <td class="hof-fix">JWKS + kid matching</td>
+        </tr>
+        <tr>
+          <td class="hof-num">4</td>
+          <td class="hof-bug">Browser cache notifications <code>[]</code></td>
+          <td class="hof-time">~2 ชม.</td>
+          <td class="hof-fix">cache: 'no-store'</td>
+        </tr>
+        <tr>
+          <td class="hof-num">5</td>
+          <td class="hof-bug">asyncpg <code>datetime.time</code> ไม่รับ string</td>
+          <td class="hof-time">~30 นาที</td>
+          <td class="hof-fix">fromisoformat() before INSERT</td>
+        </tr>
+        <tr>
+          <td class="hof-num">6</td>
+          <td class="hof-bug">Notifications HTML nest + นอก <code>.main</code></td>
+          <td class="hof-time">~1 ชม. (3 รอบ)</td>
+          <td class="hof-fix">trace closing div ทุกตัว</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="quote">Bug #3 (Google OAuth) กินเวลาข้ามคืน — debug ตั้งแต่บ่ายวันที่ 22 จนถึงตี 1 วันที่ 23</div>
+  </div>
+
+</div>
+</body>
+</html>
