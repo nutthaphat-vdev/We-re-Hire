@@ -127,6 +127,7 @@ user_blocks
 - 007_work_hours.sql
 - 008_job_lifecycle.sql
 - 009_disputed_status.sql
+- 010_kyc.sql (nationality_type, KYC document columns, index on background_check_status)
 - 011_job_categories_expanded.sql (เพิ่ม factory/event/interpreter/caregiver + is_special column)
 
 ---
@@ -248,19 +249,31 @@ wallet_transactions -- audit log ทุก movement
 
 **Flow:** Worker upload รูปโปรไฟล์ + บัตรประชาชน (หน้า-หลัง) + Selfie คู่บัตร → Admin กด Approve/Reject
 
-**Migration (ยังไม่รัน — ใช้ชื่อ 010_kyc.sql เพราะ 009 ถูก disputed_status ใช้แล้ว):**
+**Migration: 010_kyc.sql ✅ run แล้ว**
+
+รองรับทั้งคนไทยและต่างด้าว:
+- `thai`: บัตรประชาชน (หน้า-หลัง) + Selfie
+- `foreign`: Passport + Work Permit + Selfie
+
 ```sql
+-- nationality_type: 'thai' | 'foreign'
 ALTER TABLE worker_profiles
-  ADD COLUMN IF NOT EXISTS profile_photo_url TEXT,
-  ADD COLUMN IF NOT EXISTS id_card_front_url TEXT,
-  ADD COLUMN IF NOT EXISTS id_card_back_url  TEXT,
-  ADD COLUMN IF NOT EXISTS selfie_url        TEXT,
-  ADD COLUMN IF NOT EXISTS kyc_submitted_at  TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS kyc_reviewed_by   UUID REFERENCES users(id),
-  ADD COLUMN IF NOT EXISTS kyc_note          TEXT;
+  ADD COLUMN IF NOT EXISTS nationality_type    VARCHAR(10) NOT NULL DEFAULT 'thai',
+  ADD COLUMN IF NOT EXISTS profile_photo_url   TEXT,
+  ADD COLUMN IF NOT EXISTS id_card_front_url   TEXT,   -- Thai only
+  ADD COLUMN IF NOT EXISTS id_card_back_url    TEXT,   -- Thai only
+  ADD COLUMN IF NOT EXISTS passport_url        TEXT,   -- Foreign only
+  ADD COLUMN IF NOT EXISTS work_permit_url     TEXT,   -- Foreign only
+  ADD COLUMN IF NOT EXISTS work_permit_expiry  DATE,   -- Foreign only
+  ADD COLUMN IF NOT EXISTS selfie_url          TEXT,
+  ADD COLUMN IF NOT EXISTS kyc_submitted_at    TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS kyc_reviewed_at     TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS kyc_reviewed_by     UUID REFERENCES users(id),
+  ADD COLUMN IF NOT EXISTS kyc_note            TEXT;
 ```
 - `background_check_status` ที่มีอยู่แล้วใช้ได้เลย (values: none / pending / approved / rejected)
 - Badge แสดงบน profile card: **✓ KYC Verified**
+- Index บน `background_check_status = 'pending'` สำหรับ Admin dashboard
 - Scale ได้ถึง ~1,000 workers โดยไม่มีปัญหา
 - ถ้า volume เกิน → upgrade iDenfy (~$0.5/verification)
 

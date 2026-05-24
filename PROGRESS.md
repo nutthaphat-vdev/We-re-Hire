@@ -96,6 +96,7 @@
 | 007_work_hours.sql | ✅ |
 | 008_job_lifecycle.sql | ✅ |
 | 009_disputed_status.sql | ✅ |
+| 010_kyc.sql | ✅ |
 | 011_job_categories_expanded.sql | ✅ |
 
 ---
@@ -117,7 +118,7 @@
 - [ ] Worker upload บัตรประชาชน (หน้า-หลัง) + Selfie คู่บัตร
 - [ ] Admin approve/reject KYC — manual via Supabase dashboard
 - [ ] Badge **✓ KYC Verified** บน worker profile card
-- [ ] Migration: 010_kyc.sql
+- [x] Migration: 010_kyc.sql ✅ run แล้ว
 - [ ] Employer verification flow
 
 ### Phase 3 — Wallet & Escrow 💰
