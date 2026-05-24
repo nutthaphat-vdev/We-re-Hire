@@ -110,10 +110,12 @@
 
 ## 📋 Roadmap
 
-### Phase 2 — KYC & Trust (Level 1 Free)
-- [ ] Worker upload รูปบัตรประชาชน (หน้า-หลัง) + Selfie คู่บัตร
-- [ ] Admin approve/reject KYC — manual via Supabase Storage
-- [ ] Badge ✓ verified บน worker profile
+### Phase 2 — KYC Level 1 (Free)
+> ยืนยันตัวตนด้วยบัตรประชาชน + Selfie — admin verify มือ, ฟรี 100%
+- [ ] รูปโปรไฟล์ worker (Supabase Storage)
+- [ ] Worker upload บัตรประชาชน (หน้า-หลัง) + Selfie คู่บัตร
+- [ ] Admin approve/reject KYC — manual via Supabase dashboard
+- [ ] Badge **✓ KYC Verified** บน worker profile card
 - [ ] Migration: 010_kyc.sql
 - [ ] Employer verification flow
 
@@ -126,6 +128,17 @@
 - [ ] Worker withdrawal request
 - [ ] PromptPay / Omise / 2C2P integration
 - [ ] Dispute button ฝั่ง Employer + POST /applications/{id}/dispute
+
+### Phase 3.5 — NDID Integration 🪪
+> ยืนยันตัวตนระดับรัฐ ผ่านแอพธนาคาร — ดึงประวัติจริงจากราชการ
+- [ ] เชื่อมต่อ NDID API (National Digital ID — ธปท.)
+- [ ] Worker ยืนยันตัวตนผ่านแอพธนาคาร (กสิกร / SCB / กรุงไทย ฯลฯ)
+- [ ] ดึงประวัติอาชญากรรมจากระบบราชการอัตโนมัติ
+- [ ] Badge **NDID Verified** บน worker profile
+- [ ] Worker Tier System:
+  - `Unverified` — สมัครงานได้, ข้อมูลน้อย
+  - `KYC` — บัตรประชาชน + Selfie ผ่าน admin
+  - `NDID` — ยืนยันผ่านธนาคาร + ประวัติอาชญากรรมสะอาด
 
 ### Phase 4 — Notifications & Communication
 - [ ] Push notifications (LINE Notify หรือ Firebase FCM)

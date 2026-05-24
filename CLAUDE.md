@@ -242,11 +242,12 @@ wallet_transactions -- audit log ทุก movement
 
 > Manual admin verify — ฟรี 100% ใช้ Supabase Storage
 
-**Flow:** Worker upload รูปบัตรประชาชน (หน้า-หลัง) + Selfie คู่บัตร → Admin กด Approve/Reject
+**Flow:** Worker upload รูปโปรไฟล์ + บัตรประชาชน (หน้า-หลัง) + Selfie คู่บัตร → Admin กด Approve/Reject
 
 **Migration (ยังไม่รัน — ใช้ชื่อ 010_kyc.sql เพราะ 009 ถูก disputed_status ใช้แล้ว):**
 ```sql
 ALTER TABLE worker_profiles
+  ADD COLUMN IF NOT EXISTS profile_photo_url TEXT,
   ADD COLUMN IF NOT EXISTS id_card_front_url TEXT,
   ADD COLUMN IF NOT EXISTS id_card_back_url  TEXT,
   ADD COLUMN IF NOT EXISTS selfie_url        TEXT,
@@ -254,9 +255,46 @@ ALTER TABLE worker_profiles
   ADD COLUMN IF NOT EXISTS kyc_reviewed_by   UUID REFERENCES users(id),
   ADD COLUMN IF NOT EXISTS kyc_note          TEXT;
 ```
-- `background_check_status` ที่มีอยู่แล้วใช้ได้เลย
+- `background_check_status` ที่มีอยู่แล้วใช้ได้เลย (values: none / pending / approved / rejected)
+- Badge แสดงบน profile card: **✓ KYC Verified**
 - Scale ได้ถึง ~1,000 workers โดยไม่มีปัญหา
 - ถ้า volume เกิน → upgrade iDenfy (~$0.5/verification)
+
+---
+
+## 🏛️ NDID Integration (Phase 3.5)
+
+> National Digital ID — ระบบยืนยันตัวตนแห่งชาติของ ธปท. (ธนาคารแห่งประเทศไทย)
+
+**Worker Tier System:**
+| Tier | วิธียืนยัน | Badge | สิทธิ์ |
+|------|-----------|-------|--------|
+| `Unverified` | — | ไม่มี | สมัครงานได้ ข้อมูลน้อย |
+| `KYC` | บัตรประชาชน + Selfie (admin) | ✓ KYC Verified | สมัครงานได้ เพิ่มความน่าเชื่อถือ |
+| `NDID` | ยืนยันผ่านแอพธนาคาร (รัฐ) | 🏛️ NDID Verified | สมัครงาน high-trust ได้ + ประวัติอาชญากรรมสะอาด |
+
+**Flow:**
+```
+Worker กด "ยืนยันตัวตนระดับ NDID"
+→ Redirect ไปแอพธนาคาร (กสิกร / SCB / กรุงไทย ฯลฯ)
+→ ธนาคารดึงข้อมูลจากทะเบียนราษฎร์ + ประวัติอาชญากรรม
+→ Callback พร้อม verified status + consent token
+→ เก็บ ndid_verified_at + ndid_ref บน worker_profiles
+→ Badge NDID Verified ปรากฏบน profile
+```
+
+**DB columns ที่ต้องเพิ่ม (migration 011_ndid.sql):**
+```sql
+ALTER TABLE worker_profiles
+  ADD COLUMN IF NOT EXISTS ndid_verified_at  TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS ndid_ref          TEXT,
+  ADD COLUMN IF NOT EXISTS criminal_check_passed BOOLEAN DEFAULT FALSE;
+```
+
+**Business value:**
+- Employer กรองหา "NDID only" เมื่อต้องการงานที่ trust สูง (รปภ., เลี้ยงเด็ก, ดูแลผู้สูงอายุ)
+- ดึงประวัติอาชญากรรมจาก สำนักงานตำรวจแห่งชาติ ผ่าน NDID โดยตรง — ไม่ต้องรอ manual
+- Moat สำคัญ: platform ทั่วไปทำไม่ได้ เพราะต้องเป็น NDID Member
 
 ---
 
