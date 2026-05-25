@@ -16,7 +16,7 @@
 
 | Service | URL |
 |---------|-----|
-| Frontend | https://divine-bar-29c7.vi-nutthaphat.workers.dev |
+| Frontend | https://wearehiredmvp.vi-nutthaphat.workers.dev |
 | Backend | https://web-production-03c5a.up.railway.app |
 | GitHub | https://github.com/abc147258/We-re-Hire |
 | Supabase | wexupoegrynxbhdzioym (ap-northeast-1 Tokyo) |
@@ -334,10 +334,10 @@ DATABASE_URL        = postgresql://postgres.wexupoegrynxbhdzioym:...
 JWT_SECRET          = (random string ยาวๆ)
 JWT_ALGORITHM       = HS256
 JWT_EXPIRE_MINUTES  = 1440
-CORS_ORIGINS        = http://localhost:5500,...,https://divine-bar-29c7.vi-nutthaphat.workers.dev
+CORS_ORIGINS        = http://localhost:5500,...,https://wearehiredmvp.vi-nutthaphat.workers.dev
 SUPABASE_URL        = https://wexupoegrynxbhdzioym.supabase.co
 SUPABASE_JWT_SECRET = (Legacy JWT Secret จาก Supabase)
-FRONTEND_URL        = https://divine-bar-29c7.vi-nutthaphat.workers.dev
+FRONTEND_URL        = https://wearehiredmvp.vi-nutthaphat.workers.dev
 NIXPACKS_INSTALL_CMD= pip install -r requirements.txt
 ```
 
