@@ -601,6 +601,7 @@ class WorkerProfileUpdate(BaseModel):
     lng:                 Optional[float]     = Field(None, ge=-180, le=180)
     location_name:       Optional[str]       = Field(None, max_length=255)
     is_available:        Optional[bool]      = None
+    nationality_type:    Optional[str]       = Field(None, pattern="^(thai|foreign)$")
 
 @app.get("/workers/profile/me", tags=["Worker"])
 async def get_worker_profile(
@@ -611,6 +612,7 @@ async def get_worker_profile(
         """
         SELECT id, full_name, skills, experience_years, daily_rate_expected,
                background_check_status, location_name, is_available,
+               nationality_type, work_permit_url, work_permit_expiry,
                ST_X(location::geometry) AS lng,
                ST_Y(location::geometry) AS lat,
                updated_at
@@ -673,6 +675,8 @@ async def update_worker_profile(
         updates["location_name"] = body.location_name
     if body.is_available is not None:
         updates["is_available"] = body.is_available
+    if body.nationality_type is not None:
+        updates["nationality_type"] = body.nationality_type
 
     if not updates and body.lat is None:
         raise HTTPException(status_code=400, detail="ไม่มีข้อมูลที่ต้องอัปเดต")
@@ -1046,11 +1050,27 @@ async def apply_to_job(
         raise HTTPException(status_code=409, detail="ที่นั่งเต็มแล้ว")
 
     worker = await db.fetchrow(
-        "SELECT id, skills, daily_rate_expected FROM worker_profiles WHERE user_id=$1",
+        """SELECT id, skills, daily_rate_expected,
+                  nationality_type, work_permit_url, work_permit_expiry
+           FROM   worker_profiles WHERE user_id=$1""",
         UUID(user["sub"]),
     )
     if not worker:
         raise HTTPException(status_code=404, detail="สร้าง Worker Profile ก่อน")
+
+    # Work Permit enforcement — แรงงานต่างด้าวต้องมี Work Permit ที่ยังไม่หมดอายุ
+    if worker["nationality_type"] == "foreign":
+        from datetime import date as date_type
+        if not worker["work_permit_url"]:
+            raise HTTPException(
+                status_code=403,
+                detail="กรุณา upload Work Permit ก่อนสมัครงาน",
+            )
+        if not worker["work_permit_expiry"] or worker["work_permit_expiry"] < date_type.today():
+            raise HTTPException(
+                status_code=403,
+                detail="Work Permit หมดอายุแล้ว กรุณาอัปเดตเอกสารก่อนสมัครงาน",
+            )
 
     dist_row = await db.fetchrow(
         """

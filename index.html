@@ -150,67 +150,75 @@
 <!-- AUTH PAGE -->
 <div id="authPage" class="auth-wrap" style="display:none">
   <div class="auth-card">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px;gap:4px">
+      <button class="lang-btn btn btn-secondary btn-sm active" data-lang="th" onclick="setLang('th')" style="padding:3px 10px;font-size:12px">🇹🇭 TH</button>
+      <button class="lang-btn btn btn-secondary btn-sm" data-lang="my" onclick="setLang('my')" style="padding:3px 10px;font-size:12px">🇲🇲 MM</button>
+      <button class="lang-btn btn btn-secondary btn-sm" data-lang="en" onclick="setLang('en')" style="padding:3px 10px;font-size:12px">🇬🇧 EN</button>
+    </div>
     <div class="auth-logo">
       <div class="auth-logo-text">We're Hired</div>
       <div class="auth-logo-sub">แพลตฟอร์มจ้างงานรายวัน • BKK MVP</div>
     </div>
     <div class="auth-tabs">
-      <div class="auth-tab active" onclick="switchAuthTab('login')">เข้าสู่ระบบ</div>
-      <div class="auth-tab" onclick="switchAuthTab('register')">สมัครสมาชิก</div>
+      <div class="auth-tab active" onclick="switchAuthTab('login')" data-i18n="login_tab">เข้าสู่ระบบ</div>
+      <div class="auth-tab" onclick="switchAuthTab('register')" data-i18n="register_tab">สมัครสมาชิก</div>
     </div>
     <div id="alertAuth"></div>
     <div id="loginForm">
       <div class="form-group">
-        <label>อีเมล</label>
+        <label data-i18n="email_lbl">อีเมล</label>
         <input type="email" id="loginEmail" placeholder="email@example.com">
       </div>
       <div class="form-group">
-        <label>รหัสผ่าน</label>
+        <label data-i18n="password_lbl">รหัสผ่าน</label>
         <input type="password" id="loginPassword" placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
-      <button class="btn btn-primary btn-block" onclick="doLogin()" id="loginBtn">เข้าสู่ระบบ</button>
+      <button class="btn btn-primary btn-block" onclick="doLogin()" id="loginBtn" data-i18n="login_btn">เข้าสู่ระบบ</button>
       <div style="display:flex;align-items:center;gap:10px;margin:16px 0">
         <div style="flex:1;height:1px;background:var(--border)"></div>
-        <span style="font-size:12px;color:var(--muted)">หรือ</span>
+        <span style="font-size:12px;color:var(--muted)" data-i18n="or_divider">หรือ</span>
         <div style="flex:1;height:1px;background:var(--border)"></div>
       </div>
       <button class="btn btn-secondary btn-block" onclick="doGoogleLogin('worker')" style="gap:10px">
         <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-3.59-13.46-8.83l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-        เข้าสู่ระบบด้วย Google
+        <span data-i18n="google_login">เข้าสู่ระบบด้วย Google</span>
       </button>
     </div>
     <div id="registerForm" style="display:none">
       <div class="form-group">
-        <label>บทบาท</label>
+        <label data-i18n="role_lbl">บทบาท</label>
         <div class="role-select">
-          <div class="role-btn active" onclick="selectRole('worker',this)">👷 Worker</div>
-          <div class="role-btn" onclick="selectRole('employer',this)">🏭 Employer</div>
+          <div class="role-btn active" onclick="selectRole('worker',this)" data-i18n="role_worker">👷 Worker</div>
+          <div class="role-btn" onclick="selectRole('employer',this)" data-i18n="role_employer">🏭 Employer</div>
         </div>
         <input type="hidden" id="regRole" value="worker">
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>อีเมล</label>
+          <label data-i18n="email_lbl">อีเมล</label>
           <input type="email" id="regEmail" placeholder="email@example.com">
         </div>
         <div class="form-group">
-          <label>เบอร์โทร</label>
+          <label data-i18n="phone_lbl">เบอร์โทร</label>
           <input type="tel" id="regPhone" placeholder="0812345678">
         </div>
       </div>
       <div class="form-group">
-        <label>รหัสผ่าน</label>
+        <label data-i18n="password_lbl">รหัสผ่าน</label>
         <input type="password" id="regPassword" placeholder="อย่างน้อย 6 ตัวอักษร">
       </div>
-      <button class="btn btn-primary btn-block" onclick="doRegister()" style="margin-bottom:12px">สมัครสมาชิก</button>
+      <button class="btn btn-primary btn-block" onclick="doRegister()" style="margin-bottom:12px" data-i18n="register_btn">สมัครสมาชิก</button>
+      <div style="padding:10px 12px;background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.25);border-radius:8px;font-size:11px;color:var(--warn);margin-bottom:12px;line-height:1.5" data-i18n="wp_disclaimer">
+        Employer มีหน้าที่ตรวจสอบความถูกต้องของ Work Permit ด้วยตนเองก่อนจ้างงาน
+      </div>
       <div style="display:flex;align-items:center;gap:10px;margin:12px 0">
         <div style="flex:1;height:1px;background:var(--border)"></div>
-        <span style="font-size:12px;color:var(--muted)">หรือ</span>
+        <span style="font-size:12px;color:var(--muted)" data-i18n="or_divider">หรือ</span>
         <div style="flex:1;height:1px;background:var(--border)"></div>
       </div>
       <button class="btn btn-secondary btn-block" onclick="doGoogleLogin(document.getElementById('regRole').value)" style="gap:10px">
         <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-3.59-13.46-8.83l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-        สมัครด้วย Google
+        <span data-i18n="google_register">สมัครด้วย Google</span>
       </button>
     </div>
   </div>
@@ -272,6 +280,11 @@
       <div style="margin-top:8px;display:flex;gap:6px;">
         <button class="btn btn-secondary btn-sm" onclick="copyToken()" style="flex:1;font-size:11px">Copy Token</button>
         <button class="btn btn-danger btn-sm" onclick="doLogout()" style="flex:1;font-size:11px">ออก</button>
+      </div>
+      <div style="margin-top:6px;display:flex;gap:4px;justify-content:center">
+        <button class="lang-btn btn btn-secondary btn-sm" data-lang="th" onclick="setLang('th')" style="padding:3px 8px;font-size:11px">🇹🇭</button>
+        <button class="lang-btn btn btn-secondary btn-sm" data-lang="my" onclick="setLang('my')" style="padding:3px 8px;font-size:11px">🇲🇲</button>
+        <button class="lang-btn btn btn-secondary btn-sm" data-lang="en" onclick="setLang('en')" style="padding:3px 8px;font-size:11px">🇬🇧</button>
       </div>
     </div>
   </div>
@@ -515,6 +528,87 @@
 </div>
 
 <script>
+// ─── MULTILANG ─────────────────────────────────────────────
+const LANG = {
+  th: {
+    login_tab:'เข้าสู่ระบบ', register_tab:'สมัครสมาชิก',
+    email_lbl:'อีเมล', password_lbl:'รหัสผ่าน', phone_lbl:'เบอร์โทร',
+    role_lbl:'บทบาท', role_worker:'👷 Worker', role_employer:'🏭 Employer',
+    login_btn:'เข้าสู่ระบบ', register_btn:'สมัครสมาชิก',
+    google_login:'เข้าสู่ระบบด้วย Google', google_register:'สมัครด้วย Google',
+    or_divider:'หรือ',
+    nearby_title:'หางานใกล้บ้าน', nearby_sub:'ค้นหางานในรัศมีที่กำหนด',
+    search_place_lbl:'ค้นหาสถานที่', radius_lbl:'รัศมี (กม.)',
+    search_btn:'🔍 ค้นหา', apply_btn:'สมัครงานนี้', applied_ok:'✅ สมัครแล้ว',
+    checkin_btn:'มาถึงแล้ว 📍', complete_btn:'งานเสร็จแล้ว ✅',
+    nav_btn:'🗺️ นำทาง', contact_btn:'📞 ดูเบอร์',
+    wait_start:'⏳ รอ Employer ยืนยันเริ่มงาน',
+    wait_verify:'⏳ รอ Employer ยืนยันจบงาน',
+    job_success:'🎉 งานสำเร็จ! อย่าลืมรีวิว',
+    st_applied:'รอพิจารณา', st_shortlisted:'อยู่ในรายชื่อ', st_hired:'ได้รับการจ้าง',
+    st_rejected:'ไม่ผ่าน', st_withdrawn:'ถอน', st_checked_in:'เช็คอินแล้ว',
+    st_working:'กำลังทำงาน ▶️', st_completed:'งานเสร็จ ⏳',
+    st_verified:'ยืนยันแล้ว ✅', st_disputed:'อยู่ระหว่างตรวจสอบ ⚠️', st_noshow:'ไม่มาทำงาน ❌',
+    wp_disclaimer:'Employer มีหน้าที่ตรวจสอบความถูกต้องของ Work Permit ด้วยตนเองก่อนจ้างงาน',
+  },
+  my: {
+    login_tab:'ဝင်ရောက်ရန်', register_tab:'မှတ်ပုံတင်ရန်',
+    email_lbl:'အီးမေးလ်', password_lbl:'စကားဝှက်', phone_lbl:'ဖုန်းနံပါတ်',
+    role_lbl:'အခန်းကဏ္ဍ', role_worker:'👷 အလုပ်သမား', role_employer:'🏭 အလုပ်ရှင်',
+    login_btn:'ဝင်ရောက်ရန်', register_btn:'မှတ်ပုံတင်ရန်',
+    google_login:'Google ဖြင့်ဝင်ရောက်ရန်', google_register:'Google ဖြင့်မှတ်ပုံတင်ရန်',
+    or_divider:'သို့မဟုတ်',
+    nearby_title:'အနီးနားရှိ အလုပ်ရှာပါ', nearby_sub:'သတ်မှတ်ရာဒီယပ်အတွင်း ရှာဖွေပါ',
+    search_place_lbl:'တည်နေရာရှာပါ', radius_lbl:'ရာဒီယပ် (ကီလိုမီတာ)',
+    search_btn:'🔍 ရှာဖွေပါ', apply_btn:'ဤအလုပ်လျှောက်ပါ', applied_ok:'✅ လျှောက်ပြီး',
+    checkin_btn:'ရောက်ရှိပြီ 📍', complete_btn:'အလုပ်ပြီးပြီ ✅',
+    nav_btn:'🗺️ လမ်းညွှန်', contact_btn:'📞 ဖုန်းကြည့်ပါ',
+    wait_start:'⏳ အလုပ်ရှင်၏ အစပြုခြင်းကို စောင့်ဆိုင်းပါ',
+    wait_verify:'⏳ အလုပ်ရှင်၏ အတည်ပြုချက်ကို စောင့်ဆိုင်းပါ',
+    job_success:'🎉 အလုပ်အောင်မြင်ပြီ! သုံးသပ်ချက်ပေးရန် မမေ့ပါနှင့်',
+    st_applied:'ဆုံးဖြတ်ချက်ကိုစောင့်ဆိုင်းပါ', st_shortlisted:'စာရင်းတွင်ပါဝင်သည်', st_hired:'ငှားရမ်းခံရပြီ',
+    st_rejected:'ငြင်းဆန်ခဲ့သည်', st_withdrawn:'ဆုတ်ခွာပြီ', st_checked_in:'ဝင်ရောက်မှတ်ပုံတင်ပြီ',
+    st_working:'အလုပ်လုပ်နေဆဲ ▶️', st_completed:'အလုပ်ပြီး ⏳',
+    st_verified:'အတည်ပြုပြီ ✅', st_disputed:'စစ်ဆေးနေဆဲ ⚠️', st_noshow:'မလာနိုင်ဘူး ❌',
+    wp_disclaimer:'အလုပ်ရှင်သည် ငှားရမ်းမတိုင်မီ Work Permit မှန်ကန်မှုကို ကိုယ်တိုင်စစ်ဆေးရမည်',
+  },
+  en: {
+    login_tab:'Login', register_tab:'Register',
+    email_lbl:'Email', password_lbl:'Password', phone_lbl:'Phone',
+    role_lbl:'Role', role_worker:'👷 Worker', role_employer:'🏭 Employer',
+    login_btn:'Login', register_btn:'Register',
+    google_login:'Login with Google', google_register:'Register with Google',
+    or_divider:'or',
+    nearby_title:'Find Nearby Jobs', nearby_sub:'Search within a set radius',
+    search_place_lbl:'Search location', radius_lbl:'Radius (km)',
+    search_btn:'🔍 Search', apply_btn:'Apply Now', applied_ok:'✅ Applied',
+    checkin_btn:'Arrived 📍', complete_btn:'Job Done ✅',
+    nav_btn:'🗺️ Navigate', contact_btn:'📞 Contact',
+    wait_start:'⏳ Waiting for employer to start',
+    wait_verify:'⏳ Waiting for employer to verify',
+    job_success:'🎉 Job complete! Don\'t forget to review',
+    st_applied:'Pending', st_shortlisted:'Shortlisted', st_hired:'Hired',
+    st_rejected:'Rejected', st_withdrawn:'Withdrawn', st_checked_in:'Checked In',
+    st_working:'Working ▶️', st_completed:'Completed ⏳',
+    st_verified:'Verified ✅', st_disputed:'In Review ⚠️', st_noshow:'No Show ❌',
+    wp_disclaimer:'Employer is responsible for verifying Work Permit validity before hiring',
+  },
+};
+let _lang = localStorage.getItem('wh_lang') || 'th';
+function t(key) { return (LANG[_lang] || LANG.th)[key] || key; }
+function setLang(lang) {
+  _lang = lang;
+  localStorage.setItem('wh_lang', lang);
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (el.tagName === 'INPUT' && el.placeholder !== undefined) el.placeholder = t(k);
+    else el.textContent = t(k);
+  });
+  document.querySelectorAll('.lang-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.lang === lang));
+}
+
+// ─── CONSTANTS ─────────────────────────────────────────────
 const API = 'https://web-production-03c5a.up.railway.app';
 let token = localStorage.getItem('wh_token') || '';
 let userRole = localStorage.getItem('wh_role') || '';
@@ -731,6 +825,7 @@ function initApp() {
   loadDashboard();
   initCategoryDropdowns();
   startNotifPolling();
+  setLang(_lang);
 }
 
 // ─── NAV ───────────────────────────────────────────────────
@@ -809,7 +904,22 @@ async function loadWorkerProfile() {
   el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
   try {
     const p = await api('GET', '/workers/profile/me');
-    const bgColor = { pending:'badge-warn', verified:'badge-green', failed:'badge-danger', expired:'badge-gray' };
+    const bgColor = { pending:'badge-warn', approved:'badge-green', failed:'badge-danger', expired:'badge-gray' };
+    const wpExpiry = p.work_permit_expiry ? new Date(p.work_permit_expiry) : null;
+    const _wpToday = new Date(); _wpToday.setHours(0,0,0,0);
+    const wpDaysLeft = wpExpiry ? Math.floor((wpExpiry - _wpToday) / 86400000) : null;
+    const wpSection = p.nationality_type === 'foreign' ? `
+      <div style="margin-top:16px;padding:10px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-family:'IBM Plex Mono',monospace">WORK PERMIT</div>
+        ${p.background_check_status === 'approved'
+          ? '<span class="badge badge-green">✅ Work Permit Verified</span>'
+          : (p.work_permit_url ? '<span class="badge badge-warn">⏳ รอ Admin ตรวจสอบ</span>' : '<span class="badge badge-danger">⚠️ ยังไม่ได้ upload</span>')}
+        ${p.work_permit_url ? `<a href="${p.work_permit_url}" target="_blank" style="font-size:12px;color:var(--accent2);margin-left:8px">📄 ดูเอกสาร</a>` : ''}
+        ${wpDaysLeft !== null && wpDaysLeft >= 0 && wpDaysLeft < 30
+          ? `<div style="margin-top:6px;font-size:12px;color:var(--warn)">⚠️ Work permit จะหมดอายุใน ${wpDaysLeft} วัน</div>` : ''}
+        ${wpDaysLeft !== null && wpDaysLeft < 0
+          ? '<div style="margin-top:6px;font-size:12px;color:var(--danger)">❌ Work permit หมดอายุแล้ว กรุณาอัปเดตเอกสาร</div>' : ''}
+      </div>` : '';
     el.innerHTML = `
       <div class="card">
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
@@ -833,6 +943,7 @@ async function loadWorkerProfile() {
         </div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px">ทักษะ</div>
         <div class="tags">${p.skills.length ? p.skills.map(s=>`<span class="tag tag-match">${s}</span>`).join('') : '<span style="font-size:13px;color:var(--muted)">ยังไม่มีทักษะ</span>'}</div>
+        ${wpSection}
         <div class="divider"></div>
         <button class="btn btn-secondary btn-sm" onclick="showEditProfile()">✏️ แก้ไขโปรไฟล์</button>
       </div>
@@ -859,6 +970,13 @@ async function loadWorkerProfile() {
             <div class="form-group"><label>ค่าแรงที่คาด (฿/วัน)</label><input type="number" id="editRate" value="${p.daily_rate_expected||''}"></div>
           </div>
           <div class="form-group"><label>ชื่อสถานที่</label><input type="text" id="editLocation" value="${p.location_name||''}"></div>
+          <div class="form-group">
+            <label>สัญชาติ</label>
+            <select id="editNationality">
+              <option value="thai" ${p.nationality_type !== 'foreign' ? 'selected' : ''}>🇹🇭 ไทย</option>
+              <option value="foreign" ${p.nationality_type === 'foreign' ? 'selected' : ''}>🌏 ต่างด้าว</option>
+            </select>
+          </div>
           <div id="alertEditProfile"></div>
           <button class="btn btn-primary" onclick="doUpdateProfile()">บันทึก</button>
           <button class="btn btn-secondary" onclick="document.getElementById('editProfileForm').style.display='none'" style="margin-left:8px">ยกเลิก</button>
@@ -950,6 +1068,7 @@ async function doUpdateProfile() {
       experience_years:    parseInt(document.getElementById('editExp').value),
       daily_rate_expected: parseFloat(document.getElementById('editRate').value) || undefined,
       location_name:       document.getElementById('editLocation').value.trim() || undefined,
+      nationality_type:    document.getElementById('editNationality')?.value || undefined,
     });
     showAlert('alertEditProfile','✅ อัปเดตสำเร็จ!','success');
     setTimeout(() => loadWorkerProfile(), 1000);
@@ -1001,7 +1120,7 @@ async function searchNearby() {
             <span class="match-score">${j.match_score}/100</span>
           </div>
           <div style="margin-top:12px">
-            <button class="btn btn-primary btn-sm" onclick="applyJob('${j.job_id}',${lat},${lng},this)">สมัครงานนี้</button>
+            <button class="btn btn-primary btn-sm" onclick="applyJob('${j.job_id}',${lat},${lng},this)">${t('apply_btn')}</button>
           </div>
         </div>`).join('');
   } catch(e) {
@@ -1014,7 +1133,7 @@ async function applyJob(jobId, lat, lng, btn) {
   btn.innerHTML = '<span class="loading"></span>';
   try {
     const data = await api('POST', `/jobs/${jobId}/apply`, { lat, lng });
-    btn.innerHTML = `✅ สมัครแล้ว (${data.match_score}/100)`;
+    btn.innerHTML = `${t('applied_ok')} (${data.match_score}/100)`;
     btn.style.background = 'rgba(0,229,160,.15)';
     btn.style.color = 'var(--accent)';
     btn.style.border = '1px solid rgba(0,229,160,.3)';
@@ -1038,14 +1157,13 @@ async function loadMyApps() {
     const sColor = {
       applied:'badge-blue', shortlisted:'badge-warn', hired:'badge-green',
       rejected:'badge-danger', withdrawn:'badge-gray',
-      checked_in:'badge-blue', working:'badge-warn', completed:'badge-blue', verified:'badge-green', disputed:'badge-danger'
+      checked_in:'badge-blue', working:'badge-warn', completed:'badge-blue',
+      verified:'badge-green', disputed:'badge-danger', no_show:'badge-danger'
     };
-    const sTH = {
-      applied:'รอพิจารณา', shortlisted:'อยู่ในรายชื่อ', hired:'ได้รับการจ้าง',
-      rejected:'ไม่ผ่าน', withdrawn:'ถอน',
-      checked_in:'เช็คอินแล้ว', working:'กำลังทำงาน ▶️', completed:'งานเสร็จ ⏳', verified:'ยืนยันแล้ว ✅',
-      disputed:'อยู่ระหว่างตรวจสอบ ⚠️'
-    };
+    const stKey = { applied:'st_applied', shortlisted:'st_shortlisted', hired:'st_hired',
+      rejected:'st_rejected', withdrawn:'st_withdrawn', checked_in:'st_checked_in',
+      working:'st_working', completed:'st_completed', verified:'st_verified',
+      disputed:'st_disputed', no_show:'st_noshow' };
     const ACTIVE = ['hired','checked_in','working','completed','verified'];
     el.innerHTML = data.map(a => `
       <div class="card" id="appcard-${a.id}">
@@ -1058,7 +1176,7 @@ async function loadMyApps() {
               ${a.job.ot_rate ? `• 💰 OT ${a.job.ot_rate}฿/ชม.` : ''}
             </div>
           </div>
-          <span class="badge ${sColor[a.status]||'badge-gray'}">${sTH[a.status]||a.status}</span>
+          <span class="badge ${sColor[a.status]||'badge-gray'}">${t(stKey[a.status])||a.status}</span>
         </div>
         <div style="display:flex;gap:16px;font-size:12px;color:var(--muted)">
           <span>Match: <strong style="color:var(--accent)">${a.match_score}/100</strong></span>
@@ -1068,13 +1186,13 @@ async function loadMyApps() {
         ${a.employer_note ? `<div style="margin-top:10px;font-size:13px;color:var(--muted);font-style:italic">"${a.employer_note}"</div>` : ''}
         ${ACTIVE.includes(a.status) && a.maps_link ? `
           <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <a href="${a.maps_link}" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">🗺️ นำทาง</a>
-            <button class="btn btn-secondary btn-sm" onclick="showContact('${a.id}',this)">📞 ดูเบอร์</button>
-            ${a.status === 'hired' ? `<button class="btn btn-primary btn-sm" onclick="doCheckin('${a.id}',this)">มาถึงแล้ว 📍</button>` : ''}
-            ${a.status === 'working' ? `<button class="btn btn-primary btn-sm" onclick="doComplete('${a.id}',this)">งานเสร็จแล้ว ✅</button>` : ''}
-            ${a.status === 'checked_in' ? `<span style="font-size:12px;color:var(--muted)">⏳ รอ Employer ยืนยันเริ่มงาน</span>` : ''}
-            ${a.status === 'completed' ? `<span style="font-size:12px;color:var(--muted)">⏳ รอ Employer ยืนยันจบงาน</span>` : ''}
-            ${a.status === 'verified' ? `<span style="font-size:12px;color:var(--accent)">🎉 งานสำเร็จ! อย่าลืมรีวิว</span>` : ''}
+            <a href="${a.maps_link}" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">${t('nav_btn')}</a>
+            <button class="btn btn-secondary btn-sm" onclick="showContact('${a.id}',this)">${t('contact_btn')}</button>
+            ${a.status === 'hired' ? `<button class="btn btn-primary btn-sm" onclick="doCheckin('${a.id}',this)">${t('checkin_btn')}</button>` : ''}
+            ${a.status === 'working' ? `<button class="btn btn-primary btn-sm" onclick="doComplete('${a.id}',this)">${t('complete_btn')}</button>` : ''}
+            ${a.status === 'checked_in' ? `<span style="font-size:12px;color:var(--muted)">${t('wait_start')}</span>` : ''}
+            ${a.status === 'completed' ? `<span style="font-size:12px;color:var(--muted)">${t('wait_verify')}</span>` : ''}
+            ${a.status === 'verified' ? `<span style="font-size:12px;color:var(--accent)">${t('job_success')}</span>` : ''}
           </div>
           <div id="contact-${a.id}" style="display:none;margin-top:10px"></div>` : ''}
         ${a.status === 'disputed' ? `
