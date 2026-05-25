@@ -254,6 +254,50 @@ Cron 18:00 ทุกวัน / 11:00 UTC (send_d1_reminders):
   → push notification ไปทุก hired worker ที่มีงานพรุ่งนี้
 ```
 
+### · 🛂 Work Permit Enforcement — แรงงานต่างด้าวต้องมีเอกสารก่อนสมัคร
+
+**Backend (main.py):**
+```python
+# POST /jobs/{id}/apply — ตรวจก่อน insert application
+if worker["nationality_type"] == "foreign":
+    if not worker["work_permit_url"]:
+        raise HTTPException(403, "กรุณา upload Work Permit ก่อนสมัครงาน")
+    if worker["work_permit_expiry"] < date.today():
+        raise HTTPException(403, "Work Permit หมดอายุแล้ว กรุณาอัปเดตเอกสาร")
+```
+
+- `GET /workers/profile/me` คืน `nationality_type`, `work_permit_url`, `work_permit_expiry` ด้วย
+- `PATCH /workers/profile` รับ `nationality_type` (thai / foreign)
+
+**Frontend (index.html):**
+- Work Permit card ใน worker profile — เห็นเฉพาะ foreign workers
+  - Badge: ✅ Verified / ⏳ รอ Admin / ⚠️ ยังไม่ได้ upload
+  - Link ดูเอกสาร (เปิด Supabase Storage URL)
+  - คำเตือนสีส้ม ถ้าเหลือ < 30 วัน
+  - Error สีแดง ถ้าหมดอายุแล้ว
+- Nationality selector (ไทย / ต่างด้าว) ใน edit profile form
+- Terms disclaimer ใน register page
+
+### · 🌐 Multi-language UI — รองรับแรงงาน 3 ภาษา
+
+Worker-facing UI รองรับ **🇹🇭 ไทย / 🇲🇲 မြန်မာ / 🇬🇧 English** — switch ได้ทันทีโดยไม่ต้อง reload
+
+**สถาปัตยกรรม:**
+```javascript
+const LANG = { th: {...}, my: {...}, en: {...} }; // 30+ keys ต่อภาษา
+let _lang = localStorage.getItem('wh_lang') || 'th';
+function t(key) { return (LANG[_lang] || LANG.th)[key] || key; }
+function setLang(lang) { ... } // update data-i18n elements + active class
+```
+
+**ครอบคลุมทุก touch point:**
+- Login / Register page — tabs, labels, buttons, role selector
+- หน้าหางานใกล้บ้าน — ปุ่มค้นหา, ปุ่มสมัคร
+- ประวัติใบสมัคร — status badges ทุกสถานะ, ปุ่ม checkin/complete/nav/contact, wait messages
+- Lang toggle บน auth page (TH/MM/EN flag buttons)
+- Lang toggle compact ใน sidebar (เห็นตอน login แล้ว)
+- Persistence ใน `localStorage` key `wh_lang`
+
 ---
 
 ## Stats
@@ -261,11 +305,12 @@ Cron 18:00 ทุกวัน / 11:00 UTC (send_d1_reminders):
 | | จำนวน |
 |--|--|
 | วันที่ใช้สร้าง | **4 วัน** |
-| Commits | **55+** |
+| Commits | **60+** |
 | Endpoints | **47+** |
 | Database migrations | **12 ไฟล์** |
 | Bugs ที่เจอและแก้ | **8 critical** |
-| Lines of code (approx) | **~6,500+** |
+| Lines of code (approx) | **~7,000+** |
+| ภาษา UI รองรับ | **3 (TH/MM/EN)** |
 
 ---
 

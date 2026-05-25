@@ -24,10 +24,11 @@
 - [x] Google OAuth Consent Screen → Published
 
 ### 👷 Worker
-- [x] GET/POST/PATCH /workers/profile/me
+- [x] GET/POST/PATCH /workers/profile/me (รองรับ nationality_type, work_permit_url, work_permit_expiry)
 - [x] GET /workers/applications (พร้อม maps_link + contact เมื่อ hired)
 - [x] ปุ่ม 🗺️ นำทางไปที่ทำงาน (เฉพาะ hired)
 - [x] ปุ่ม 📞 ดูเบอร์ + email employer (เฉพาะ hired)
+- [x] **Work Permit Enforcement** — POST /jobs/{id}/apply block ถ้า foreign worker ไม่มี work_permit หรือหมดอายุ (403)
 
 ### 🏭 Employer
 - [x] GET/POST/PATCH /employers/profile/me
@@ -95,6 +96,13 @@
   - review_pending → หน้ารีวิว
 - [x] Auto-mark as read เมื่อกดการ์ดนำทาง
 
+### 🌐 Frontend UX
+- [x] **Multi-language UI (TH/MM/EN)** — lang toggle บน auth page + sidebar
+- [x] ทุก worker-facing string ใช้ `t()` — login/register, หางานใกล้บ้าน, status badges, action buttons
+- [x] Language preference เก็บใน localStorage (`wh_lang`)
+- [x] **Work Permit section** บน worker profile — badge, link เอกสาร, คำเตือนใกล้หมดอายุ (< 30 วัน), error ถ้าหมดแล้ว
+- [x] Nationality selector ใน edit profile form — ไทย / ต่างด้าว
+
 ### 🗄️ Database Migrations (run ครบแล้วทุกอัน)
 | ไฟล์ | สถานะ |
 |------|--------|
@@ -130,6 +138,11 @@
 - [ ] Admin approve/reject KYC — manual via Supabase dashboard
 - [ ] Badge **✓ KYC Verified** บน worker profile card
 - [x] Migration: 010_kyc.sql ✅ run แล้ว
+- [x] Work Permit enforcement — block apply ถ้า foreign worker ไม่มีหรือหมดอายุ ✅
+- [x] Work Permit section ใน worker profile card + expiry warning ✅
+- [ ] Worker upload บัตรประชาชน / Passport / Work Permit ไปยัง Supabase Storage (endpoint)
+- [ ] Admin approve/reject KYC — endpoints + UI
+- [ ] Badge **✓ KYC Verified** บน worker profile card (แสดงหลัง admin approve)
 - [ ] Employer verification flow
 
 ### Phase 3 — Wallet & Escrow 💰 + Mobile App 📱
@@ -202,3 +215,5 @@
 | **Auto-verify** | ≥ 90% ชั่วโมง + ไม่มีการกระทำใน 2 ชม. → system verify อัตโนมัติ |
 | **Anti-Ghosting** | no-show ที่ +60 นาที → slot freed + แจ้ง employer → เปิด backup workers |
 | **D-1 Reminder** | 18:00 ทุกวัน → push แจ้งเตือน hired worker ที่มีงานพรุ่งนี้ |
+| **Work Permit Lock** | foreign worker สมัครงานไม่ได้ถ้าไม่มี work_permit หรือหมดอายุแล้ว |
+| **Multi-language** | worker UI รองรับ 🇹🇭 TH / 🇲🇲 MM / 🇬🇧 EN — toggle ได้ทันที |
