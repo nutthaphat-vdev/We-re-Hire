@@ -358,7 +358,6 @@ app = FastAPI(
 origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
 if settings.frontend_url:
     origins.append(settings.frontend_url.strip())
-origins.append("https://wearehiredmvp.vi-nutthaphat.workers.dev")
 
 app.add_middleware(
     CORSMiddleware,
@@ -426,7 +425,7 @@ async def google_login_url(role: str = "worker"):
     url = (
         f"{settings.supabase_url}/auth/v1/authorize"
         f"?provider=google"
-        f"&redirect_to={settings.frontend_url or 'http://127.0.0.1:5500'}/index.html%3Frole%3D{role}"
+        f"&redirect_to={settings.frontend_url}/index.html%3Frole%3D{role}"
     )
     return {"url": url}
 
