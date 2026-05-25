@@ -358,6 +358,7 @@ app = FastAPI(
 origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
 if settings.frontend_url:
     origins.append(settings.frontend_url.strip())
+origins.append("https://wearehiredmvp.vi-nutthaphat.workers.dev")
 
 app.add_middleware(
     CORSMiddleware,
