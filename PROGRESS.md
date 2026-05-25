@@ -114,8 +114,8 @@
 
 ## 🔧 ต้องทำต่อ (งาน Manual)
 
-- [ ] **GitHub Secrets** — เพิ่ม `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` ใน repo settings
-- [ ] **GitHub PAT** — เพิ่ม scope `workflow` แล้ว push อีกครั้ง (CI pipeline จะ active)
+- [x] **GitHub Secrets** — `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` ✅ 2026-05-24
+- [x] **GitHub PAT** — scope `workflow` เพิ่มแล้ว, CI pipeline active ✅ 2026-05-24
 - [ ] **Review summary** — ดาวเฉลี่ย + top tags แสดงบน profile card
 - [ ] **Contact button reload** — ปุ่ม 📞 โผล่ทันทีหลังกด hired โดยไม่ต้อง refresh
 
@@ -132,7 +132,7 @@
 - [x] Migration: 010_kyc.sql ✅ run แล้ว
 - [ ] Employer verification flow
 
-### Phase 3 — Wallet & Escrow 💰
+### Phase 3 — Wallet & Escrow 💰 + Mobile App 📱
 > นี่คือ moat หลักของ We're Hired — ถ้าเงินอยู่ในแอพ ไม่มีใครอยากโทรตรง
 - [ ] Wallet schema (wallets, escrow_locks, wallet_transactions)
 - [ ] Employer deposit → lock เมื่อ hired
@@ -141,6 +141,7 @@
 - [ ] Worker withdrawal request
 - [ ] PromptPay / Omise / 2C2P integration
 - [ ] Dispute button ฝั่ง Employer + POST /applications/{id}/dispute
+- [ ] **Mobile App (React Native)** — พัฒนาคู่กับ Phase 3
 
 ### Phase 3.5 — NDID Integration 🪪
 > ยืนยันตัวตนระดับรัฐ ผ่านแอพธนาคาร — ดึงประวัติจริงจากราชการ
@@ -171,7 +172,6 @@
 - [ ] Worker availability calendar
 - [ ] Multi-zone posting
 - [ ] Referral system
-- [ ] Mobile App (React Native)
 - [ ] ขยายนอก BKK
 
 ---
