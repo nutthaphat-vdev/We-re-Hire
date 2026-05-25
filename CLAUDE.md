@@ -353,17 +353,17 @@ NIXPACKS_INSTALL_CMD= pip install -r requirements.txt
 - [x] Run migration 009_disputed_status.sql ✅ 2026-05-23
 - [x] Google OAuth Consent Screen → Published ✅ 2026-05-23
 - [x] Restrict Google Maps API Key ให้ใช้แค่ domain We're Hired ✅ 2026-05-23
-- [ ] หน้า Notifications UI
+- [x] หน้า Notifications UI ✅ 2026-05-24
 - [x] Upload index.html → Cloudflare Workers ✅ 2026-05-23
 - [x] ตั้ง wrangler CLI สำหรับ Cloudflare auto-deploy ✅ 2026-05-24
 
-### Phase 3 — Wallet & Payment
+### Phase 3 — Wallet & Payment + Mobile App
 - [ ] Escrow system
 - [ ] PromptPay integration
 - [ ] Worker withdrawal
+- [ ] React Native Mobile App (Expo) — พัฒนาคู่กัน
 
 ### Phase 5 — Growth
-- [ ] Mobile App (React Native)
 - [ ] ขยายนอก BKK
 
 ---
@@ -378,6 +378,292 @@ NIXPACKS_INSTALL_CMD= pip install -r requirements.txt
 
 **Wallet Escrow (Phase 3)** — เงินอยู่ในแอพ → ไม่มีใครอยากออกนอกระบบ
 → นี่คือ moat ที่แท้จริงของ WeHire
+
+---
+
+## 👻 Active Anti-Ghosting System (Phase 2 — ✅ Live)
+
+> ป้องกัน worker hired แล้วหายตัวไป — auto-detect + backup workflow
+
+**Migration: 012_anti_ghosting.sql ✅ run แล้ว**
+
+```sql
+ALTER TABLE job_applications
+  ADD COLUMN IF NOT EXISTS noshow_marked_at    TIMESTAMPTZ,  -- เมื่อถูก mark no-show
+  ADD COLUMN IF NOT EXISTS noshow_alerted_at   TIMESTAMPTZ,  -- cron alert ครั้งแรก (กัน spam)
+  ADD COLUMN IF NOT EXISTS backup_priority     INTEGER,      -- 1,2,3 = ลำดับ backup
+  ADD COLUMN IF NOT EXISTS backup_offered_at   TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS backup_accepted_at  TIMESTAMPTZ;
+-- status เพิ่ม: 'no_show' (ใน CHECK constraint)
+```
+
+**Endpoints:**
+| Endpoint | ใคร | Logic |
+|----------|-----|-------|
+| `GET /jobs/{id}/backup-workers` | Employer | top 10 applied/shortlisted ranked by match_score |
+| `POST /applications/{id}/send-backup` | Employer | mark backup_priority + แจ้ง worker ด่วน |
+| `POST /applications/{id}/accept-backup` | Worker | → `hired` + slot filled + Google Maps link |
+| `PATCH /applications/{id}/mark-noshow` | Employer | → `no_show` + slot freed + แจ้ง worker |
+
+**Cron Jobs (APScheduler):**
+```
+check_noshow_workers — ทุก 5 นาที:
+  +30 นาที หลัง work_start → alert employer (noshow_alerted_at IS NULL)
+  +60 นาที หลัง work_start → auto no_show + free slot + notify ทั้งคู่
+
+send_d1_reminders — 11:00 UTC = 18:00 Bangkok ทุกวัน:
+  หา status='hired' + start_date = พรุ่งนี้ → push แจ้ง worker ทุกคน
+```
+
+**No-Show Flow:**
+```
+Worker hired แต่ไม่เช็คอิน
+→ +30 min: alert employer "Worker ยังไม่เช็คอิน"
+→ +60 min: auto no_show → slot_filled - 1 → employer เห็น backup list
+→ Employer กด send-backup ไป top candidate
+→ Worker รับ backup offer → hired ทันที (มี Maps link)
+```
+
+---
+
+## 🧮 Behavioral Score System (Design — Phase 2.5)
+
+> วัดความน่าเชื่อถือของ worker จากพฤติกรรมจริง ไม่ใช่แค่ review
+
+**Score Components (เก็บไว้ใน `worker_profiles`):**
+```sql
+ALTER TABLE worker_profiles
+  ADD COLUMN IF NOT EXISTS reliability_score   DECIMAL(4,2),  -- 0.00–10.00 (computed)
+  ADD COLUMN IF NOT EXISTS jobs_completed      INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS jobs_noshow         INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS jobs_hired          INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS score_updated_at    TIMESTAMPTZ;
+```
+
+**สูตรคำนวณ:**
+```
+completion_rate = jobs_completed / MAX(jobs_hired, 1)        -- 0.0–1.0
+noshow_rate     = jobs_noshow    / MAX(jobs_hired, 1)        -- 0.0–1.0
+review_avg      = (ค่าเฉลี่ยดาวจาก worker_review_summary) / 5.0
+
+reliability_score =
+  (completion_rate × 5.0) +
+  ((1 - noshow_rate) × 3.0) +
+  (review_avg × 2.0)
+  → MAX: 10.00 | MIN: 0.00
+```
+
+**เมื่อใดให้ update score:**
+- เมื่อ status → `verified` → jobs_completed + 1
+- เมื่อ status → `no_show`  → jobs_noshow + 1
+- เมื่อ `decided_at` SET (hired) → jobs_hired + 1
+- หลัง submit review → recompute review_avg
+
+**Badge ตาม score:**
+| Score | Badge |
+|-------|-------|
+| ≥ 9.0 | 🌟 Top Worker |
+| ≥ 7.0 | ✅ Reliable |
+| ≥ 5.0 | — (ไม่มี badge) |
+| < 5.0 | ⚠️ (แสดงเฉพาะ admin) |
+
+**Migration ที่ต้องสร้าง: `013_behavioral_score.sql`**
+
+---
+
+## 🪪 KYC Foreign Worker — Detail Spec
+
+> รองรับแรงงานต่างด้าว (Myanmar, Lao, Cambodian) ซึ่งต้องใช้เอกสารต่างจากคนไทย
+
+**nationality_type routing:**
+```
+'thai'   → id_card_front_url + id_card_back_url + selfie_url
+'foreign' → passport_url + work_permit_url + work_permit_expiry + selfie_url
+```
+
+**Work Permit Expiry Alert:**
+- Cron (รายวัน) เช็ค `work_permit_expiry - NOW() < 30 วัน`
+- แจ้ง worker: "Work Permit ของคุณใกล้หมดอายุ กรุณาอัปเดตเอกสาร"
+- ถ้า expired → `background_check_status` → `rejected` อัตโนมัติ
+- Migration: เพิ่มใน `send_d1_reminders` หรือ cron ใหม่แยก
+
+**Flow หลัง Upload:**
+```
+Worker upload เอกสาร → background_check_status: none → pending
+Admin เปิดดูใน Supabase Storage → กด Approve/Reject
+  Approve → background_check_status: approved + kyc_reviewed_at + kyc_reviewed_by
+  Reject  → background_check_status: rejected + kyc_note (เหตุผล)
+→ Notify worker ทันที
+```
+
+**Storage Path แนะนำ (Supabase Storage):**
+```
+kyc/{user_id}/profile_photo.jpg
+kyc/{user_id}/id_card_front.jpg   (Thai)
+kyc/{user_id}/id_card_back.jpg    (Thai)
+kyc/{user_id}/passport.jpg        (Foreign)
+kyc/{user_id}/work_permit.jpg     (Foreign)
+kyc/{user_id}/selfie.jpg
+```
+
+---
+
+## 💰 Pro-rata Settlement v2 (Phase 3 — Escrow)
+
+> สูตรสุดท้ายที่ balance เสมอ — ไม่มีเงินรั่วไหล
+
+**สูตรคำนวณ:**
+```
+total_locked         = 600 บาท
+actual_work_ratio    = 0.70
+
+worker_gross         = total_locked × ratio            = 420
+platform_penalty_fee = worker_gross × 10%              = 42   ← penalty ทำงานไม่ครบ
+worker_payout_net    = worker_gross - platform_penalty  = 378
+employer_refund_net  = total_locked × (1 - ratio)      = 180
+
+✅ Balance: 378 + 180 + 42 = 600
+```
+
+**Fields ที่ต้องเพิ่มใน `escrow_locks`:**
+```sql
+ALTER TABLE escrow_locks
+  ADD COLUMN IF NOT EXISTS actual_work_ratio    DECIMAL(5,4),  -- 0.7000
+  ADD COLUMN IF NOT EXISTS worker_payout_net    DECIMAL(10,2), -- 378
+  ADD COLUMN IF NOT EXISTS employer_refund_net  DECIMAL(10,2), -- 180
+  ADD COLUMN IF NOT EXISTS platform_penalty_fee DECIMAL(10,2); -- 42
+```
+
+**Edge cases สำคัญ:**
+- `ratio = 1.0` → Worker ได้เต็ม, platform_fee = 0, employer คืน 0
+- `ratio = 0.0` → Worker ได้ 0, employer คืนเต็ม, platform_fee = 0
+- Worker ออกเพราะ employer (สั่งหยุด/อันตราย) → admin set `ratio = 1.0`
+- `ratio > 1.0` → reject ทันที (validation)
+- Double settlement → เช็ค `status = 'disputed'` ก่อนทุกครั้ง
+- Balance check: ต้อง pass `worker_payout_net + employer_refund_net + platform_penalty_fee = total_locked` ก่อน execute transaction
+
+**Admin Settlement Flow (atomic):**
+```
+Admin กรอก actual_work_ratio → validate → คำนวณ 3 amounts
+→ atomic transaction:
+  1. Worker wallet available  += worker_payout_net
+  2. Employer wallet available += employer_refund_net
+  3. Platform wallet           += platform_penalty_fee
+→ escrow status = 'settled_by_admin'
+→ log: admin_id, timestamp, ratio, amounts
+→ notify worker + employer พร้อมรายละเอียดตัวเลข
+```
+
+---
+
+## 🗂️ Job Categories Expansion (Phase 2 — ✅ Live)
+
+> Migration 011_job_categories_expanded.sql — 8 categories, 32+ titles
+
+**`is_special` column:**
+```sql
+ALTER TABLE job_categories
+  ADD COLUMN IF NOT EXISTS is_special BOOLEAN NOT NULL DEFAULT FALSE;
+```
+- `is_special = TRUE` → ต้องการ NDID verification (Phase 3.5)
+- ปัจจุบันมีเฉพาะ `caregiver` category
+
+**Categories ทั้งหมด (8 หมวด):**
+| code | ชื่อ | Icon | is_special |
+|------|------|------|------------|
+| warehouse | โกดังและโลจิสติกส์ | 📦 | FALSE |
+| fnb | อาหารและเครื่องดื่ม | 🍜 | FALSE |
+| maintenance | ช่างและซ่อมบำรุง | 🔧 | FALSE |
+| cleaning | ทำความสะอาด | 🧹 | FALSE |
+| factory | โรงงานและการผลิต | 🏭 | FALSE |
+| event | งาน Event และ Seasonal | 🎪 | FALSE |
+| interpreter | ล่ามภาษา | 🗣️ | FALSE |
+| caregiver | งานดูแลบุคคล | ⚠️ | **TRUE** |
+
+**Titles ที่เพิ่ม (24 titles ใหม่):** welder, machinist, machine_repair, qc_inspector, line_supervisor, packer_factory, delivery_driver, receiving_clerk, cashier, store_crew, general_repair, tile_worker, event_staff, pretty_mc, fair_sales, data_entry_temp, event_photo, interp_th_my, interp_th_la, interp_th_kh, interp_th_en, elderly_care, temp_nanny, patient_assist
+
+---
+
+## 🛡️ Admin Team Plan
+
+> ปัจจุบัน: single admin via `X-Admin-Secret` header — เพียงพอสำหรับ MVP
+> Phase 3+: multi-admin roles
+
+**Admin Capabilities ปัจจุบัน:**
+```python
+# ทุก admin endpoint ต้องส่ง header:
+# X-Admin-Secret: {settings.admin_secret}
+
+POST   /admin/workers/{id}/verify      # approve/reject KYC
+POST   /admin/employers/{id}/verify    # approve employer
+GET    /debug/trigger-cron             # manual trigger auto-verify
+```
+
+**Admin Capabilities ที่ต้องเพิ่ม (Phase 3):**
+```
+GET  /admin/kyc/pending          # ดูรายการ KYC รอ approve
+POST /admin/kyc/{id}/decide      # approve/reject พร้อม note
+GET  /admin/noshow               # รายการ no-show ทั้งหมด
+GET  /admin/disputes             # รายการ disputed งาน
+POST /admin/disputes/{id}/settle # ตัดสิน ratio + สั่ง escrow release
+```
+
+**Multi-Admin Design (Phase 3+):**
+```sql
+CREATE TABLE admin_users (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID REFERENCES users(id),
+  role       VARCHAR(20) CHECK (role IN ('admin', 'super_admin')),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+-- super_admin: settle disputes, ban users
+-- admin: KYC verify, view reports only
+```
+
+**Security Notes:**
+- `admin_secret` เก็บใน Railway env var — ไม่อยู่ใน code
+- Production: เปลี่ยนเป็น admin JWT หลัง MVP
+- Log ทุก admin action พร้อม timestamp + admin_id
+
+---
+
+## 📱 React Native — Phase 3
+
+> ตัดสินใจ: พัฒนาคู่กับ Phase 3 (Wallet & Escrow) — ไม่รอ Phase 6
+
+**ข้อดีที่ทำได้เลย:** Backend เป็น REST API ทั้งหมด — Mobile app เรียก endpoint เดิมได้ 100%
+
+**Tech Stack:**
+```
+Framework : Expo (React Native) — build iOS + Android จาก codebase เดียว
+State     : Zustand หรือ Context API
+Navigation: React Navigation v6
+HTTP      : fetch / axios
+Maps      : react-native-maps (Google Maps SDK)
+GPS       : expo-location
+Camera    : expo-camera (KYC upload)
+Storage   : expo-secure-store (JWT token)
+Push      : expo-notifications (FCM/APNs)
+```
+
+**Features ที่ Priority สูงสุด:**
+1. Auth (register/login/Google OAuth)
+2. Worker: ค้นหางาน nearby + apply + checkin GPS
+3. Employer: post job + ดู candidates + hire
+4. Notifications (real-time via polling หรือ FCM)
+5. KYC upload (camera → Supabase Storage)
+6. Wallet (Phase 3)
+
+**API Compatibility:**
+- ทุก endpoint ใช้ได้เลย — ไม่ต้องแก้ backend
+- GPS checkin: `expo-location` → ส่ง lat/lng ไป `POST /applications/{id}/checkin`
+- D-1 reminder: backend ส่ง notification แล้ว — mobile รับผ่าน FCM
+
+**Environment:**
+```
+API_URL = https://web-production-03c5a.up.railway.app
+(เหมือนกับ frontend ปัจจุบัน)
+```
 
 ---
 
