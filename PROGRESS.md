@@ -189,6 +189,75 @@
 
 ---
 
+## 🤝 KEY PARTNERS Strategy (Phase 2)
+
+> เป้าหมาย: onboard employer กลุ่มใหญ่ที่ต้องการแรงงานรายวันต่อเนื่อง
+
+| กลุ่ม | ตัวอย่าง | ความต้องการหลัก | วิธี approach |
+|-------|---------|----------------|--------------|
+| **โรงงาน** | นิคมอุตสาหกรรม ลาดกระบัง, บางปู, บางชัน | แรงงานสายพานและแพ็กสินค้า จำนวนมาก, ต้องการทุกวัน | Direct call ฝ่าย HR, นำเสนอ cost/worker ที่ต่ำกว่า agency |
+| **โรงแรม** | Airbnb Host, Boutique Hotel, Budget Hotel | แม่บ้าน, ต้อนรับ, ครัว — ช่วง high season หรือแทนพนักงานลา | Line OA + Walk-in พื้นที่สุขุมวิท, สีลม, สาทร |
+| **7-Eleven / ร้านสะดวกซื้อ** | 7-Eleven, FamilyMart, Lotus Express | Part-time กะดึก, fill-in เมื่อพนักงานขาด | เจรจาผ่าน CP Franchise head office ระดับเดียว |
+| **ร้านอาหาร** | ร้าน SME, Chain, Food Court | ครัว, เสิร์ฟ, ล้างจาน — weekends + holidays | Facebook Group เจ้าของร้าน + Walk-in ตลาด, ห้าง |
+| **ขนส่ง / โลจิสติกส์** | Lazada, Flash, Kerry hub | พนักงานคัดแยก, โหลดสินค้า — ช่วงเทศกาล | LinkedIn outreach ทีม Ops + Pitch deck นำเสนอ flexibility |
+
+**KPI Phase 2 Partners:** 5 signed employers แต่ละกลุ่ม ภายใน 3 เดือน → รวม 25 employer partners
+
+---
+
+## 📣 CHANNELS
+
+### Online
+| ช่องทาง | Target | เนื้อหา | KPI |
+|---------|--------|---------|-----|
+| **Facebook** | Worker (18–40 ปี, กรุงเทพ+ปริมณฑล) | วิดีโอสั้น "หางานง่ายๆ ผ่านมือถือ", success story | Reach 10k/เดือน |
+| **Instagram** | Worker Gen Z + Employer SME | Infographic ค่าแรงรายวัน, behind-the-scenes | Follower 1k ใน 60 วัน |
+| **LINE Official** | Worker + Employer ทุกกลุ่ม | Broadcast งานใหม่ใกล้บ้าน, แจ้งเตือน D-1, support bot | 500 friends ใน 30 วัน |
+| **X (Twitter)** | Employer / HR community | Thread "ปัญหา No-show คือต้นทุนที่มองไม่เห็น" | Thought leadership |
+
+### Offline
+| ช่องทาง | วิธี | เป้าหมาย |
+|---------|------|---------|
+| **Walk-in** | แจก flyer ใน นิคมอุตสาหกรรม, ตลาดแรงงาน, BTS/MRT | Worker sign-up 50 คน/อาทิตย์ |
+| **Direct Call** | โทรหา HR ของ target employer list | Employer onboard 2 ราย/อาทิตย์ |
+
+---
+
+## 💬 CUSTOMER RELATIONSHIP
+
+### Worker
+- **LINE Official Bot** — ตอบคำถามอัตโนมัติ 24/7:
+  - "หางานใกล้ฉัน" → deep-link เปิดแอพ + หน้า Nearby
+  - "สถานะงานฉัน" → แจ้ง status ล่าสุด
+  - "ต่ออายุ Work Permit" → link ขั้นตอน + remind อีก 7 วัน
+- **Response SLA:** ตอบภายใน 2 ชั่วโมง (admin จริง), 24/7 (bot)
+
+### Employer
+- **Dedicated onboarding:** Admin โทรหา employer ใหม่ภายใน 24 ชม. หลัง sign up
+- **Priority support:** Employer ที่มี posted job > 3 ใบ ได้ LINE ส่วนตัว admin
+- **Monthly report:** สรุปจำนวน hires, completion rate, cost-per-hire ส่ง email ทุกสิ้นเดือน
+- **Response SLA:** Business hours 09:00–18:00 ตอบภายใน 1 ชั่วโมง
+
+---
+
+## 📊 USER METRICS Definitions
+
+> วัดผลทุกสัปดาห์ — dashboard ใน Supabase / Grafana (Phase 5)
+
+| Metric | นิยาม | สูตร | Target (Month 3) |
+|--------|-------|------|-----------------|
+| **DAU** (Daily Active Users) | User ที่ login หรือ perform action ใดๆ ใน 24 ชม. | `COUNT(DISTINCT user_id) WHERE last_active > NOW() - 1 day` | 200 DAU |
+| **Job Completion Rate** | % งานที่จบด้วย status `verified` จากงานที่เริ่ม `working` | `verified / (working + completed + verified + disputed)` | ≥ 85% |
+| **Worker Retention Rate** | % worker ที่กลับมาสมัครงานอีกครั้งใน 30 วัน | `workers with 2nd application within 30d / total workers with 1st application` | ≥ 40% |
+| **Time to Hire** | เวลาเฉลี่ยตั้งแต่ employer โพสต์งาน จนถึงมี worker ถูก `hired` ครั้งแรก | `AVG(decided_at - created_at) WHERE status = 'hired'` | ≤ 4 ชั่วโมง |
+
+**Secondary metrics (track แต่ไม่ใช่ primary goal ตอนนี้):**
+- No-show Rate: `no_show / hired` → target < 10%
+- Dispute Rate: `disputed / completed` → target < 5%
+- KYC Approval Rate: `approved / submitted` → target > 90%
+
+---
+
 ## 🗂️ ไฟล์ปัจจุบัน
 
 | ไฟล์ | คำอธิบาย | สถานะ |
