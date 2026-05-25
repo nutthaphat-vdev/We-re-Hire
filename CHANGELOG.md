@@ -197,16 +197,75 @@ AND (
 
 ---
 
+## Day 4 — 25 พฤษภาคม 2568 · วัน Trust & Safety Sprint
+
+### · 🪪 KYC Phase 2A — รองรับแรงงานทุกสัญชาติ
+Migration `010_kyc.sql` เพิ่ม 12 columns ใน `worker_profiles`:
+
+| กลุ่ม | Columns |
+|-------|---------|
+| ทุกคน | `nationality_type`, `profile_photo_url`, `selfie_url` |
+| คนไทย | `id_card_front_url`, `id_card_back_url` |
+| ต่างด้าว | `passport_url`, `work_permit_url`, `work_permit_expiry` |
+| Admin tracking | `kyc_submitted_at`, `kyc_reviewed_at`, `kyc_reviewed_by`, `kyc_note` |
+
+- `background_check_status` ที่มีอยู่แล้ว (none/pending/approved/rejected) ใช้ต่อได้เลย
+- Index `idx_worker_kyc_status` บน `background_check_status = 'pending'` เร่ง Admin dashboard
+
+### · 🗂️ Job Categories Expanded (011)
+เพิ่ม 4 categories ใหม่ + 24 job titles:
+
+| Category | Icon | หมายเหตุ |
+|----------|------|----------|
+| โรงงานและการผลิต | 🏭 | 6 titles |
+| งาน Event และ Seasonal | 🎪 | 5 titles |
+| ล่ามภาษา | 🗣️ | 4 titles (TH↔MY/LA/KH/EN) |
+| งานดูแลบุคคล | ⚠️ | 3 titles — `is_special=true` (NDID required Phase 3.5) |
+
+รวม DB: 8 categories · 32+ job titles
+
+### · 👻 Active Anti-Ghosting System (Feature ใหญ่สุดของวัน)
+ปัญหา: worker ได้รับงาน hired แล้วหายตัวไป ไม่มาทำงาน ทำให้ employer เสียเวลา
+
+**Schema (012_anti_ghosting.sql):**
+- `noshow_marked_at`, `noshow_alerted_at` — track no-show state
+- `backup_priority`, `backup_offered_at`, `backup_accepted_at` — backup workflow
+- Status `no_show` เพิ่มใน CHECK constraint
+- 2 indexes สำหรับ cron performance
+
+**4 Endpoints ใหม่:**
+
+| Endpoint | ใคร | Logic |
+|----------|-----|-------|
+| `GET /jobs/{id}/backup-workers` | Employer | top 10 applied/shortlisted ranked by match_score |
+| `POST /applications/{id}/send-backup` | Employer | ส่ง offer ด่วน + แจ้ง worker ทันที |
+| `POST /applications/{id}/accept-backup` | Worker | รับงาน → `hired` + slot filled + Maps link |
+| `PATCH /applications/{id}/mark-noshow` | Employer | `no_show` + slot freed + แจ้ง worker |
+
+**2 Cron Jobs:**
+
+```
+Cron ทุก 5 นาที (check_noshow_workers):
+  work_start + 30 นาที ผ่านไป → alert employer (ครั้งเดียว)
+  work_start + 60 นาที ผ่านไป → auto no_show + free slot + notify ทั้งคู่
+
+Cron 18:00 ทุกวัน / 11:00 UTC (send_d1_reminders):
+  ค้นหา status='hired' + start_date = พรุ่งนี้
+  → push notification ไปทุก hired worker ที่มีงานพรุ่งนี้
+```
+
+---
+
 ## Stats
 
 | | จำนวน |
 |--|--|
-| วันที่ใช้สร้าง | **3 วัน** |
-| Commits | **50+** |
-| Endpoints | **39+** |
-| Database migrations | **9 ไฟล์** |
+| วันที่ใช้สร้าง | **4 วัน** |
+| Commits | **55+** |
+| Endpoints | **47+** |
+| Database migrations | **12 ไฟล์** |
 | Bugs ที่เจอและแก้ | **8 critical** |
-| Lines of code (approx) | **~5,000+** |
+| Lines of code (approx) | **~6,500+** |
 
 ---
 

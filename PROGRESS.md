@@ -1,5 +1,5 @@
 # We're Hired — Progress & Roadmap
-อัปเดต: 24 พฤษภาคม 2568
+อัปเดต: 25 พฤษภาคม 2568
 
 ---
 
@@ -61,6 +61,16 @@
 - [x] Auto-verify cron ทุก 30 นาที (≥ 90% duration → verified, < 90% → disputed)
 - [x] Migrations: 007_work_hours, 008_job_lifecycle, 009_disputed_status ✅ run แล้ว
 
+### 👻 Anti-Ghosting System
+- [x] status `no_show` — worker hired แต่ไม่มา
+- [x] GET /jobs/{id}/backup-workers — top 10 backup candidates (ranked by match score)
+- [x] POST /applications/{id}/send-backup — employer ส่ง offer ด่วนไป backup worker
+- [x] POST /applications/{id}/accept-backup — worker รับงานสำรอง → hired ทันที
+- [x] PATCH /applications/{id}/mark-noshow — employer mark no-show → slot freed
+- [x] Cron ทุก 5 นาที: alert +30 นาที, auto no_show +60 นาที หลัง work_start
+- [x] Cron 18:00 ทุกวัน: D-1 reminder ไป hired workers ที่มีงานพรุ่งนี้
+- [x] Migration: 012_anti_ghosting.sql ✅ run แล้ว
+
 ### ⭐ Review System
 - [x] Blind review — ซ่อนจนทั้งคู่ส่ง หรือครบ 7 วัน
 - [x] 1–5 ดาว + tag buttons
@@ -98,7 +108,7 @@
 | 009_disputed_status.sql | ✅ |
 | 010_kyc.sql | ✅ |
 | 011_job_categories_expanded.sql | ✅ |
-| 012_anti_ghosting.sql | ⏳ ยังไม่รัน |
+| 012_anti_ghosting.sql | ✅ |
 
 ---
 
@@ -170,7 +180,7 @@
 
 | ไฟล์ | คำอธิบาย | สถานะ |
 |------|----------|--------|
-| main.py | FastAPI backend — 39+ endpoints | ✅ live |
+| main.py | FastAPI backend — 47+ endpoints | ✅ live |
 | index.html | Single-file frontend (Vanilla JS) | ✅ live |
 | worker.js | Cloudflare Worker entry point (serve HTML) | ✅ |
 | wrangler.toml | Cloudflare Workers config | ✅ |
@@ -190,3 +200,5 @@
 | **Wallet Escrow** *(Phase 3)* | เงินอยู่ในแอพ — ไม่มีใครอยากออกนอกระบบ |
 | **GPS Checkin** | ต้องอยู่ภายใน 150m จากสถานที่งานถึงจะ checkin ได้ |
 | **Auto-verify** | ≥ 90% ชั่วโมง + ไม่มีการกระทำใน 2 ชม. → system verify อัตโนมัติ |
+| **Anti-Ghosting** | no-show ที่ +60 นาที → slot freed + แจ้ง employer → เปิด backup workers |
+| **D-1 Reminder** | 18:00 ทุกวัน → push แจ้งเตือน hired worker ที่มีงานพรุ่งนี้ |
