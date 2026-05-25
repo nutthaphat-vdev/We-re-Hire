@@ -1,4 +1,6 @@
 # We're Hired — Progress & Roadmap
+> **"ทำงานวันนี้ เสร็จงานได้เงินทันที"**
+
 อัปเดต: 25 พฤษภาคม 2568
 
 ---
@@ -131,19 +133,52 @@
 
 ## 📋 Roadmap
 
-### Phase 2 — KYC Level 1 (Free)
-> ยืนยันตัวตนด้วยบัตรประชาชน + Selfie — admin verify มือ, ฟรี 100%
+### Phase 2A — KYC Level 1 (Free) 🪪
+> ยืนยันตัวตนด้วยบัตรประชาชน / Passport + Selfie — admin verify มือ, ฟรี 100%
+
+**ทำแล้ว ✅**
+- [x] Migration: 010_kyc.sql — 12 columns (nationality_type, kyc docs, review tracking)
+- [x] Work Permit enforcement — block apply ถ้า foreign worker ไม่มีหรือหมดอายุ (403)
+- [x] Work Permit section บน worker profile card + expiry warning < 30 วัน
+- [x] Multi-language UI 🌐 TH/MM/EN — worker ต่างด้าวเข้าใจแอพได้ทันที
+
+**ยังต้องทำ**
+- [ ] Worker upload เอกสาร → Supabase Storage (endpoint `POST /workers/kyc/upload`)
+- [ ] Admin `GET /admin/kyc/pending` + `POST /admin/kyc/{id}/decide` (approve/reject + note)
+- [ ] Badge **✓ KYC Verified** แสดงบน profile card หลัง admin approve
+- [ ] Cron รายวัน: Work Permit expiry alert + auto-reject ถ้า expired
 - [ ] รูปโปรไฟล์ worker (Supabase Storage)
-- [ ] Worker upload บัตรประชาชน (หน้า-หลัง) + Selfie คู่บัตร
-- [ ] Admin approve/reject KYC — manual via Supabase dashboard
-- [ ] Badge **✓ KYC Verified** บน worker profile card
-- [x] Migration: 010_kyc.sql ✅ run แล้ว
-- [x] Work Permit enforcement — block apply ถ้า foreign worker ไม่มีหรือหมดอายุ ✅
-- [x] Work Permit section ใน worker profile card + expiry warning ✅
-- [ ] Worker upload บัตรประชาชน / Passport / Work Permit ไปยัง Supabase Storage (endpoint)
-- [ ] Admin approve/reject KYC — endpoints + UI
-- [ ] Badge **✓ KYC Verified** บน worker profile card (แสดงหลัง admin approve)
 - [ ] Employer verification flow
+
+### Phase 2B — Behavioral Score System 🧮
+> วัดความน่าเชื่อถือ worker จากพฤติกรรมจริง — ไม่ใช่แค่ review
+
+**ต้องการ Phase 2A (KYC) ก่อน**
+
+**Score Components** (เก็บใน `worker_profiles`):
+```
+reliability_score = (completion_rate × 5.0) + ((1 - noshow_rate) × 3.0) + (review_avg × 2.0)
+MAX: 10.00 | MIN: 0.00
+```
+
+| Signal | น้ำหนัก | อัปเดตเมื่อ |
+|--------|---------|------------|
+| Checkin ตรงเวลา / งาน verified ครบ | +5.0 | status → `verified` |
+| ไม่ no-show | +3.0 (penalty ถ้า no-show) | status → `no_show` |
+| Review ดาวเฉลี่ย | +2.0 | หลัง submit review |
+
+**Badge ตาม score:**
+| Score | Badge แสดงบน profile |
+|-------|---------------------|
+| ≥ 9.0 | 🌟 Top Worker |
+| ≥ 7.0 | ✅ Reliable |
+| ≥ 5.0 | — (ไม่มี badge) |
+| < 5.0 | ⚠️ แสดงเฉพาะ admin |
+
+- [ ] Migration: `013_behavioral_score.sql` (columns: reliability_score, jobs_completed, jobs_noshow, jobs_hired)
+- [ ] Backend: คำนวณ + update score อัตโนมัติทุก lifecycle event
+- [ ] Frontend: แสดง "ความน่าเชื่อถือ ⭐⭐⭐⭐☆" บน worker profile card
+- [ ] Employer: filter ผู้สมัครตาม reliability_score ขั้นต่ำ
 
 ### Phase 3 — Wallet & Escrow 💰 + Mobile App 📱
 > นี่คือ moat หลักของ We're Hired — ถ้าเงินอยู่ในแอพ ไม่มีใครอยากโทรตรง
@@ -154,34 +189,56 @@
 - [ ] Worker withdrawal request
 - [ ] PromptPay / Omise / 2C2P integration
 - [ ] Dispute button ฝั่ง Employer + POST /applications/{id}/dispute
-- [ ] **Mobile App (React Native)** — พัฒนาคู่กับ Phase 3
+- [ ] **Mobile App (React Native / Expo)** — พัฒนาคู่กับ Wallet
+  - Auth, Nearby Jobs, GPS Checkin, KYC upload (camera), Notifications, Wallet
 
-### Phase 3.5 — NDID Integration 🪪
+### Phase 3.5 — NDID Integration 🏛️
 > ยืนยันตัวตนระดับรัฐ ผ่านแอพธนาคาร — ดึงประวัติจริงจากราชการ
 - [ ] เชื่อมต่อ NDID API (National Digital ID — ธปท.)
 - [ ] Worker ยืนยันตัวตนผ่านแอพธนาคาร (กสิกร / SCB / กรุงไทย ฯลฯ)
 - [ ] ดึงประวัติอาชญากรรมจากระบบราชการอัตโนมัติ
-- [ ] Badge **NDID Verified** บน worker profile
+- [ ] Badge **🏛️ NDID Verified** บน worker profile
 - [ ] Worker Tier System:
   - `Unverified` — สมัครงานได้, ข้อมูลน้อย
   - `KYC` — บัตรประชาชน + Selfie ผ่าน admin
   - `NDID` — ยืนยันผ่านธนาคาร + ประวัติอาชญากรรมสะอาด
 
-### Phase 4 — Notifications & Communication
+### Phase 4 — AI Integration 🤖
+> ใช้ Claude API ลด overhead ของ admin + เพิ่มคุณภาพ matching
+
+**Strategy: Haiku filter ก่อน → ซับซ้อนค่อยส่ง Sonnet**
+
+| Use Case | Model | Input → Output |
+|----------|-------|---------------|
+| **Support Bot** | Haiku | คำถาม worker/employer → ตอบ FAQ, deep-link แอพ |
+| **KYC Pre-filter** | Haiku | รูปบัตรประชาชน → ตรวจว่าอ่านออกหรือเปล่า, ก่อนส่ง admin |
+| **Behavioral Classify** | Haiku | pattern การสมัคร/no-show → flag risk worker เร็ว |
+| **Dispute Resolution** | Sonnet | evidence ทั้งสองฝั่ง → recommend ratio + เหตุผล |
+| **Matching v2** | Sonnet | job desc (free text) → extract skills + match worker |
+| **Fraud Detection** | Sonnet | pattern account → detect fake employer/worker |
+
+- [ ] เชื่อมต่อ Anthropic API (claude-haiku-4-5, claude-sonnet-4-6)
+- [ ] POST /support/chat — LINE OA bot backend
+- [ ] POST /admin/kyc/precheck — Haiku pre-filter ก่อน admin queue
+- [ ] POST /admin/disputes/{id}/ai-suggest — Sonnet recommend settlement ratio
+- [ ] Matching v2: รองรับ job description แบบ free text (ไม่ต้อง select skill เท่านั้น)
+- [ ] Cost guardrail: Haiku limit 1,000 tokens/req, Sonnet limit 2,000 tokens/req
+
+### Phase 5 — Notifications & Communication
 - [ ] Push notifications (LINE Notify หรือ Firebase FCM)
 - [ ] Worker ↔ Employer in-app chat (เฉพาะหลัง hired)
 - [ ] Email notification backup
 
-### Phase 5 — Scale & Production
+### Phase 6 — Scale & Production
 - [ ] Rate limiting (per IP / per user)
 - [ ] Logging + monitoring (Sentry / Grafana)
 - [ ] pg_cron: reveal reviews hourly, expire old jobs
 - [ ] Custom domain + HTTPS
 - [ ] Dockerize (Dockerfile + docker-compose)
 
-### Phase 6 — Growth
+### Phase 7 — Growth
 - [ ] Landing page / Marketing site
-- [ ] Job recommendation engine (ML-based matching)
+- [ ] Job recommendation engine (ML-based)
 - [ ] Worker availability calendar
 - [ ] Multi-zone posting
 - [ ] Referral system
