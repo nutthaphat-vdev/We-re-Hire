@@ -98,6 +98,7 @@
 | 009_disputed_status.sql | ✅ |
 | 010_kyc.sql | ✅ |
 | 011_job_categories_expanded.sql | ✅ |
+| 012_anti_ghosting.sql | ⏳ ยังไม่รัน |
 
 ---
 

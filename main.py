@@ -157,6 +157,163 @@ async def auto_verify_completed_jobs():
         logger.error(f"[auto_verify] cron error: {e}")
 
 
+async def check_noshow_workers():
+    """Cron ทุก 5 นาที: ตรวจ hired workers ที่ไม่เช็คอินหลังเวลาเริ่มงาน"""
+    if pool is None:
+        return
+    TH_TZ    = timezone(timedelta(hours=7))
+    now_th   = datetime.now(TH_TZ)
+    today_th = now_th.date()
+    now_time = now_th.time().replace(tzinfo=None)  # TIME ของ Thai ณ ตอนนี้
+
+    try:
+        async with pool.acquire() as db:
+            # ── Alert ครั้งแรก: work_start + 30 นาที ผ่านไปแล้ว ─────────────
+            alert_rows = await db.fetch(
+                """
+                SELECT
+                    ja.id,
+                    jp.title          AS job_title,
+                    jp.work_start,
+                    wp.full_name      AS worker_name,
+                    wp.user_id        AS worker_user_id,
+                    ep.user_id        AS employer_user_id
+                FROM   job_applications ja
+                JOIN   job_postings      jp ON jp.id  = ja.job_id
+                JOIN   worker_profiles   wp ON wp.id  = ja.worker_id
+                JOIN   employer_profiles ep ON ep.id  = jp.employer_id
+                WHERE  ja.status              = 'hired'
+                  AND  ja.noshow_alerted_at  IS NULL
+                  AND  ja.noshow_marked_at   IS NULL
+                  AND  jp.start_date          = $1
+                  AND  jp.work_start         IS NOT NULL
+                  AND  jp.work_start + INTERVAL '30 minutes' < $2
+                """,
+                today_th, now_time,
+            )
+            for row in alert_rows:
+                await db.execute(
+                    "UPDATE job_applications SET noshow_alerted_at = NOW() WHERE id = $1",
+                    row["id"],
+                )
+                await db.execute(
+                    """
+                    INSERT INTO notifications (user_id, type, title, body)
+                    VALUES ($1, 'application_update', '⚠️ Worker ยังไม่เช็คอิน', $2)
+                    """,
+                    row["employer_user_id"],
+                    f"Worker {row['worker_name']} ยังไม่เช็คอินสำหรับงาน \"{row['job_title']}\" "
+                    f"(เริ่มงาน {str(row['work_start'])[:5]}) กรุณาตรวจสอบ",
+                )
+                logger.info(f"[noshow] alert sent for application {row['id']}")
+
+            # ── Auto no-show: work_start + 60 นาที ผ่านไปแล้ว ───────────────
+            noshow_rows = await db.fetch(
+                """
+                SELECT
+                    ja.id,
+                    ja.job_id,
+                    jp.title          AS job_title,
+                    wp.full_name      AS worker_name,
+                    wp.user_id        AS worker_user_id,
+                    ep.user_id        AS employer_user_id
+                FROM   job_applications ja
+                JOIN   job_postings      jp ON jp.id  = ja.job_id
+                JOIN   worker_profiles   wp ON wp.id  = ja.worker_id
+                JOIN   employer_profiles ep ON ep.id  = jp.employer_id
+                WHERE  ja.status             = 'hired'
+                  AND  ja.noshow_marked_at  IS NULL
+                  AND  jp.start_date         = $1
+                  AND  jp.work_start        IS NOT NULL
+                  AND  jp.work_start + INTERVAL '60 minutes' < $2
+                """,
+                today_th, now_time,
+            )
+            for row in noshow_rows:
+                async with db.transaction():
+                    await db.execute(
+                        "UPDATE job_applications SET status='no_show', noshow_marked_at=NOW() WHERE id=$1",
+                        row["id"],
+                    )
+                    await db.execute(
+                        "UPDATE job_postings SET slots_filled = GREATEST(0, slots_filled - 1) WHERE id=$1",
+                        row["job_id"],
+                    )
+                    await db.execute(
+                        """
+                        INSERT INTO notifications (user_id, type, title, body)
+                        VALUES ($1, 'application_update', '🚨 Worker ไม่มาทำงาน', $2)
+                        """,
+                        row["employer_user_id"],
+                        f"Worker {row['worker_name']} ถูกทำเครื่องหมาย No-Show อัตโนมัติ "
+                        f"สำหรับงาน \"{row['job_title']}\" กรุณาเลือก Worker สำรอง",
+                    )
+                    await db.execute(
+                        """
+                        INSERT INTO notifications (user_id, type, title, body)
+                        VALUES ($1, 'application_update', '❌ ถูกทำเครื่องหมาย No-Show', $2)
+                        """,
+                        row["worker_user_id"],
+                        f"คุณไม่ได้เช็คอินสำหรับงาน \"{row['job_title']}\" ใบสมัครถูกยกเลิกอัตโนมัติ",
+                    )
+                logger.info(f"[noshow] auto no_show for application {row['id']}")
+
+            total = len(alert_rows) + len(noshow_rows)
+            if total:
+                logger.info(f"[noshow] alerted={len(alert_rows)} no_show={len(noshow_rows)}")
+
+    except Exception as e:
+        logger.error(f"[noshow] cron error: {e}")
+
+
+async def send_d1_reminders():
+    """Cron ทุกวัน 18:00 Thai time (11:00 UTC): แจ้งเตือน D-1 ก่อนวันทำงาน"""
+    if pool is None:
+        return
+    TH_TZ       = timezone(timedelta(hours=7))
+    tomorrow_th = (datetime.now(TH_TZ) + timedelta(days=1)).date()
+
+    try:
+        async with pool.acquire() as db:
+            rows = await db.fetch(
+                """
+                SELECT
+                    ja.id,
+                    jp.title          AS job_title,
+                    jp.work_start,
+                    jp.location_name,
+                    ep.company_name,
+                    wp.user_id        AS worker_user_id
+                FROM   job_applications ja
+                JOIN   job_postings      jp ON jp.id  = ja.job_id
+                JOIN   worker_profiles   wp ON wp.id  = ja.worker_id
+                JOIN   employer_profiles ep ON ep.id  = jp.employer_id
+                WHERE  ja.status    = 'hired'
+                  AND  jp.start_date = $1
+                """,
+                tomorrow_th,
+            )
+            for row in rows:
+                work_time = str(row["work_start"])[:5] if row["work_start"] else "ไม่ระบุ"
+                location  = row["location_name"] or "สถานที่ทำงาน"
+                await db.execute(
+                    """
+                    INSERT INTO notifications (user_id, type, title, body)
+                    VALUES ($1, 'application_update', '🔔 แจ้งเตือนงานพรุ่งนี้', $2)
+                    """,
+                    row["worker_user_id"],
+                    f"พรุ่งนี้คุณมีงาน \"{row['job_title']}\" กับ {row['company_name']} "
+                    f"เริ่ม {work_time} น. ที่ {location} — กรุณาเตรียมตัวและเช็คอินให้ตรงเวลา",
+                )
+                logger.info(f"[d1reminder] reminder sent for application {row['id']}")
+
+            if rows:
+                logger.info(f"[d1reminder] sent {len(rows)} reminders for {tomorrow_th}")
+
+    except Exception as e:
+        logger.error(f"[d1reminder] cron error: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global pool
@@ -171,8 +328,10 @@ async def lifespan(app: FastAPI):
 
     scheduler = AsyncIOScheduler()
     scheduler.add_job(auto_verify_completed_jobs, "interval", minutes=30)
+    scheduler.add_job(check_noshow_workers,       "interval", minutes=5)
+    scheduler.add_job(send_d1_reminders,           "cron",     hour=11, minute=0)  # 11:00 UTC = 18:00 Bangkok
     scheduler.start()
-    print("⏰ Auto-verify cron started (every 30 min)")
+    print("⏰ Schedulers started: auto-verify(30m) | noshow-check(5m) | D-1 reminder(18:00 BKK)")
 
     yield
 
@@ -1439,6 +1598,272 @@ async def employer_verify_complete(
     except Exception:
         pass
     return {"status": "verified"}
+
+
+# ============================================================
+# ANTI-GHOSTING — Backup Workers & No-Show
+# ============================================================
+
+@app.get("/jobs/{job_id}/backup-workers", tags=["Anti-Ghosting"])
+async def get_backup_workers(
+    job_id: UUID,
+    user:   dict = Depends(require_employer),
+    db:     asyncpg.Connection = Depends(get_db),
+):
+    """Employer ดู top backup candidates สำหรับงานนี้ (applied/shortlisted ที่ยังไม่ hired)"""
+    emp_id = await db.fetchval(
+        "SELECT id FROM employer_profiles WHERE user_id=$1", UUID(user["sub"])
+    )
+    job_check = await db.fetchval(
+        "SELECT id FROM job_postings WHERE id=$1 AND employer_id=$2", job_id, emp_id
+    )
+    if not job_check:
+        raise HTTPException(status_code=404, detail="ไม่พบงาน หรือไม่มีสิทธิ์ดู")
+
+    rows = await db.fetch(
+        """
+        SELECT
+            ja.id              AS application_id,
+            wp.id              AS worker_id,
+            wp.full_name,
+            wp.background_check_status,
+            wp.daily_rate_expected,
+            ja.match_score,
+            ja.distance_km,
+            ja.matched_skills,
+            ja.status,
+            ja.backup_priority,
+            ja.backup_offered_at,
+            ja.backup_accepted_at
+        FROM   job_applications ja
+        JOIN   worker_profiles  wp ON wp.id = ja.worker_id
+        WHERE  ja.job_id = $1
+          AND  ja.status IN ('applied', 'shortlisted')
+        ORDER  BY ja.match_score DESC, ja.distance_km ASC
+        LIMIT  10
+        """,
+        job_id,
+    )
+    return [
+        {
+            "application_id":          str(r["application_id"]),
+            "worker_id":               str(r["worker_id"]),
+            "full_name":               r["full_name"],
+            "background_check_status": r["background_check_status"],
+            "daily_rate_expected":     float(r["daily_rate_expected"]) if r["daily_rate_expected"] else None,
+            "match_score":             float(r["match_score"] or 0),
+            "distance_km":             float(r["distance_km"] or 0),
+            "matched_skills":          r["matched_skills"] or [],
+            "status":                  r["status"],
+            "backup_priority":         r["backup_priority"],
+            "backup_offered_at":       r["backup_offered_at"].isoformat() if r["backup_offered_at"] else None,
+            "backup_accepted_at":      r["backup_accepted_at"].isoformat() if r["backup_accepted_at"] else None,
+        }
+        for r in rows
+    ]
+
+
+@app.post("/applications/{app_id}/send-backup", tags=["Anti-Ghosting"])
+async def send_backup_offer(
+    app_id: UUID,
+    user:   dict = Depends(require_employer),
+    db:     asyncpg.Connection = Depends(get_db),
+):
+    """Employer ส่ง backup offer ไปหา worker ที่ยังไม่ hired (เมื่อ hired worker no-show)"""
+    emp_id = await db.fetchval(
+        "SELECT id FROM employer_profiles WHERE user_id=$1", UUID(user["sub"])
+    )
+    row = await db.fetchrow(
+        """
+        SELECT ja.id, ja.status, ja.job_id, ja.worker_id, ja.backup_offered_at,
+               jp.title AS job_title, jp.employer_id
+        FROM   job_applications ja
+        JOIN   job_postings     jp ON jp.id = ja.job_id
+        WHERE  ja.id = $1
+        """,
+        app_id,
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="ไม่พบใบสมัคร")
+    if row["employer_id"] != emp_id:
+        raise HTTPException(status_code=403, detail="ไม่มีสิทธิ์")
+    if row["status"] not in ("applied", "shortlisted"):
+        raise HTTPException(
+            status_code=409,
+            detail=f"ส่ง backup offer ได้เฉพาะ applied/shortlisted (สถานะปัจจุบัน: {row['status']})",
+        )
+    if row["backup_offered_at"] is not None:
+        raise HTTPException(status_code=409, detail="ส่ง backup offer ไปแล้ว รอ worker ตอบรับ")
+
+    next_priority = await db.fetchval(
+        "SELECT COALESCE(MAX(backup_priority), 0) + 1 FROM job_applications WHERE job_id=$1",
+        row["job_id"],
+    )
+    await db.execute(
+        "UPDATE job_applications SET backup_priority=$1, backup_offered_at=NOW() WHERE id=$2",
+        next_priority, app_id,
+    )
+
+    worker_user_id = await db.fetchval(
+        "SELECT user_id FROM worker_profiles WHERE id=$1", row["worker_id"]
+    )
+    try:
+        await db.execute(
+            """
+            INSERT INTO notifications (user_id, type, title, body)
+            VALUES ($1, 'hired', '🆕 มีงานพิเศษสำหรับคุณ!', $2)
+            """,
+            worker_user_id,
+            f"Employer เสนองาน \"{row['job_title']}\" ให้คุณด่วน! "
+            f"(Worker เดิมไม่มา) กรุณาตอบรับภายใน 30 นาที",
+        )
+    except Exception:
+        pass
+
+    return {"status": "backup_offered", "backup_priority": next_priority}
+
+
+@app.post("/applications/{app_id}/accept-backup", tags=["Anti-Ghosting"])
+async def accept_backup_offer(
+    app_id: UUID,
+    user:   dict = Depends(require_worker),
+    db:     asyncpg.Connection = Depends(get_db),
+):
+    """Worker กด รับงานสำรอง → status เปลี่ยนเป็น hired"""
+    worker_id = await db.fetchval(
+        "SELECT id FROM worker_profiles WHERE user_id=$1", UUID(user["sub"])
+    )
+    row = await db.fetchrow(
+        """
+        SELECT ja.id, ja.status, ja.job_id,
+               ja.backup_offered_at, ja.backup_accepted_at,
+               jp.title          AS job_title,
+               jp.slots_available, jp.slots_filled,
+               jp.location_name,
+               ST_Y(jp.location::geometry) AS job_lat,
+               ST_X(jp.location::geometry) AS job_lng,
+               ep.user_id        AS employer_user_id
+        FROM   job_applications ja
+        JOIN   job_postings     jp ON jp.id = ja.job_id
+        JOIN   employer_profiles ep ON ep.id = jp.employer_id
+        WHERE  ja.id = $1 AND ja.worker_id = $2
+        """,
+        app_id, worker_id,
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="ไม่พบใบสมัคร")
+    if row["backup_offered_at"] is None:
+        raise HTTPException(status_code=400, detail="ยังไม่ได้รับ backup offer")
+    if row["backup_accepted_at"] is not None:
+        raise HTTPException(status_code=409, detail="รับงานนี้ไปแล้ว")
+    if row["status"] == "hired":
+        raise HTTPException(status_code=409, detail="ได้รับสถานะ hired แล้ว")
+    if row["slots_filled"] >= row["slots_available"]:
+        raise HTTPException(status_code=409, detail="ที่นั่งเต็มแล้ว")
+
+    maps_link  = f"https://www.google.com/maps/dir/?api=1&destination={row['job_lat']},{row['job_lng']}"
+    place_name = row["location_name"] or "สถานที่ทำงาน"
+
+    async with db.transaction():
+        await db.execute(
+            """
+            UPDATE job_applications
+            SET    status = 'hired', backup_accepted_at = NOW(), decided_at = NOW()
+            WHERE  id = $1
+            """,
+            app_id,
+        )
+        await db.execute(
+            """
+            UPDATE job_postings
+            SET    slots_filled = slots_filled + 1,
+                   status = CASE WHEN slots_filled + 1 >= slots_available THEN 'filled' ELSE status END
+            WHERE  id = $1
+            """,
+            row["job_id"],
+        )
+        await db.execute(
+            """
+            INSERT INTO notifications (user_id, type, title, body)
+            VALUES ($1, 'hired', '✅ คุณได้รับงานสำรอง!', $2)
+            """,
+            UUID(user["sub"]),
+            f"ยินดีด้วย! คุณได้รับงาน \"{row['job_title']}\"\n📍 {place_name}\n🗺️ นำทาง: {maps_link}",
+        )
+        worker_name = await db.fetchval(
+            "SELECT full_name FROM worker_profiles WHERE id=$1", worker_id
+        )
+        try:
+            await db.execute(
+                """
+                INSERT INTO notifications (user_id, type, title, body)
+                VALUES ($1, 'new_applicant', '✅ Worker สำรองตอบรับแล้ว', $2)
+                """,
+                row["employer_user_id"],
+                f"Worker {worker_name} ตอบรับงาน \"{row['job_title']}\" แล้ว เตรียมรับ Worker ได้เลย",
+            )
+        except Exception:
+            pass
+
+    return {"status": "hired", "job_title": row["job_title"]}
+
+
+@app.patch("/applications/{app_id}/mark-noshow", tags=["Anti-Ghosting"])
+async def mark_noshow(
+    app_id: UUID,
+    user:   dict = Depends(require_employer),
+    db:     asyncpg.Connection = Depends(get_db),
+):
+    """Employer mark worker ว่าไม่มาทำงาน → status = no_show + คืน slot"""
+    emp_id = await db.fetchval(
+        "SELECT id FROM employer_profiles WHERE user_id=$1", UUID(user["sub"])
+    )
+    row = await db.fetchrow(
+        """
+        SELECT ja.id, ja.status, ja.job_id, ja.worker_id,
+               jp.title AS job_title, jp.employer_id
+        FROM   job_applications ja
+        JOIN   job_postings     jp ON jp.id = ja.job_id
+        WHERE  ja.id = $1
+        """,
+        app_id,
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="ไม่พบใบสมัคร")
+    if row["employer_id"] != emp_id:
+        raise HTTPException(status_code=403, detail="ไม่มีสิทธิ์")
+    if row["status"] != "hired":
+        raise HTTPException(
+            status_code=409,
+            detail=f"mark no-show ได้เฉพาะ status=hired (ปัจจุบัน: {row['status']})",
+        )
+
+    async with db.transaction():
+        await db.execute(
+            "UPDATE job_applications SET status='no_show', noshow_marked_at=NOW() WHERE id=$1",
+            app_id,
+        )
+        await db.execute(
+            "UPDATE job_postings SET slots_filled = GREATEST(0, slots_filled - 1) WHERE id=$1",
+            row["job_id"],
+        )
+        worker_user_id = await db.fetchval(
+            "SELECT user_id FROM worker_profiles WHERE id=$1", row["worker_id"]
+        )
+        try:
+            await db.execute(
+                """
+                INSERT INTO notifications (user_id, type, title, body)
+                VALUES ($1, 'application_update', '❌ ถูกทำเครื่องหมาย No-Show', $2)
+                """,
+                worker_user_id,
+                f"Employer ทำเครื่องหมายว่าคุณไม่มาทำงาน \"{row['job_title']}\" "
+                f"หากมีข้อผิดพลาด กรุณาติดต่อทีมงาน",
+            )
+        except Exception:
+            pass
+
+    return {"status": "no_show", "job_title": row["job_title"]}
 
 
 # ============================================================
