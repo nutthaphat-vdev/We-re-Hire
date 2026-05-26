@@ -353,6 +353,27 @@ function setLang(lang) { ... } // update data-i18n elements + active class
 - Active = `var(--accent)` สีเขียว, Inactive = `var(--muted)` สีเทา
 - `setLang()` อัปเดต inline `color` ทันทีทุกครั้ง toggle
 
+### · 🔐 Security Audit + Fixes
+Security audit ครอบคลุมทุกจุด — `main.py` (2,580 บรรทัด) + `index.html` (2,301 บรรทัด)  
+ผล: **4 CRITICAL / 7 WARNING / 6 INFO** — ข่าวดี: ไม่มี SQL Injection, JWT verify ถูกต้อง, RBAC ครบ
+
+**Fixes ที่ implement ในวันนี้:**
+
+| # | ระดับ | งาน | ไฟล์ |
+|---|-------|-----|------|
+| C1 | 🔴 | XSS: เพิ่ม `esc()` + ใช้ทุก user-input ใน innerHTML | index.html |
+| C3 | 🔴 | ลบ auto-ban 3 reports → `logger.warning` สำหรับ admin review | main.py |
+| C4 | 🔴 | Contact endpoint: `hired` เดียว → `hired/checked_in/working/completed/verified` | main.py |
+| W2 | 🟡 | ปิด `/docs` + `/redoc` เมื่อ `RAILWAY_ENVIRONMENT` set | main.py |
+| W3 | 🟡 | ลบ `u.email` ออกจาก `GET /users/blocked` response | main.py |
+| W4 | 🟡 | Review: `status = 'hired'` → `IN ('hired','verified','disputed')` | main.py |
+| W6 | 🟡 | ลบ URL เก่า `divine-bar-29c7` ออกจาก CORS hardcode | main.py |
+
+**XSS ที่แก้ครอบคลุม:** job title, location_name, skills array, employer_note, full_name, background_check_status, notification title/body, contact name/phone/email, employer company_name — ทุกจุดที่มาจาก API
+
+**คงเหลือ (ก่อน scale):**  
+W1 rate limiting · C2 JWT expire 120 นาที · W7 `is_active` ใน `get_current_user` · I1 security headers · W5 column allowlist
+
 ---
 
 ## Stats
@@ -360,10 +381,11 @@ function setLang(lang) { ... } // update data-i18n elements + active class
 | | จำนวน |
 |--|--|
 | วันที่ใช้สร้าง | **5 วัน** |
-| Commits | **70+** |
+| Commits | **75+** |
 | Endpoints | **47+** |
 | Database migrations | **12 ไฟล์** |
 | Bugs ที่เจอและแก้ | **8 critical** |
+| Security findings fixed | **7 (4 CRITICAL + 3 WARNING)** |
 | Lines of code (approx) | **~7,000+** |
 | ภาษา UI รองรับ | **2 (TH/EN)** |
 

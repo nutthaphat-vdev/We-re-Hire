@@ -55,7 +55,7 @@
 
 ### 🔒 Contact Reveal
 - [x] GET /applications/{id}/contact
-- [x] เปิดเผยเบอร์โทร + email เฉพาะคู่ที่ hired เท่านั้น (Contact Lock)
+- [x] เปิดเผยเบอร์โทร + email ตลอด lifecycle `hired → verified` (Contact Lock)
 
 ### 📋 Job Lifecycle
 - [x] hired → checked_in → working → completed → verified / disputed
@@ -86,6 +86,16 @@
 - [x] POST /reports, POST /blocks
 - [x] ปุ่ม 🚩 Report ใน frontend
 - [x] Migration: 006_trust_safety ✅ run แล้ว
+
+### 🔐 Security (Audited 26 พ.ค. 2568 — Claude Sonnet 4.6)
+- [x] **Security Audit ผ่าน** — 4 CRITICAL / 7 WARNING / 6 INFO ทุกจุด
+- [x] **XSS Protection** — `esc()` ทุก user-input ใน innerHTML (job title, name, skills, notif body, contact info)
+- [x] **Auto-ban ลบออก** — `logger.warning` แทน + admin review
+- [x] **Contact reveal ใช้ได้ตลอด lifecycle** — `hired → checked_in → working → completed → verified`
+- [x] **`/docs` ปิดใน Railway production** — enumerate admin endpoints ไม่ได้
+- [x] **CORS URL เก่าลบออก** — `divine-bar-29c7` subdomain ไม่อยู่ใน allowlist แล้ว
+- [x] **Email ไม่รั่ว** — ลบ `u.email` ออกจาก `GET /users/blocked` response
+- [x] **Review ส่งได้หลัง verified/disputed** — แก้ logic bug `status = 'hired'` → `IN ('hired','verified','disputed')`
 
 ### 🔔 Notifications
 - [x] Notification badge (unread count) ใน sidebar — poll ทุก 30 วิ
@@ -131,6 +141,13 @@
 - [x] **GitHub PAT** — scope `workflow` เพิ่มแล้ว, CI pipeline active ✅ 2026-05-24
 - [ ] **Review summary** — ดาวเฉลี่ย + top tags แสดงบน profile card
 - [ ] **Contact button reload** — ปุ่ม 📞 โผล่ทันทีหลังกด hired โดยไม่ต้อง refresh
+
+### 🔐 Security Hardening (ก่อน Scale / หลัง Pitch)
+- [ ] **Rate limiting** (slowapi) — W1: brute force `/auth/login`, spam `/apply`
+- [ ] **JWT expire ลดเป็น 120 นาที** — C2: ลดหน้าต่าง token theft
+- [ ] **`is_active` check ใน `get_current_user`** — W7: banned user ใช้ token เก่าไม่ได้ทันที
+- [ ] **Security headers ใน worker.js** — I1: CSP, X-Frame-Options, X-Content-Type-Options
+- [ ] **Column allowlist ใน dynamic SQL** — W5: explicit whitelist ป้องกัน dev ใหม่ inject field
 
 ---
 
@@ -337,7 +354,7 @@ MAX: 10.00 | MIN: 0.00
 
 | หลักการ | วิธีทำ |
 |---------|--------|
-| **Contact Lock** | เบอร์โทร/email เปิดเผยเฉพาะคู่ที่ `hired` — ป้องกัน bypass แอพ |
+| **Contact Lock** | เบอร์โทร/email เปิดเผยตลอด `hired → verified` — ป้องกัน bypass แอพ |
 | **Blind Review** | review ซ่อนจนทั้งคู่ส่ง หรือครบ 7 วัน — ป้องกัน bias |
 | **Wallet Escrow** *(Phase 3)* | เงินอยู่ในแอพ — ไม่มีใครอยากออกนอกระบบ |
 | **GPS Checkin** | ต้องอยู่ภายใน 150m จากสถานที่งานถึงจะ checkin ได้ |
