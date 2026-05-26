@@ -325,6 +325,9 @@ async def lifespan(app: FastAPI):
         statement_cache_size=0,  # Required for Supabase PgBouncer transaction mode
     )
     print("✅ DB pool connected")
+    logger.info(f"[startup] FRONTEND_URL   = {settings.frontend_url!r}")
+    logger.info(f"[startup] CORS_ORIGINS   = {settings.cors_origins!r}")
+    logger.info(f"[startup] origins list   = {origins}")
 
     scheduler = AsyncIOScheduler()
     scheduler.add_job(auto_verify_completed_jobs, "interval", minutes=30)
