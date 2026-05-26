@@ -361,6 +361,13 @@ app = FastAPI(
 origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
 if settings.frontend_url:
     origins.append(settings.frontend_url.strip())
+# Explicit allowlist — ensures new Cloudflare URL works regardless of env var
+for _url in [
+    "https://wearehiredmvp.vi-nutthaphat.workers.dev",
+    "https://divine-bar-29c7.vi-nutthaphat.workers.dev",
+]:
+    if _url not in origins:
+        origins.append(_url)
 
 app.add_middleware(
     CORSMiddleware,
