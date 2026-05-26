@@ -151,8 +151,8 @@
 <div id="authPage" class="auth-wrap" style="display:none">
   <div class="auth-card">
     <div style="display:flex;justify-content:flex-end;margin-bottom:8px;gap:4px">
-      <button class="lang-btn btn btn-secondary btn-sm active" data-lang="th" onclick="setLang('th')" style="padding:3px 10px;font-size:12px">🇹🇭 TH</button>
-      <button class="lang-btn btn btn-secondary btn-sm" data-lang="en" onclick="setLang('en')" style="padding:3px 10px;font-size:12px">🇬🇧 EN</button>
+      <button class="lang-btn" data-lang="th" onclick="setLang('th')" style="background:none;border:none;cursor:pointer;font-size:12px;font-weight:600;padding:3px 8px;color:var(--accent)">TH</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')" style="background:none;border:none;cursor:pointer;font-size:12px;font-weight:600;padding:3px 8px;color:var(--muted)">EN</button>
     </div>
     <div class="auth-logo">
       <div class="auth-logo-text">We're Hired</div>
@@ -272,6 +272,10 @@
         <span data-i18n="nav_my_reviews">รีวิวของฉัน</span>
       </div>
     </nav>
+    <div style="padding:8px 20px;display:flex;gap:8px;">
+      <button class="lang-btn" data-lang="th" onclick="setLang('th')" style="background:none;border:none;cursor:pointer;font-size:13px;font-weight:600;padding:4px 0;color:var(--accent)">TH</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')" style="background:none;border:none;cursor:pointer;font-size:13px;font-weight:600;padding:4px 0;color:var(--muted)">EN</button>
+    </div>
     <div class="token-box">
       <div class="token-label">SESSION TOKEN</div>
       <div id="sidebarRole"></div>
@@ -279,10 +283,6 @@
       <div style="margin-top:8px;display:flex;gap:6px;">
         <button class="btn btn-secondary btn-sm" onclick="copyToken()" style="flex:1;font-size:11px">Copy Token</button>
         <button class="btn btn-danger btn-sm" onclick="doLogout()" style="flex:1;font-size:11px"><span data-i18n="nav_logout">ออก</span></button>
-      </div>
-      <div style="margin-top:6px;display:flex;gap:4px;justify-content:center">
-        <button class="lang-btn btn btn-secondary btn-sm" data-lang="th" onclick="setLang('th')" style="padding:3px 8px;font-size:11px">🇹🇭</button>
-        <button class="lang-btn btn btn-secondary btn-sm" data-lang="en" onclick="setLang('en')" style="padding:3px 8px;font-size:11px">🇬🇧</button>
       </div>
     </div>
   </div>
@@ -663,8 +663,11 @@ function setLang(lang) {
     if (el.tagName === 'INPUT' && el.placeholder !== undefined) el.placeholder = t(k);
     else el.textContent = t(k);
   });
-  document.querySelectorAll('.lang-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.lang === lang));
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    const active = b.dataset.lang === lang;
+    b.classList.toggle('active', active);
+    b.style.color = active ? 'var(--accent)' : 'var(--muted)';
+  });
   // Re-render dynamic page content
   const activePage = document.querySelector('.page.active');
   if (activePage) {
