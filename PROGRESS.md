@@ -1,7 +1,7 @@
 # We're Hired — Progress & Roadmap
 > **"ทำงานวันนี้ เสร็จงานได้เงินทันที"**
 
-อัปเดต: 25 พฤษภาคม 2568
+อัปเดต: 26 พฤษภาคม 2568
 
 ---
 
@@ -101,9 +101,10 @@
 - [x] Auto-mark as read เมื่อกดการ์ดนำทาง
 
 ### 🌐 Frontend UX
-- [x] **Multi-language UI (TH/MM/EN)** — lang toggle บน auth page + sidebar
-- [x] ทุก worker-facing string ใช้ `t()` — login/register, หางานใกล้บ้าน, status badges, action buttons
+- [x] **Multi-language UI (TH/EN)** — ไทย / English (MM ถอดออก ไม่เหมาะ pitch)
+- [x] **i18n ครอบคลุมทุกหน้า** — sidebar, dashboard, nearby, myapps, myjobs, candidates, notifications, profile
 - [x] Language preference เก็บใน localStorage (`wh_lang`)
+- [x] **Language toggle** — ย้ายออกนอก token box, อยู่ด้านล่าง nav items, text-only TH/EN (ไม่มี flag)
 - [x] **Work Permit section** บน worker profile — badge, link เอกสาร, คำเตือนใกล้หมดอายุ (< 30 วัน), error ถ้าหมดแล้ว
 - [x] Nationality selector ใน edit profile form — ไทย / ต่างด้าว
 
@@ -142,7 +143,7 @@
 - [x] Migration: 010_kyc.sql — 12 columns (nationality_type, kyc docs, review tracking)
 - [x] Work Permit enforcement — block apply ถ้า foreign worker ไม่มีหรือหมดอายุ (403)
 - [x] Work Permit section บน worker profile card + expiry warning < 30 วัน
-- [x] Multi-language UI 🌐 TH/MM/EN — worker ต่างด้าวเข้าใจแอพได้ทันที
+- [x] Multi-language UI 🌐 TH/EN — ครอบคลุมทุกหน้า (MM ถอดออก ไม่เหมาะ pitch)
 
 **ยังต้องทำ**
 - [ ] Worker upload เอกสาร → Supabase Storage (endpoint `POST /workers/kyc/upload`)
@@ -344,4 +345,4 @@ MAX: 10.00 | MIN: 0.00
 | **Anti-Ghosting** | no-show ที่ +60 นาที → slot freed + แจ้ง employer → เปิด backup workers |
 | **D-1 Reminder** | 18:00 ทุกวัน → push แจ้งเตือน hired worker ที่มีงานพรุ่งนี้ |
 | **Work Permit Lock** | foreign worker สมัครงานไม่ได้ถ้าไม่มี work_permit หรือหมดอายุแล้ว |
-| **Multi-language** | worker UI รองรับ 🇹🇭 TH / 🇲🇲 MM / 🇬🇧 EN — toggle ได้ทันที |
+| **Multi-language** | worker UI รองรับ 🇹🇭 TH / 🇬🇧 EN — toggle ได้ทันที ครอบคลุมทุกหน้า |

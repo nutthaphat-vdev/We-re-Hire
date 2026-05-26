@@ -329,7 +329,29 @@ function setLang(lang) { ... } // update data-i18n elements + active class
 | 6 | main.py — ไม่มี URL hardcode |
 | 7 | Verify ด้วย curl |
 
-บทเรียน: Supabase URL Configuration คือจุดที่ลืมบ่อยสุด ถ้าไม่แก้ Google OAuth callback จะ fail
+**Bug ที่เจอ:** Supabase Site URL คือตัวการทำให้ redirect URL กลับไปเป็น URL เก่า  
+**Lesson:** ทุกครั้งที่เปลี่ยน URL ต้องแก้ครบ checklist ทั้ง 7 ขั้น — ลืมขั้นไหนขั้นหนึ่ง OAuth พัง
+
+### · 🌐 Multi-language UI ทุกหน้า (TH/EN)
+ขยาย i18n จาก auth page เดียว → ครอบคลุมทุกหน้าใน dashboard
+
+**หน้าที่อัปเดต:**
+- Sidebar — nav items, section labels (GENERAL/WORKER/EMPLOYER), ปุ่ม Logout
+- Dashboard — greeting, quick-action cards, stat labels
+- Notifications — type badges, date labels, empty states, mark-read button
+- My Applications (worker) — status badges, action buttons (checkin/complete/nav/contact)
+- My Jobs (employer) — empty state, slot info, view/close/reopen buttons
+- Candidates — back button, hire/reject/verify/dispute buttons, status badges
+- Worker Profile — field labels, edit/save/cancel buttons, nationality selector
+
+**ถอด Myanmar ออก:** ภาษาพม่า (MM) ไม่เหมาะกับ pitch deck BKK MVP  
+เหลือ 2 ภาษา: 🇹🇭 ไทย / 🇬🇧 English
+
+### · 📍 Language Toggle — ย้าย position + เปลี่ยน style
+- ย้ายออกจากใน `.token-box` → อยู่ระหว่าง nav items กับ token box
+- เปลี่ยนจาก flag emoji (🇬🇧) → text-only `TH` / `EN`
+- Active = `var(--accent)` สีเขียว, Inactive = `var(--muted)` สีเทา
+- `setLang()` อัปเดต inline `color` ทันทีทุกครั้ง toggle
 
 ---
 
@@ -343,7 +365,7 @@ function setLang(lang) { ... } // update data-i18n elements + active class
 | Database migrations | **12 ไฟล์** |
 | Bugs ที่เจอและแก้ | **8 critical** |
 | Lines of code (approx) | **~7,000+** |
-| ภาษา UI รองรับ | **3 (TH/MM/EN)** |
+| ภาษา UI รองรับ | **2 (TH/EN)** |
 
 ---
 
