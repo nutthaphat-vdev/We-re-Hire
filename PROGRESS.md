@@ -13,10 +13,12 @@
 - [x] JWT Auth middleware (HS256 — token ของเราเอง)
 - [x] Google OAuth via Supabase — verify ด้วย JWKS + ES256
 - [x] bcrypt password hashing (cost=12)
-- [x] CORS configuration
+- [x] CORS configuration (อ่านจาก env var + hardcode allowlist)
 - [x] Health check endpoint
 - [x] Deploy: Railway (backend) + Cloudflare Workers (frontend)
 - [x] GitHub Actions auto-deploy — push → Cloudflare อัตโนมัติ ✅ live
+- [x] **Rename Worker** → `wearehiredmvp` — URL ใหม่: `wearehiredmvp.vi-nutthaphat.workers.dev`
+- [x] **Production URL Change Checklist** — บันทึกใน CLAUDE.md ครบ 7 ขั้นตอน
 
 ### 🔐 Auth
 - [x] POST /auth/register (worker / employer)

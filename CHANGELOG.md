@@ -300,12 +300,45 @@ function setLang(lang) { ... } // update data-i18n elements + active class
 
 ---
 
+## Day 5 — 26 พฤษภาคม 2568 · วัน Infra & Docs
+
+### · 🔗 Rename Cloudflare Worker → wearehiredmvp
+เปลี่ยนชื่อ Worker จาก `divine-bar-29c7` → `wearehiredmvp`
+
+- `wrangler.toml`: `name = "wearehiredmvp"`
+- Frontend URL ใหม่: `https://wearehiredmvp.vi-nutthaphat.workers.dev`
+- CLAUDE.md: อัปเดต URL table ทุกจุด
+
+### · 🌐 CORS & OAuth Redirect Fix
+หลังเปลี่ยน URL ต้องแก้หลายจุดพร้อมกัน:
+
+- `main.py`: ลบ hardcode `127.0.0.1:5500` fallback ออกจาก OAuth callback → ใช้ `settings.frontend_url` เปล่าๆ
+- `main.py`: hardcode URL ใหม่ใน CORS allowlist (bypass env var timing issue)
+- CORS verify ด้วย `curl -I -X OPTIONS` — ยืนยัน `Access-Control-Allow-Origin` header
+
+### · 📋 Production URL Change Checklist (CLAUDE.md)
+เพิ่ม section ใหม่ใน CLAUDE.md — 7 ขั้นตอน ทุกครั้งที่เปลี่ยน URL:
+
+| ขั้นตอน | จุดที่แก้ |
+|---------|----------|
+| 1 | Cloudflare Dashboard — rename worker |
+| 2 | wrangler.toml — name = ใหม่ |
+| 3 | Google Cloud Console — redirect URIs (รอ 5-30 นาที) |
+| **4** | **Supabase — Site URL + Redirect URLs ← มักลืม!** |
+| 5 | Railway env vars — FRONTEND_URL + CORS_ORIGINS |
+| 6 | main.py — ไม่มี URL hardcode |
+| 7 | Verify ด้วย curl |
+
+บทเรียน: Supabase URL Configuration คือจุดที่ลืมบ่อยสุด ถ้าไม่แก้ Google OAuth callback จะ fail
+
+---
+
 ## Stats
 
 | | จำนวน |
 |--|--|
-| วันที่ใช้สร้าง | **4 วัน** |
-| Commits | **60+** |
+| วันที่ใช้สร้าง | **5 วัน** |
+| Commits | **70+** |
 | Endpoints | **47+** |
 | Database migrations | **12 ไฟล์** |
 | Bugs ที่เจอและแก้ | **8 critical** |
