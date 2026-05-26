@@ -315,6 +315,57 @@ ALTER TABLE worker_profiles
 
 ---
 
+## 🔄 Production URL Change Checklist
+
+> ทุกครั้งที่เปลี่ยน Frontend URL ต้องแก้ครบทุกจุด — ลืมจุดไหนจุดหนึ่ง OAuth พัง
+
+### 1. Cloudflare Dashboard
+- Workers & Pages → เลือก Worker → Settings → Rename worker
+
+### 2. wrangler.toml
+```toml
+name = "ชื่อใหม่"
+```
+→ git commit + push → GitHub Actions deploy อัตโนมัติ
+
+### 3. Google Cloud Console ⚠️ (รอ 5–30 นาที หลัง save)
+- APIs & Services → Credentials → OAuth 2.0 Client ID
+- **Authorized redirect URIs** → เพิ่ม URL ใหม่
+  ```
+  https://[new-url]/index.html
+  https://[new-url]/**
+  ```
+
+### 4. Supabase Dashboard ← สำคัญมาก มักลืม!
+- Authentication → URL Configuration
+- **Site URL** → เปลี่ยนเป็น URL ใหม่
+- **Redirect URLs** → เพิ่ม `https://[new-url]/**`
+
+### 5. Railway Environment Variables
+```
+FRONTEND_URL  = https://[new-url]
+CORS_ORIGINS  = ...,https://[old-url],https://[new-url]   ← เพิ่ม อย่าลบเก่า
+```
+→ Save → Railway redeploy อัตโนมัติ
+
+### 6. main.py
+- ตรวจว่าไม่มี URL hardcode
+- OAuth callback ใช้ `settings.frontend_url` เสมอ
+- CORS อ่านจาก `settings.cors_origins` + `settings.frontend_url`
+
+### 7. Verify ด้วย curl
+```bash
+curl -I -X OPTIONS "https://web-production-03c5a.up.railway.app/auth/google/url" \
+  -H "Origin: https://[new-url]" \
+  -H "Access-Control-Request-Method: GET"
+```
+✅ ต้องเห็น `Access-Control-Allow-Origin: https://[new-url]`  
+❌ ถ้าเห็น `400 Bad Request` → Railway env var ยังไม่ได้ update หรือยังไม่ redeploy
+
+> **Note:** Phase 3 → React Native จะจัดการ env var ได้ง่ายกว่า ไม่ต้องแก้ทีละจุดแบบนี้
+
+---
+
 ## 🚫 Pitfalls ที่เคยเจอ — ห้ามทำซ้ำ
 
 | ปัญหา | สาเหตุ | วิธีแก้ |
