@@ -65,6 +65,7 @@ async def auto_verify_completed_jobs():
                 """
                 SELECT
                     ja.id,
+                    jp.id           AS job_id,
                     jp.title        AS job_title,
                     wp.user_id      AS worker_user_id,
                     ep.user_id      AS employer_user_id
@@ -93,6 +94,15 @@ async def auto_verify_completed_jobs():
                 await db.execute(
                     "UPDATE job_applications SET status='verified', employer_verified_at=NOW() WHERE id=$1",
                     row["id"],
+                )
+                # ถ้า slots เต็มแล้ว → mark job เป็น filled
+                await db.execute(
+                    """
+                    UPDATE job_postings SET status='filled'
+                    WHERE  id=$1 AND status='open'
+                      AND  slots_filled >= slots_available
+                    """,
+                    row["job_id"],
                 )
                 msg = f"งาน {row['job_title']} ได้รับการยืนยันอัตโนมัติ (2 ชม. หลังงานเสร็จ) กรุณาให้คะแนนและรีวิว"
                 await db.execute(
@@ -899,6 +909,7 @@ async def get_my_jobs(
                start_date, created_at
         FROM   job_postings
         WHERE  employer_id = $1
+          AND  status = 'open'
         ORDER  BY created_at DESC
         LIMIT  100
         """,
@@ -1453,7 +1464,7 @@ async def _get_app_for_employer(app_id: UUID, user: dict, db) -> dict:
     row = await db.fetchrow(
         """
         SELECT ja.id, ja.status, ja.worker_id,
-               jp.title AS job_title, jp.work_start,
+               jp.id AS job_id, jp.title AS job_title, jp.work_start,
                wp.user_id AS worker_user_id
         FROM   job_applications ja
         JOIN   job_postings     jp ON jp.id = ja.job_id
@@ -1612,6 +1623,15 @@ async def employer_verify_complete(
     await db.execute(
         "UPDATE job_applications SET status='verified', employer_verified_at=NOW() WHERE id=$1",
         app_id,
+    )
+    # ถ้า slots เต็มแล้ว → mark job เป็น filled
+    await db.execute(
+        """
+        UPDATE job_postings SET status='filled'
+        WHERE  id=$1 AND status='open'
+          AND  slots_filled >= slots_available
+        """,
+        row["job_id"],
     )
     review_msg = f"งาน {row['job_title']} เสร็จสิ้นแล้ว! กรุณาให้คะแนนและรีวิว"
     try:
