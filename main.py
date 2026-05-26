@@ -356,15 +356,16 @@ app = FastAPI(
     version="0.1.0",
     description="Daily Wage Matchmaking Platform — BKK MVP",
     lifespan=lifespan,
+    docs_url=None if os.getenv("RAILWAY_ENVIRONMENT") else "/docs",
+    redoc_url=None if os.getenv("RAILWAY_ENVIRONMENT") else "/redoc",
 )
 
 origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
 if settings.frontend_url:
     origins.append(settings.frontend_url.strip())
-# Explicit allowlist — ensures new Cloudflare URL works regardless of env var
+# Explicit allowlist — current Cloudflare Worker URL
 for _url in [
     "https://wearehiredmvp.vi-nutthaphat.workers.dev",
-    "https://divine-bar-29c7.vi-nutthaphat.workers.dev",
 ]:
     if _url not in origins:
         origins.append(_url)
@@ -1978,9 +1979,10 @@ async def get_contact(
     if not row:
         raise HTTPException(status_code=404, detail="ไม่พบใบสมัคร")
 
-    # ต้อง hired เท่านั้น
-    if row["status"] != "hired":
-        raise HTTPException(status_code=403, detail="เปิดเผยข้อมูลติดต่อได้เฉพาะงานที่ hired แล้วเท่านั้น")
+    # อนุญาตตลอดช่วงงาน active (hired → verified)
+    _CONTACT_OK = {"hired", "checked_in", "working", "completed", "verified"}
+    if row["status"] not in _CONTACT_OK:
+        raise HTTPException(status_code=403, detail="เปิดเผยข้อมูลติดต่อได้เฉพาะงานที่ active แล้วเท่านั้น")
 
     # ตรวจสิทธิ์ — ต้องเป็นคู่ที่เกี่ยวข้องกัน
     if role == "worker" and row["worker_user_id"] != user_id:
@@ -2322,10 +2324,7 @@ async def report_user(
         body.reported_user_id,
     )
     if report_count >= 3:
-        await db.execute(
-            "UPDATE users SET is_active=FALSE WHERE id=$1 AND is_active=TRUE",
-            body.reported_user_id,
-        )
+        logger.warning(f"[trust] user {body.reported_user_id} has {report_count} reports — needs admin review")
 
     return {"status": "reported", "message": "รายงานถูกส่งแล้ว ทีมงานจะตรวจสอบ"}
 
@@ -2371,7 +2370,7 @@ async def get_blocked_users(
 ):
     rows = await db.fetch(
         """
-        SELECT u.id, u.email, u.role, ub.created_at AS blocked_at
+        SELECT u.id, u.role, ub.created_at AS blocked_at
         FROM   user_blocks ub
         JOIN   users u ON u.id = ub.blocked_user_id
         WHERE  ub.blocker_id = $1
@@ -2379,7 +2378,7 @@ async def get_blocked_users(
         """,
         UUID(user["sub"]),
     )
-    return [{"user_id": str(r["id"]), "email": r["email"],
+    return [{"user_id": str(r["id"]),
              "role": r["role"], "blocked_at": r["blocked_at"].isoformat()} for r in rows]
 
 
@@ -2439,7 +2438,7 @@ async def submit_review(
         JOIN   worker_profiles   wp ON wp.id = ja.worker_id
         JOIN   job_postings      jp ON jp.id = ja.job_id
         JOIN   employer_profiles ep ON ep.id = jp.employer_id
-        WHERE  ja.id = $1 AND ja.status = 'hired'
+        WHERE  ja.id = $1 AND ja.status IN ('hired', 'verified', 'disputed')
         """,
         body.application_id,
     )

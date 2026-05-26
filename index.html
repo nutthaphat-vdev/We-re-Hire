@@ -751,6 +751,17 @@ function showAlert(id, msg, type='error') {
   setTimeout(() => { if(el) el.innerHTML=''; }, 5000);
 }
 
+// ─── HTML ESCAPE — ใช้ทุกจุดที่ render user input ใน innerHTML ────────────
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ─── LANDING ───────────────────────────────────────────────
 function showAuthFromLanding() {
   document.getElementById('landingPage').style.display = 'none';
@@ -1172,20 +1183,20 @@ async function searchNearby() {
       data.jobs.map(j => `
         <div class="job-card">
           <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div style="font-weight:600;font-size:16px">${j.title}</div>
+            <div style="font-weight:600;font-size:16px">${esc(j.title)}</div>
             <span class="badge badge-green">฿${Number(j.daily_wage_rate).toLocaleString()}/วัน</span>
           </div>
           <div class="job-meta" style="margin-top:8px">
-            <span>📍 ${j.location_name||j.zone_name||'-'}</span>
+            <span>📍 ${esc(j.location_name||j.zone_name||'-')}</span>
             <span>📏 ${j.distance_km} กม.</span>
             <span>📅 ${j.duration_days} วัน</span>
             <span>👥 เหลือ ${j.slots_remaining} ที่</span>
-            ${j.work_start && j.work_end ? `<span style="color:var(--accent);font-weight:600">⏰ ${j.work_start}–${j.work_end}</span>` : ''}
+            ${j.work_start && j.work_end ? `<span style="color:var(--accent);font-weight:600">⏰ ${esc(j.work_start)}–${esc(j.work_end)}</span>` : ''}
             ${j.ot_rate ? `<span style="color:var(--warn)">💰 OT ${j.ot_rate}฿/ชม.</span>` : ''}
           </div>
           <div class="tags">
-            ${j.matched_skills.map(s=>`<span class="tag tag-match">✓ ${s}</span>`).join('')}
-            ${j.missing_skills.map(s=>`<span class="tag">${s}</span>`).join('')}
+            ${j.matched_skills.map(s=>`<span class="tag tag-match">✓ ${esc(s)}</span>`).join('')}
+            ${j.missing_skills.map(s=>`<span class="tag">${esc(s)}</span>`).join('')}
           </div>
           <div class="match-bar"><div class="match-fill" style="width:${j.match_score}%"></div></div>
           <div class="match-label">
@@ -1242,10 +1253,10 @@ async function loadMyApps() {
       <div class="card" id="appcard-${a.id}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
           <div>
-            <div style="font-weight:600;font-size:15px">${a.job.title}</div>
+            <div style="font-weight:600;font-size:15px">${esc(a.job.title)}</div>
             <div style="font-size:12px;color:var(--muted);margin-top:2px">
-              ${a.job.location_name||'-'} • ฿${a.job.daily_wage_rate}/วัน • ${a.job.duration_days} วัน
-              ${a.job.work_start ? `• ⏰ ${a.job.work_start}–${a.job.work_end}` : ''}
+              ${esc(a.job.location_name||'-')} • ฿${a.job.daily_wage_rate}/วัน • ${a.job.duration_days} วัน
+              ${a.job.work_start ? `• ⏰ ${esc(a.job.work_start)}–${esc(a.job.work_end)}` : ''}
               ${a.job.ot_rate ? `• 💰 OT ${a.job.ot_rate}฿/ชม.` : ''}
             </div>
           </div>
@@ -1256,7 +1267,7 @@ async function loadMyApps() {
           <span>ระยะ: ${a.distance_km} กม.</span>
           <span>สมัคร: ${new Date(a.applied_at).toLocaleDateString('th-TH')}</span>
         </div>
-        ${a.employer_note ? `<div style="margin-top:10px;font-size:13px;color:var(--muted);font-style:italic">"${a.employer_note}"</div>` : ''}
+        ${a.employer_note ? `<div style="margin-top:10px;font-size:13px;color:var(--muted);font-style:italic">"${esc(a.employer_note)}"</div>` : ''}
         ${ACTIVE.includes(a.status) && a.maps_link ? `
           <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <a href="${a.maps_link}" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">${t('nav_btn')}</a>
@@ -1294,8 +1305,8 @@ async function checkEmployerProfile() {
       <div style="padding:12px 16px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);margin-bottom:16px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
           <div style="flex:1">
-            <div style="font-weight:600">${emp.company_name}</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">${emp.contact_person} · ${emp.business_type||''}</div>
+            <div style="font-weight:600">${esc(emp.company_name)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(emp.contact_person)} · ${esc(emp.business_type||'')}</div>
           </div>
           ${verifiedBadge}
         </div>
@@ -1439,17 +1450,17 @@ async function loadMyJobs() {
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
           <div>
-            <div style="font-weight:600;font-size:16px">${j.title}</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">${j.location_name||'-'} • ฿${j.daily_wage_rate}/วัน • ${j.duration_days} วัน</div>
+            <div style="font-weight:600;font-size:16px">${esc(j.title)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(j.location_name||'-')} • ฿${j.daily_wage_rate}/วัน • ${j.duration_days} วัน</div>
           </div>
-          <span class="badge ${sColor[j.status]||'badge-gray'}">${j.status}</span>
+          <span class="badge ${sColor[j.status]||'badge-gray'}">${esc(j.status)}</span>
         </div>
         <div style="display:flex;gap:12px;font-size:12px;color:var(--muted);margin-bottom:14px">
           <span>${t('jobs_slots')} ${j.slots_available - j.slots_filled}/${j.slots_available}</span>
           <span>${t('jobs_posted')} ${new Date(j.created_at).toLocaleDateString(locale)}</span>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-secondary btn-sm" onclick="loadCandidates('${j.id}','${j.title}')">${t('jobs_view_cands')}</button>
+          <button class="btn btn-secondary btn-sm" data-jid="${esc(j.id)}" data-jtitle="${esc(j.title)}" onclick="loadCandidates(this.dataset.jid,this.dataset.jtitle)">${t('jobs_view_cands')}</button>
           ${j.status==='open' ? `<button class="btn btn-danger btn-sm" onclick="closeJob('${j.id}')">${t('jobs_close')}</button>` : ''}
           ${j.status==='closed' ? `<button class="btn btn-secondary btn-sm" onclick="reopenJob('${j.id}')">${t('jobs_reopen')}</button>` : ''}
         </div>
@@ -1486,19 +1497,19 @@ async function loadCandidates(jobId, jobTitle) {
     }
     const bgColor = { pending:'badge-warn', verified:'badge-green', failed:'badge-danger' };
     el.innerHTML = back +
-      `<div style="font-size:16px;font-weight:600;margin-bottom:16px">${jobTitle} — ${data.length} ${t('cand_applied')}</div>` +
+      `<div style="font-size:16px;font-weight:600;margin-bottom:16px">${esc(jobTitle)} — ${data.length} ${t('cand_applied')}</div>` +
       data.map(c => `
         <div class="candidate">
-          <div class="avatar">${c.full_name.charAt(0).toUpperCase()}</div>
+          <div class="avatar">${esc(c.full_name.charAt(0).toUpperCase())}</div>
           <div class="candidate-info">
-            <div class="candidate-name">${c.full_name}</div>
+            <div class="candidate-name">${esc(c.full_name)}</div>
             <div class="candidate-meta">
               Match: <strong style="color:var(--accent)">${c.match_score}/100</strong> •
               ${c.distance_km} กม. •
-              <span class="badge ${bgColor[c.background_check_status]||'badge-gray'}" style="font-size:10px">${c.background_check_status}</span>
+              <span class="badge ${bgColor[c.background_check_status]||'badge-gray'}" style="font-size:10px">${esc(c.background_check_status)}</span>
             </div>
             <div class="tags" style="margin-top:6px">
-              ${c.matched_skills.map(s=>`<span class="tag tag-match" style="font-size:10px">✓ ${s}</span>`).join('')}
+              ${c.matched_skills.map(s=>`<span class="tag tag-match" style="font-size:10px">✓ ${esc(s)}</span>`).join('')}
             </div>
           </div>
           <div class="candidate-actions" style="flex-direction:column;gap:6px;align-items:flex-end">
@@ -1677,9 +1688,9 @@ async function showContact(appId, btn) {
     el.innerHTML = `
       <div style="background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:8px;padding:10px 14px;margin-top:8px">
         <div style="font-size:12px;color:var(--muted);margin-bottom:6px">📞 ข้อมูลติดต่อ</div>
-        <div style="font-weight:600">${c.contact_name}${c.company_name ? ' · ' + c.company_name : ''}</div>
-        ${c.phone ? `<div style="margin-top:4px"><a href="tel:${c.phone}" style="color:var(--accent);text-decoration:none;font-family:'IBM Plex Mono',monospace">📱 ${c.phone}</a></div>` : ''}
-        <div style="margin-top:2px;font-size:12px;color:var(--muted)">${c.email}</div>
+        <div style="font-weight:600">${esc(c.contact_name)}${c.company_name ? ' · ' + esc(c.company_name) : ''}</div>
+        ${c.phone ? `<div style="margin-top:4px"><a href="tel:${esc(c.phone)}" style="color:var(--accent);text-decoration:none;font-family:'IBM Plex Mono',monospace">📱 ${esc(c.phone)}</a></div>` : ''}
+        <div style="margin-top:2px;font-size:12px;color:var(--muted)">${esc(c.email)}</div>
       </div>`;
     el.style.display = 'block';
     btn.innerHTML = '🙈 ซ่อน';
@@ -1960,13 +1971,13 @@ async function loadNotifications() {
               <div style="font-size:22px;line-height:1.3;flex-shrink:0">${icon}</div>
               <div style="flex:1;min-width:0">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
-                  <div style="font-weight:600;font-size:14px;word-break:break-word">${n.title}</div>
+                  <div style="font-weight:600;font-size:14px;word-break:break-word">${esc(n.title)}</div>
                   <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">
-                    <span class="badge ${lbl.color}" style="font-size:10px">${lbl.text}</span>
+                    <span class="badge ${lbl.color}" style="font-size:10px">${esc(lbl.text)}</span>
                     ${unread ? '<span class="badge badge-blue" style="font-size:10px">ใหม่</span>' : ''}
                   </div>
                 </div>
-                ${n.body ? `<div style="font-size:13px;color:var(--muted);margin-bottom:8px;white-space:pre-wrap;word-break:break-word">${n.body}</div>` : ''}
+                ${n.body ? `<div style="font-size:13px;color:var(--muted);margin-bottom:8px;white-space:pre-wrap;word-break:break-word">${esc(n.body)}</div>` : ''}
                 <div style="display:flex;justify-content:space-between;align-items:center">
                   <div style="display:flex;align-items:center;gap:8px">
                     <div style="font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace">${time}</div>
