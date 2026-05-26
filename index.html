@@ -152,7 +152,6 @@
   <div class="auth-card">
     <div style="display:flex;justify-content:flex-end;margin-bottom:8px;gap:4px">
       <button class="lang-btn btn btn-secondary btn-sm active" data-lang="th" onclick="setLang('th')" style="padding:3px 10px;font-size:12px">🇹🇭 TH</button>
-      <button class="lang-btn btn btn-secondary btn-sm" data-lang="my" onclick="setLang('my')" style="padding:3px 10px;font-size:12px">🇲🇲 MM</button>
       <button class="lang-btn btn btn-secondary btn-sm" data-lang="en" onclick="setLang('en')" style="padding:3px 10px;font-size:12px">🇬🇧 EN</button>
     </div>
     <div class="auth-logo">
@@ -283,7 +282,6 @@
       </div>
       <div style="margin-top:6px;display:flex;gap:4px;justify-content:center">
         <button class="lang-btn btn btn-secondary btn-sm" data-lang="th" onclick="setLang('th')" style="padding:3px 8px;font-size:11px">🇹🇭</button>
-        <button class="lang-btn btn btn-secondary btn-sm" data-lang="my" onclick="setLang('my')" style="padding:3px 8px;font-size:11px">🇲🇲</button>
         <button class="lang-btn btn btn-secondary btn-sm" data-lang="en" onclick="setLang('en')" style="padding:3px 8px;font-size:11px">🇬🇧</button>
       </div>
     </div>
@@ -591,68 +589,6 @@ const LANG = {
     nav_my_reviews:'รีวิวของฉัน', nav_my_profile:'โปรไฟล์ของฉัน',
     nav_post_job:'โพสต์งานใหม่', nav_my_jobs:'งานของฉัน',
     nav_logout:'ออก',
-  },
-  my: {
-    login_tab:'ဝင်ရောက်ရန်', register_tab:'မှတ်ပုံတင်ရန်',
-    email_lbl:'အီးမေးလ်', password_lbl:'စကားဝှက်', phone_lbl:'ဖုန်းနံပါတ်',
-    role_lbl:'အခန်းကဏ္ဍ', role_worker:'👷 အလုပ်သမား', role_employer:'🏭 အလုပ်ရှင်',
-    login_btn:'ဝင်ရောက်ရန်', register_btn:'မှတ်ပုံတင်ရန်',
-    google_login:'Google ဖြင့်ဝင်ရောက်ရန်', google_register:'Google ဖြင့်မှတ်ပုံတင်ရန်',
-    or_divider:'သို့မဟုတ်',
-    nearby_title:'အနီးနားရှိ အလုပ်ရှာပါ', nearby_sub:'သတ်မှတ်ရာဒီယပ်အတွင်း ရှာဖွေပါ',
-    search_place_lbl:'တည်နေရာရှာပါ', radius_lbl:'ရာဒီယပ် (ကီလိုမီတာ)',
-    search_btn:'🔍 ရှာဖွေပါ', apply_btn:'ဤအလုပ်လျှောက်ပါ', applied_ok:'✅ လျှောက်ပြီး',
-    checkin_btn:'ရောက်ရှိပြီ 📍', complete_btn:'အလုပ်ပြီးပြီ ✅',
-    nav_btn:'🗺️ လမ်းညွှန်', contact_btn:'📞 ဖုန်းကြည့်ပါ',
-    wait_start:'⏳ အလုပ်ရှင်၏ အစပြုခြင်းကို စောင့်ဆိုင်းပါ',
-    wait_verify:'⏳ အလုပ်ရှင်၏ အတည်ပြုချက်ကို စောင့်ဆိုင်းပါ',
-    job_success:'🎉 အလုပ်အောင်မြင်ပြီ! သုံးသပ်ချက်ပေးရန် မမေ့ပါနှင့်',
-    st_applied:'ဆုံးဖြတ်ချက်ကိုစောင့်ဆိုင်းပါ', st_shortlisted:'စာရင်းတွင်ပါဝင်သည်', st_hired:'ငှားရမ်းခံရပြီ',
-    st_rejected:'ငြင်းဆန်ခဲ့သည်', st_withdrawn:'ဆုတ်ခွာပြီ', st_checked_in:'ဝင်ရောက်မှတ်ပုံတင်ပြီ',
-    st_working:'အလုပ်လုပ်နေဆဲ ▶️', st_completed:'အလုပ်ပြီး ⏳',
-    st_verified:'အတည်ပြုပြီ ✅', st_disputed:'စစ်ဆေးနေဆဲ ⚠️', st_noshow:'မလာနိုင်ဘူး ❌',
-    wp_disclaimer:'အလုပ်ရှင်သည် ငှားရမ်းမတိုင်မီ Work Permit မှန်ကန်မှုကို ကိုယ်တိုင်စစ်ဆေးရမည်',
-    // Dashboard
-    dash_worker_greeting:'ဘန်ကောက်တွင် နေ့စဉ်အလုပ်ရှာပါ', dash_employer_greeting:'အလုပ်များနှင့် လျှောက်ထားသူများ စီမံပါ',
-    stat_area:'ဝန်ဆောင်မှုနေရာ', stat_zones:'ခရိုင်လွှမ်းခြုံမှု', stat_radius:'အများဆုံး ကီလိုမီတာ',
-    dash_find_jobs:'အနီးနားရှိ အလုပ်ရှာပါ', dash_find_jobs_sub:'သင့်ကျွမ်းကျင်မှုနှင့် ကိုက်ညီသော အလုပ်များကြည့်ပါ',
-    dash_my_profile:'ကျွန်ုပ်ပရိုဖိုင်', dash_my_profile_sub:'ကျွမ်းကျင်မှုနှင့် အချက်အလက်တည်းဖြတ်ပါ',
-    dash_post_job:'အလုပ်ကြော်ငြာ တင်ပါ', dash_post_job_sub:'သင့်လျော်သော နေ့စဉ်အလုပ်သမားရှာပါ',
-    dash_my_jobs:'ကျွန်ုပ်အလုပ်များ', dash_my_jobs_sub:'လျှောက်ထားသူများကြည့်ပြီး အလုပ်စီမံပါ',
-    // Notifications
-    notif_new_applicant:'လျှောက်ထားသူသစ်', notif_hired:'ငှားရမ်းခံရပြီ', notif_rejected:'ငြင်းဆန်ခဲ့သည်',
-    notif_shortlisted:'ရွေးချယ်ပြီး', notif_update:'လျှောက်လွှာအပ်ဒိတ်', notif_review:'သုံးသပ်ချက်ပေးရန်',
-    notif_payment:'ငွေပေးချေမှု', notif_bgcheck:'အထောက်အထားစစ်ဆေးမှု',
-    notif_new_badge:'အသစ်', notif_read_btn:'ဖတ်ပြီး', notif_read_done:'ဖတ်ပြီး ✓',
-    notif_see_detail:'အသေးစိတ်ကြည့်ပါ →',
-    notif_empty_all:'အသိပေးချက်မရှိသေးပါ', notif_empty_unread:'မဖတ်ရသေးသော အသိပေးချက်မရှိပါ',
-    notif_today:'ယနေ့', notif_yesterday:'မနေ့က',
-    // My Jobs
-    jobs_empty:'တင်ထားသောအလုပ်မရှိသေးပါ', jobs_post_first:'ပထမဆုံးအလုပ်တင်ပါ',
-    jobs_slots:'နေရာလပ်:', jobs_posted:'တင်သည်:',
-    jobs_view_cands:'👥 လျှောက်ထားသူများကြည့်ပါ', jobs_close:'အလုပ်ပိတ်ပါ', jobs_reopen:'အလုပ်ပြန်ဖွင့်ပါ',
-    // Candidates
-    cand_back:'← နောက်သို့', cand_applied:'ဦးရေ လျှောက်ထားသည်',
-    cand_reject_btn:'ငြင်းဆန်ပါ', cand_hire_btn:'ငှားပါ ✓',
-    cand_hire_done:'✅ ငှားပြီးပြီ', cand_reject_done:'❌ ငြင်းဆန်ပြီးပြီ',
-    cand_waiting_checkin:'Worker စစ်ဆေးဝင်ရောက်ရန် စောင့်ဆိုင်းပါ', cand_see_contact:'📞 ဖုန်းကြည့်ပါ',
-    cand_start_work:'▶️ အလုပ်စတင်ပါ', cand_working:'▶️ အလုပ်လုပ်နေဆဲ',
-    cand_verify_btn:'✅ အလုပ်ပြီးကြောင်းအတည်ပြုပါ', cand_dispute_btn:'⚠️ ကန့်ကွက်ပါ',
-    cand_success:'✅ အောင်မြင်ပြီ', cand_in_review:'⚠️ စစ်ဆေးနေဆဲ',
-    cand_report:'🚩 တိုင်ကြားပါ', cand_no_candidates:'လျှောက်ထားသူမရှိသေးပါ',
-    // Worker Profile
-    profile_exp:'အတွေ့အကြုံ', profile_exp_unit:'နှစ်',
-    profile_rate:'မျှော်မှန်းသောနေ့စဉ်နှုန်း', profile_skills_lbl:'ကျွမ်းကျင်မှုများ', profile_no_skills:'ကျွမ်းကျင်မှုမရှိသေးပါ',
-    profile_edit_btn:'✏️ ပရိုဖိုင်တည်းဖြတ်ပါ', profile_save:'သိမ်းပါ', profile_cancel:'မလုပ်တော့ပါ',
-    profile_create_btn:'✅ ပရိုဖိုင်ဖန်တီးပါ', profile_nationality:'လူမျိုး',
-    profile_nat_thai:'🇹🇭 ထိုင်း', profile_nat_foreign:'🌏 နိုင်ငံခြားသား',
-    // Sidebar nav
-    nav_sec_general:'GENERAL', nav_sec_worker:'WORKER', nav_sec_employer:'EMPLOYER',
-    nav_home:'ပင်မစာမျက်နှာ', nav_notifications:'အကြောင်းကြားချက်များ',
-    nav_find_jobs:'အလုပ်ရှာဖွေရန်', nav_applications:'လျှောက်လွှာများ',
-    nav_my_reviews:'ကျွန်ုပ်၏သုံးသပ်ချက်', nav_my_profile:'ကျွန်ုပ်၏ပရိုဖိုင်',
-    nav_post_job:'အလုပ်တင်ရန်', nav_my_jobs:'ကျွန်ုပ်၏အလုပ်များ',
-    nav_logout:'ထွက်ရန်',
   },
   en: {
     login_tab:'Login', register_tab:'Register',
@@ -1941,7 +1877,7 @@ function _notifDateLabel(dateStr) {
   d.setHours(0,0,0,0);
   if (d.getTime() === today.getTime()) return t('notif_today');
   if (d.getTime() === yest.getTime())  return t('notif_yesterday');
-  const locale = _lang === 'th' ? 'th-TH' : _lang === 'my' ? 'my-MM' : 'en-GB';
+  const locale = _lang === 'th' ? 'th-TH' : 'en-GB';
   return new Date(dateStr).toLocaleDateString(locale, {day:'numeric',month:'long',year:'numeric'});
 }
 
