@@ -732,7 +732,7 @@ API_URL = https://web-production-03c5a.up.railway.app
 
 ### ก่อน implement ทุกครั้ง
 - คาดการณ์ edge cases ที่อาจเกิดขึ้น
-- เช็ค type safety — asyncpg Decimal vs float
+- เช็ค type safety — asyncpg Decimal vs float เสมอ
 - เช็ค null/None handling ทุก field
 - เช็ค status transitions ว่า logic ถูกต้องไหม
 - เช็ค foreign key constraints ก่อน INSERT/DELETE
@@ -741,22 +741,51 @@ API_URL = https://web-production-03c5a.up.railway.app
 - ระบุ side effects ที่อาจเกิดจาก code นี้
 - บอกพี่ว่ามี endpoint/function ไหนที่อาจได้รับผลกระทบ
 - แนะนำ test case ที่ควรลองก่อน deploy
-- ถ้าแก้ bug — บอกว่ามี bug แบบเดียวกันซ่อนอยู่ที่อื่นไหม
+- ถ้าแก้ bug — เช็คว่ามี bug แบบเดียวกันซ่อนอยู่ที่อื่นไหม
 
-### Red flags ที่ต้องแจ้งพี่ทันที
+### Red flags ต้องแจ้งพี่ทันที
 - SQL ที่ไม่มี parameterized query
 - JWT/auth logic ที่เปลี่ยน
-- Migration ที่ drop column หรือ alter type
+- Migration ที่ DROP column หรือ ALTER type
 - CORS หรือ security header ที่เปลี่ยน
 - Cron job ที่อาจ overlap กัน
-- Loop ที่อาจเกิด infinite หรือ N+1 query
+- Loop ที่อาจเกิด N+1 query
 
-### Format การรายงาน
-หลัง implement ให้สรุปแบบนี้เสมอ:
-```
+### Format การรายงานหลัง implement
 ✅ สิ่งที่ทำ
 ⚠️ สิ่งที่ต้องระวัง
 🧪 Test case ที่แนะนำ
 🔗 Endpoints/functions ที่อาจได้รับผลกระทบ
-```
+
+---
+
+## Advanced Skills & Domain Knowledge
+
+### Performance
+- รู้จัก N+1 query และหลีกเลี่ยงเสมอ
+- ใช้ EXPLAIN ANALYZE ก่อน query หนักๆ
+- รู้ว่า index ไหนมีอยู่แล้วใน schema (ดู supabase_setup_full.sql)
+
+### Migration Safety
+- ห้าม DROP COLUMN โดยไม่แจ้งพี่ก่อน
+- ทุก migration ต้องคิด rollback plan ไว้ด้วย
+- ห้าม ALTER TYPE column ที่มีข้อมูลอยู่แล้ว
+
+### Cron Job Awareness
+- cron ที่รันอยู่: auto-verify (30m), noshow-check (5m), D-1 reminder (18:00 BKK)
+- เช็ค overlap ก่อนเพิ่ม cron ใหม่ทุกครั้ง
+- ระวัง race condition ระหว่าง cron jobs
+
+### Payment Logic (Phase 3)
+- Escrow state machine ต้อง atomic ทุกครั้ง
+- ทุก financial transaction ต้องมี idempotency key
+- ห้าม double-charge ไม่ว่ากรณีใดทั้งสิ้น
+- Pro-rata calculation ต้องแม่นยำ — ใช้ Decimal ไม่ใช่ float
+
+### React Native (Phase 3)
+- ใช้ Expo — ไม่ใช่ bare React Native
+- TypeScript strict mode — ห้ามใช้ `any`
+- API ทุกตัวต้องผ่าน `/services/api.ts` เท่านั้น
+- GPS ใช้ Expo Location
+- Push notification ใช้ Expo Notifications
 
