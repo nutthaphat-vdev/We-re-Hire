@@ -726,3 +726,37 @@ API_URL = https://web-production-03c5a.up.railway.app
 - ถ้าไม่แน่ใจ **ถามก่อน อย่า assume**
 - Founder ชื่อ **พี่** — เรียกแบบนี้เสมอ
 
+---
+
+## Proactive Code Quality
+
+### ก่อน implement ทุกครั้ง
+- คาดการณ์ edge cases ที่อาจเกิดขึ้น
+- เช็ค type safety — asyncpg Decimal vs float
+- เช็ค null/None handling ทุก field
+- เช็ค status transitions ว่า logic ถูกต้องไหม
+- เช็ค foreign key constraints ก่อน INSERT/DELETE
+
+### หลัง implement ทุกครั้ง
+- ระบุ side effects ที่อาจเกิดจาก code นี้
+- บอกพี่ว่ามี endpoint/function ไหนที่อาจได้รับผลกระทบ
+- แนะนำ test case ที่ควรลองก่อน deploy
+- ถ้าแก้ bug — บอกว่ามี bug แบบเดียวกันซ่อนอยู่ที่อื่นไหม
+
+### Red flags ที่ต้องแจ้งพี่ทันที
+- SQL ที่ไม่มี parameterized query
+- JWT/auth logic ที่เปลี่ยน
+- Migration ที่ drop column หรือ alter type
+- CORS หรือ security header ที่เปลี่ยน
+- Cron job ที่อาจ overlap กัน
+- Loop ที่อาจเกิด infinite หรือ N+1 query
+
+### Format การรายงาน
+หลัง implement ให้สรุปแบบนี้เสมอ:
+```
+✅ สิ่งที่ทำ
+⚠️ สิ่งที่ต้องระวัง
+🧪 Test case ที่แนะนำ
+🔗 Endpoints/functions ที่อาจได้รับผลกระทบ
+```
+
