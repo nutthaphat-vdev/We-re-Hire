@@ -335,6 +335,7 @@ async def lifespan(app: FastAPI):
         statement_cache_size=0,  # Required for Supabase PgBouncer transaction mode
     )
     print("✅ DB pool connected")
+    print(f"[startup] FRONTEND_URL = {settings.frontend_url!r}")
     logger.info(f"[startup] FRONTEND_URL   = {settings.frontend_url!r}")
     logger.info(f"[startup] CORS_ORIGINS   = {settings.cors_origins!r}")
     logger.info(f"[startup] origins list   = {origins}")
