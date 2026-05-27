@@ -362,6 +362,14 @@ curl -I -X OPTIONS "https://web-production-03c5a.up.railway.app/auth/google/url"
 ✅ ต้องเห็น `Access-Control-Allow-Origin: https://[new-url]`  
 ❌ ถ้าเห็น `400 Bad Request` → Railway env var ยังไม่ได้ update หรือยังไม่ redeploy
 
+### 8. Railway Source Repo ← มักลืม!
+- Railway → Project → Settings → **Source**
+- ตรวจว่า repo ชี้ถูก account ไหม
+- ถ้าเปลี่ยน GitHub account → disconnect แล้ว reconnect ใหม่
+- ถ้าไม่แก้ → Railway ไม่ได้รับ webhook → ไม่ redeploy!
+
+> **Note:** GitHub redirect repo เก่าให้อัตโนมัติ เลยดูเหมือนทำงานได้ แต่จริงๆ Railway ไม่ได้รับ push webhook จาก repo ใหม่
+
 > **Note:** Phase 3 → React Native จะจัดการ env var ได้ง่ายกว่า ไม่ต้องแก้ทีละจุดแบบนี้
 
 ---
