@@ -17,7 +17,7 @@
 | Service | URL |
 |---------|-----|
 | Frontend | https://wearehiredmvp.vi-nutthaphat.workers.dev |
-| Backend | https://web-production-03c5a.up.railway.app |
+| Backend | https://web-production-1db39.up.railway.app |
 | GitHub | https://github.com/abc147258/We-re-Hire |
 | Supabase | wexupoegrynxbhdzioym (ap-northeast-1 Tokyo) |
 
@@ -355,7 +355,7 @@ CORS_ORIGINS  = ...,https://[old-url],https://[new-url]   ← เพิ่ม �
 
 ### 7. Verify ด้วย curl
 ```bash
-curl -I -X OPTIONS "https://web-production-03c5a.up.railway.app/auth/google/url" \
+curl -I -X OPTIONS "https://web-production-1db39.up.railway.app/auth/google/url" \
   -H "Origin: https://[new-url]" \
   -H "Access-Control-Request-Method: GET"
 ```
@@ -720,7 +720,7 @@ Push      : expo-notifications (FCM/APNs)
 
 **Environment:**
 ```
-API_URL = https://web-production-03c5a.up.railway.app
+API_URL = https://web-production-1db39.up.railway.app
 (เหมือนกับ frontend ปัจจุบัน)
 ```
 
