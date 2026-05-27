@@ -2412,9 +2412,11 @@ async def get_blocked_users(
 async def health(db: asyncpg.Connection = Depends(get_db)):
     version = await db.fetchval("SELECT version()")
     return {
-        "status":   "ok",
-        "db":       "connected",
-        "pg":       version.split(" ")[1] if version else "unknown",
+        "status":       "ok",
+        "db":           "connected",
+        "pg":           version.split(" ")[1] if version else "unknown",
+        "frontend_url": settings.frontend_url,
+        "build":        "2026-05-27-v2",
     }
 
 
