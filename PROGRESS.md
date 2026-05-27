@@ -20,6 +20,7 @@
 - [x] **Rename Worker** → `wearehiredmvp` — URL ใหม่: `wearehiredmvp.vi-nutthaphat.workers.dev`
 - [x] **Production URL Change Checklist** — บันทึกใน CLAUDE.md ครบ 8 ขั้นตอน (เพิ่ม Railway Source Repo)
 - [x] **Railway service migration** — ย้ายจาก `web-production-03c5a` → `web-production-1db39` (หลังย้าย GitHub account)
+- [x] **GitHub repo ย้ายบัญชี** → `nutthaphat-vdev/We-re-Hire` (PAT revoke + reconnect Railway Source)
 - [x] **Backend URL อัปเดตครบ** — index.html, CLAUDE.md ชี้ไป `web-production-1db39` แล้ว
 
 ### 🔐 Auth
@@ -343,6 +344,8 @@ MAX: 10.00 | MIN: 0.00
 |------|----------|--------|
 | main.py | FastAPI backend — 47+ endpoints | ✅ live |
 | index.html | Single-file frontend (Vanilla JS) | ✅ live |
+| WeHired_DarkFlyer.html | ใบปลิว GTM — Dark theme (Facebook/LINE) | ✅ |
+| WeHired_LightFlyer.html | ใบปลิว GTM — Light theme (พิมพ์แจก A4) | ✅ |
 | worker.js | Cloudflare Worker entry point (serve HTML) | ✅ |
 | wrangler.toml | Cloudflare Workers config | ✅ |
 | .github/workflows/deploy-frontend.yml | GitHub Actions auto-deploy | ✅ live |
