@@ -1,4 +1,4 @@
-# We're Hired v1.1 — 2026-05-27
+# We're Hired v1.1 — 2026-05-27 build2
 """
 WeHire — Daily Wage Matchmaking Platform
 main.py — FastAPI entry point + Auth + Profile CRUD + Matching engine
