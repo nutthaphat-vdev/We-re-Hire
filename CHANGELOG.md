@@ -397,15 +397,57 @@ WHERE  id=$1 AND status='open'
 
 ---
 
+## Day 6 — 27 พฤษภาคม 2568 · วัน Debug & Infra Fix
+
+### · 🔐 CLAUDE.md — Proactive Code Quality + Advanced Skills
+เพิ่ม 2 sections ใหม่ใน CLAUDE.md สำหรับ working guidelines:
+- **Proactive Code Quality** — checklist ก่อน/หลัง implement, red flags, format รายงาน
+- **Advanced Skills & Domain Knowledge** — Performance, Migration Safety, Cron Awareness, Payment Logic, React Native
+
+### · 🐛 Bug #10 — Railway deploy ไม่ได้รับ webhook หลังย้าย GitHub account
+```
+อาการ: push ขึ้น nutthaphat-vdev/We-re-Hire แต่ production ยัง serve code เก่า
+        health endpoint ไม่มี field ใหม่, OAuth redirect ยังชี้ URL เก่า
+```
+
+Root cause: Railway service `web-production-03c5a` ผูกกับ repo เก่า (`abc147258`) ผ่าน webhook  
+GitHub redirect repo อัตโนมัติ → ดูเหมือนทำงานได้ แต่ Railway ไม่ได้รับ push webhook จริง  
+→ Railway deploy ไปที่ **service ใหม่** `web-production-1db39` แทน (คนละ service!)
+
+**Debug process:**
+1. เพิ่ม `print(f"[startup] FRONTEND_URL = ...")` → ยืนยัน env var ถูกใน log
+2. เพิ่ม `frontend_url` + `build` field ใน `/health` → พบว่า response ไม่มี field ใหม่ = code เก่า
+3. curl 5 รอบ → URL เก่าทุกรอบ = ไม่ใช่ load balance
+4. พบว่า `web-production-1db39.up.railway.app` คือ service ใหม่ที่ deploy ถูก
+
+**Fix:**
+- Railway → Settings → Source → reconnect repo ใหม่ `nutthaphat-vdev/We-re-Hire`
+- `index.html`: `API = 'https://web-production-1db39.up.railway.app'`
+- `CLAUDE.md`: อัปเดต Backend URL ทุกจุด
+- `CORS_ORIGINS` env var: ลบ `divine-bar-29c7` ออก
+- เพิ่ม checklist ข้อ 8 "Railway Source Repo" ใน CLAUDE.md
+
+**Final verification:**
+```json
+GET /health → {"frontend_url":"https://wearehiredmvp...","build":"2026-05-27-v2"} ✅
+CORS        → Access-Control-Allow-Origin: https://wearehiredmvp... ✅
+OAuth       → redirect_to=https://wearehiredmvp... ✅
+```
+
+**Lesson:** เมื่อย้าย GitHub account → Railway Source ต้องแก้ด้วยมือทุกครั้ง  
+GitHub redirect ทำให้ดูเหมือนทำงาน แต่ webhook ไม่ถึง Railway จริงๆ
+
+---
+
 ## Stats
 
 | | จำนวน |
 |--|--|
-| วันที่ใช้สร้าง | **5 วัน** |
-| Commits | **75+** |
+| วันที่ใช้สร้าง | **6 วัน** |
+| Commits | **90+** |
 | Endpoints | **47+** |
 | Database migrations | **12 ไฟล์** |
-| Bugs ที่เจอและแก้ | **9 critical** |
+| Bugs ที่เจอและแก้ | **10 critical** |
 | Security findings fixed | **7 (4 CRITICAL + 3 WARNING)** |
 | Lines of code (approx) | **~7,000+** |
 | ภาษา UI รองรับ | **2 (TH/EN)** |
@@ -423,5 +465,6 @@ WHERE  id=$1 AND status='open'
 | 5 | asyncpg `datetime.time` ไม่รับ string | ~30 นาที | `fromisoformat()` before INSERT |
 | 6 | Notifications HTML nest + อยู่นอก `.main` | ~1 ชม. (3 รอบ) | trace closing div ทุกตัว |
 | 9 | Job posting โผล่หลังงานเสร็จ (slots เต็มแต่ status ยัง `open`) | — | mark `status='filled'` ใน verify + cron |
+| 10 | Railway ไม่ deploy code ใหม่หลังย้าย GitHub account | ~1 ชม. | reconnect Railway Source + อัปเดต API URL |
 
 > Bug #3 (Google OAuth) กินเวลาข้ามคืน — debug ตั้งแต่บ่ายวันที่ 22 จนถึงตี 1 วันที่ 23

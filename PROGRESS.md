@@ -1,7 +1,7 @@
 # We're Hired — Progress & Roadmap
 > **"ทำงานวันนี้ เสร็จงานได้เงินทันที"**
 
-อัปเดต: 26 พฤษภาคม 2568
+อัปเดต: 27 พฤษภาคม 2568
 
 ---
 
@@ -18,7 +18,9 @@
 - [x] Deploy: Railway (backend) + Cloudflare Workers (frontend)
 - [x] GitHub Actions auto-deploy — push → Cloudflare อัตโนมัติ ✅ live
 - [x] **Rename Worker** → `wearehiredmvp` — URL ใหม่: `wearehiredmvp.vi-nutthaphat.workers.dev`
-- [x] **Production URL Change Checklist** — บันทึกใน CLAUDE.md ครบ 7 ขั้นตอน
+- [x] **Production URL Change Checklist** — บันทึกใน CLAUDE.md ครบ 8 ขั้นตอน (เพิ่ม Railway Source Repo)
+- [x] **Railway service migration** — ย้ายจาก `web-production-03c5a` → `web-production-1db39` (หลังย้าย GitHub account)
+- [x] **Backend URL อัปเดตครบ** — index.html, CLAUDE.md ชี้ไป `web-production-1db39` แล้ว
 
 ### 🔐 Auth
 - [x] POST /auth/register (worker / employer)
