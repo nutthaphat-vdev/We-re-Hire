@@ -112,6 +112,50 @@
   #debugLogs .log.err{color:#ff4757;}
   #debugLogs .log.info{color:#6b7a94;}
   #debugLogs .log.warn{color:#ff6b35;}
+
+  /* ── Mobile responsive ──────────────────────────────────── */
+  #hamburger {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 998;
+    width: 40px;
+    height: 40px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    font-size: 20px;
+    line-height: 1;
+    padding: 0;
+  }
+  #sidebarOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    z-index: 999;
+  }
+  @media (max-width: 767px) {
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      z-index: 1000;
+      transform: translateX(-220px);
+      transition: transform .25s ease;
+      overflow-y: auto;
+    }
+    .sidebar.open { transform: translateX(0); }
+    #sidebarOverlay.active { display: block; }
+    .main { width: 100%; }
+    #hamburger { display: flex; }
+  }
 </style>
 </head>
 <body>
@@ -225,6 +269,8 @@
 
 <!-- MAIN APP -->
 <div id="mainApp" class="app" style="display:none">
+  <button id="hamburger" onclick="toggleSidebar()" aria-label="เมนู">☰</button>
+  <div id="sidebarOverlay" onclick="closeSidebar()"></div>
   <div class="sidebar">
     <div class="logo">
       <div class="logo-text">We're Hired</div>
@@ -376,7 +422,8 @@
             </div>
             <div class="form-group">
               <label>วันเริ่มงาน</label>
-              <input type="date" id="jobStartDate">
+              <input type="date" id="jobStartDate" oninput="document.getElementById('jobAutoCloseHint').style.display=this.value?'block':'none'">
+              <div id="jobAutoCloseHint" style="display:none;font-size:11px;color:var(--warn);margin-top:4px">⏰ งานจะปิดอัตโนมัติถ้าไม่มีผู้ถูกเลือกภายใน 48 ชม. ก่อนวันเริ่มงาน</div>
             </div>
           </div>
           <div class="form-row">
@@ -914,6 +961,7 @@ function initApp() {
 
 // ─── NAV ───────────────────────────────────────────────────
 function showPage(name) {
+  closeSidebar();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const page = document.getElementById('page-'+name);
@@ -928,6 +976,19 @@ function showPage(name) {
   if (name === 'myreviews')     loadMyReviews();
   if (name === 'nearby')        searchNearby();
   if (name === 'notifications') { _notifFilter = 'all'; setNotifFilter('all'); }
+}
+
+// ─── SIDEBAR TOGGLE (mobile) ───────────────────────────────
+function openSidebar() {
+  document.querySelector('.sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').classList.add('active');
+}
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('active');
+}
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.contains('open') ? closeSidebar() : openSidebar();
 }
 
 // ─── DASHBOARD ─────────────────────────────────────────────
@@ -1435,6 +1496,15 @@ async function doPostJob() {
 }
 
 // ─── MY JOBS ───────────────────────────────────────────────
+function autoCloseCountdown(autoCloseAt) {
+  if (!autoCloseAt) return '';
+  const diff = new Date(autoCloseAt) - new Date();
+  if (diff <= 0) return '<span class="badge badge-danger" style="margin-left:6px">ถึงเวลาปิดแล้ว</span>';
+  const hours = Math.floor(diff / 3600000);
+  return `<span class="badge badge-warn" style="margin-left:6px">⏳ ปิดใน ${hours} ชม.</span>`;
+}
+const _autoCloseReasonLabel = { no_applicants: 'ไม่มีผู้สมัคร', no_hire: 'ไม่ได้เลือกผู้สมัคร', manual: 'ปิดเอง' };
+
 async function loadMyJobs() {
   const el = document.getElementById('myJobsContent');
   el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
@@ -1449,11 +1519,15 @@ async function loadMyJobs() {
     el.innerHTML = data.map(j => `
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
-          <div>
+          <div style="flex:1;min-width:0">
             <div style="font-weight:600;font-size:16px">${esc(j.title)}</div>
             <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(j.location_name||'-')} • ฿${j.daily_wage_rate}/วัน • ${j.duration_days} วัน</div>
           </div>
-          <span class="badge ${sColor[j.status]||'badge-gray'}">${esc(j.status)}</span>
+          <div style="display:flex;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;gap:4px">
+            <span class="badge ${sColor[j.status]||'badge-gray'}">${esc(j.status)}</span>
+            ${j.auto_closed_reason ? `<span class="badge badge-gray">ปิดอัตโนมัติ: ${_autoCloseReasonLabel[j.auto_closed_reason]||j.auto_closed_reason}</span>` : ''}
+            ${j.status==='open' && j.auto_close_at ? autoCloseCountdown(j.auto_close_at) : ''}
+          </div>
         </div>
         <div style="display:flex;gap:12px;font-size:12px;color:var(--muted);margin-bottom:14px">
           <span>${t('jobs_slots')} ${j.slots_available - j.slots_filled}/${j.slots_available}</span>

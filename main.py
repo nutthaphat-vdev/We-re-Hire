@@ -325,6 +325,59 @@ async def send_d1_reminders():
         logger.error(f"[d1reminder] cron error: {e}")
 
 
+async def check_expired_jobs():
+    """Cron ทุก 30 นาที: ปิด job ที่ถึง auto_close_at แล้วยังไม่มี hired"""
+    if pool is None:
+        return
+    try:
+        async with pool.acquire() as db:
+            jobs = await db.fetch(
+                """
+                SELECT jp.id, jp.title, ep.user_id AS employer_user_id
+                FROM   job_postings      jp
+                JOIN   employer_profiles ep ON ep.id = jp.employer_id
+                WHERE  jp.status = 'open'
+                  AND  jp.auto_close_at <= NOW()
+                """
+            )
+            closed_count = 0
+            for job in jobs:
+                total_apps = await db.fetchval(
+                    "SELECT COUNT(*) FROM job_applications WHERE job_id=$1", job["id"]
+                )
+                total_hired = await db.fetchval(
+                    "SELECT COUNT(*) FROM job_applications WHERE job_id=$1 AND status='hired'", job["id"]
+                )
+                if total_apps == 0:
+                    reason = "no_applicants"
+                    msg = (f"งาน '{job['title']}' ของคุณปิดอัตโนมัติ "
+                           f"เนื่องจากไม่มีผู้สมัครภายใน 48 ชม. ก่อนวันเริ่มงาน "
+                           f"(TODO: refund เมื่อเปิด Wallet)")
+                else:
+                    reason = "no_hire"
+                    msg = (f"งาน '{job['title']}' ของคุณปิดอัตโนมัติ "
+                           f"เนื่องจากยังไม่ได้เลือกผู้สมัครภายใน 48 ชม. ก่อนวันเริ่มงาน "
+                           f"(TODO: refund เมื่อเปิด Wallet)")
+
+                await db.execute(
+                    "UPDATE job_postings SET status='closed', auto_closed_reason=$1 WHERE id=$2",
+                    reason, job["id"],
+                )
+                await db.execute(
+                    "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, 'job_auto_closed', '⏰ งานปิดอัตโนมัติ', $2)",
+                    job["employer_user_id"], msg,
+                )
+                logger.info(
+                    f"[check_expired_jobs] closed job={job['id']} reason={reason} "
+                    f"apps={total_apps} hired={total_hired}"
+                )
+                closed_count += 1
+
+            logger.info(f"[check_expired_jobs] done closed={closed_count}")
+    except Exception as e:
+        logger.error(f"[check_expired_jobs] cron error: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global pool
@@ -344,9 +397,10 @@ async def lifespan(app: FastAPI):
     scheduler = AsyncIOScheduler()
     scheduler.add_job(auto_verify_completed_jobs, "interval", minutes=30)
     scheduler.add_job(check_noshow_workers,       "interval", minutes=5)
-    scheduler.add_job(send_d1_reminders,           "cron",     hour=11, minute=0)  # 11:00 UTC = 18:00 Bangkok
+    scheduler.add_job(send_d1_reminders,          "cron",     hour=11, minute=0)   # 11:00 UTC = 18:00 Bangkok
+    scheduler.add_job(check_expired_jobs,         "interval", minutes=30)
     scheduler.start()
-    print("⏰ Schedulers started: auto-verify(30m) | noshow-check(5m) | D-1 reminder(18:00 BKK)")
+    print("⏰ Schedulers started: auto-verify(30m) | noshow-check(5m) | D-1 reminder(18:00 BKK) | job-expiry(30m)")
 
     yield
 
@@ -861,6 +915,13 @@ async def post_job(
         except ValueError:
             raise HTTPException(status_code=400, detail="start_date format ไม่ถูกต้อง (YYYY-MM-DD)")
 
+    # คำนวณ auto_close_at
+    if start_date:
+        auto_close_at = datetime(start_date.year, start_date.month, start_date.day,
+                                 tzinfo=timezone.utc) - timedelta(hours=48)
+    else:
+        auto_close_at = datetime.now(timezone.utc) + timedelta(days=7)
+
     # แปลง string "HH:MM" → datetime.time ก่อนส่ง asyncpg (asyncpg ไม่รับ string สำหรับ TIME column)
     from datetime import time as time_type
     work_start_t = time_type.fromisoformat(body.work_start) if body.work_start else None
@@ -880,16 +941,16 @@ async def post_job(
         INSERT INTO job_postings
             (employer_id, title, description, required_skills, daily_wage_rate,
              duration_days, slots_available, location, location_name, zone_name,
-             start_date, work_start, work_end, ot_rate)
+             start_date, work_start, work_end, ot_rate, auto_close_at)
         VALUES
             ($1, $2, $3, $4, $5, $6, $7,
-             ST_MakePoint($8, $9)::geography, $10, $11, $12, $13, $14, $15)
-        RETURNING id, title, status, created_at
+             ST_MakePoint($8, $9)::geography, $10, $11, $12, $13, $14, $15, $16)
+        RETURNING id, title, status, created_at, auto_close_at
         """,
         emp_id, body.title, body.description, clean_skills,
         body.daily_wage_rate, body.duration_days, body.slots_available,
         body.lng, body.lat, body.location_name, body.zone_name, start_date,
-        work_start_t, work_end_t, body.ot_rate,
+        work_start_t, work_end_t, body.ot_rate, auto_close_at,
     )
     return dict(row)
 
@@ -908,10 +969,9 @@ async def get_my_jobs(
         """
         SELECT id, title, status, daily_wage_rate, duration_days,
                slots_available, slots_filled, location_name, zone_name,
-               start_date, created_at
+               start_date, created_at, auto_close_at, auto_closed_reason
         FROM   job_postings
         WHERE  employer_id = $1
-          AND  status = 'open'
         ORDER  BY created_at DESC
         LIMIT  100
         """,
@@ -2201,10 +2261,11 @@ async def request_background_check(
 
 @app.post("/admin/cron/trigger", tags=["Admin"], include_in_schema=False)
 async def trigger_cron(x_admin_secret: str = Header(default="")):
-    """Test-only: manually trigger auto_verify cron (guarded by admin_secret)"""
+    """Test-only: manually trigger auto_verify + check_expired_jobs crons (guarded by admin_secret)"""
     if not settings.admin_secret or x_admin_secret != settings.admin_secret:
         raise HTTPException(status_code=403, detail="Forbidden")
     await auto_verify_completed_jobs()
+    await check_expired_jobs()
     return {"ok": True}
 
 
