@@ -1392,10 +1392,14 @@ async def decide_application(
                jp.slots_available, jp.slots_filled, jp.employer_id,
                jp.title          AS job_title,
                jp.location_name,
+               jp.start_date,
+               jp.duration_days,
                ST_Y(jp.location::geometry) AS job_lat,
-               ST_X(jp.location::geometry) AS job_lng
+               ST_X(jp.location::geometry) AS job_lng,
+               wp.full_name      AS worker_name
         FROM   job_applications ja
-        JOIN   job_postings     jp ON jp.id = ja.job_id
+        JOIN   job_postings     jp ON jp.id  = ja.job_id
+        JOIN   worker_profiles  wp ON wp.id  = ja.worker_id
         WHERE  ja.id = $1
         """,
         app_id,
@@ -1435,6 +1439,50 @@ async def decide_application(
                 """,
                 row["job_id"],
             )
+
+            # Auto-withdraw overlapping applications for the same worker
+            if row["start_date"]:
+                hired_start = row["start_date"]
+                hired_end   = hired_start + timedelta(days=row["duration_days"])
+                overlap_apps = await db.fetch(
+                    """
+                    SELECT ja.id      AS app_id,
+                           ep.user_id AS employer_user_id
+                    FROM   job_applications  ja
+                    JOIN   job_postings      other_jp ON other_jp.id = ja.job_id
+                    JOIN   employer_profiles ep        ON ep.id = other_jp.employer_id
+                    WHERE  ja.worker_id = $1
+                      AND  ja.id       != $2
+                      AND  ja.status   IN ('applied', 'shortlisted')
+                      AND  other_jp.start_date IS NOT NULL
+                      AND  other_jp.start_date <= $3
+                      AND  other_jp.start_date + other_jp.duration_days >= $4
+                    """,
+                    row["worker_id"], app_id, hired_end, hired_start,
+                )
+                worker_name = row["worker_name"] or "Worker"
+                date_range  = f"{hired_start.isoformat()} – {hired_end.isoformat()}"
+                for ov in overlap_apps:
+                    await db.execute(
+                        """
+                        UPDATE job_applications
+                        SET    status = 'withdrawn',
+                               employer_note = 'ผู้สมัครรับงานอื่นในช่วงเวลานี้แล้ว'
+                        WHERE  id = $1
+                        """,
+                        ov["app_id"],
+                    )
+                    await db.execute(
+                        """
+                        INSERT INTO notifications (user_id, type, title, body)
+                        VALUES ($1, 'applicant_conflict', 'ผู้สมัครไม่พร้อมรับงาน', $2)
+                        """,
+                        ov["employer_user_id"],
+                        f"{worker_name} รับงานอื่นในช่วง {date_range} แล้ว",
+                    )
+                    logger.info(
+                        f"[decide] auto-withdrawn app={ov['app_id']} conflict worker={row['worker_id']}"
+                    )
 
         notif_title = "ยินดีด้วย! คุณได้รับการคัดเลือก" if body.decision == "hired" else "ผลการสมัครงาน"
 
