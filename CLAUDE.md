@@ -797,3 +797,60 @@ API_URL = https://web-production-1db39.up.railway.app
 - GPS ใช้ Expo Location
 - Push notification ใช้ Expo Notifications
 
+
+---
+
+## 💼 Revenue Streams & Business Roadmap
+
+> บันทึกจาก Investor Discussion — verified ข้อมูลจากกรมการจัดหางาน 2025
+
+### Stream 1 — Matching Fee (✅ Live)
+- **6% per transaction**, Gross Margin ~90%
+- ตัวอย่าง: งาน 400 บาท/วัน → fee 24 บาท → margin ~21 บาท
+- **Key Insight:** Daily wage = Rotation market — employer ต้องกลับมาใช้ platform เสมอ แม้จะจ้าง worker ตรงก็ตาม เพราะ worker ไม่ได้ว่างตลอด
+
+### Stream 2 — Work Permit Service (Phase 2)
+- **ราคาขาย: 10,000 บาท/คน** (ตลาดเรียก 12,000 บาท)
+- **ต้นทุนจริง (verified กรมการจัดหางาน):**
+  - ค่าธรรมเนียมรัฐ work permit: 900 บาท/ปี
+  - ค่าธรรมเนียมยื่นคำขอ: 100 บาท/ฉบับ
+  - รวมเอกสาร + วีซ่า: ~1,500–2,500 บาท/คน
+- **Margin: ~7,500 บาท/คน**
+- **Recurring:** ต่ออายุทุก 2 ปี
+- **Moat:** employer ที่ทำ work permit ผ่าน WeHire = ไม่มีวัน bypass platform
+- Target: แรงงานต่างด้าว เมียนมา ลาว กัมพูชา (MOU)
+- ต้องการ: ใบอนุญาตนำคนต่างด้าวมาทำงาน (ตรวจสอบกับกรมการจัดหางานก่อน scale)
+
+### Stream 3 — White Collar Job Board (Phase 3)
+- Flat fee โพสต์งาน (ไม่ต้องใบอนุญาตพิเศษ)
+- เจาะ SME / โรงงานที่ใช้ WeHire อยู่แล้ว — upsell ได้เลย
+- ใช้ฐาน employer เดิม ไม่ต้อง CAC ใหม่
+
+### Stream 4 — Premium Matching / Subscription (Phase 4)
+- AI shortlist + subscription รายเดือน
+- ใช้ data สะสมจาก Stream 1-3 มา train model
+- Employer เห็น candidates ก่อน + filter advanced
+
+### Stream 5 — Headhunter / HH (Phase 5)
+- **ต้องมีก่อน:** ใบอนุญาตจัดหางานในประเทศ
+  - ค่าธรรมเนียม: **5,000 บาท** (อายุ 2 ปี)
+  - ค่ายื่นคำขอ: 100 บาท
+  - ยื่นที่: กองทะเบียนจัดหางานกลาง กรมการจัดหางาน ดินแดง
+- **Fee model:** 15–20% เงินเดือนเดือนแรก หรือ flat fee
+- เริ่มได้เมื่อมี track record + employer trust
+
+### Gross Margin เป้าหมาย
+| Stream | Margin |
+|--------|--------|
+| Matching Fee | ~90% |
+| Work Permit | ~75% |
+| Job Board | ~85% |
+| HH | ~70% |
+| **รวม target** | **>80%** |
+
+### Key Business Insight (จาก Investor)
+> "จ้างยาวตรง = โอกาสขาย premium tier / direct hire fee ไม่ใช่ปัญหา"
+- Platform Bypass ไม่ใช่ภัยคุกคามใน daily wage market เพราะ rotation เกิดขึ้นตามธรรมชาติ
+- Work permit ผูก employer กับ platform แน่นกว่า contract ใดๆ
+- Ladder model: ใช้ฐาน daily wage → upsell work permit → upsell white collar
+
