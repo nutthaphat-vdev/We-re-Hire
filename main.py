@@ -1440,48 +1440,48 @@ async def decide_application(
                 row["job_id"],
             )
 
-            # Auto-withdraw overlapping applications for the same worker
+            # Auto-withdraw overlapping applications for the same worker (batch)
             if row["start_date"]:
                 hired_start = row["start_date"]
                 hired_end   = hired_start + timedelta(days=row["duration_days"])
-                overlap_apps = await db.fetch(
-                    """
-                    SELECT ja.id      AS app_id,
-                           ep.user_id AS employer_user_id
-                    FROM   job_applications  ja
-                    JOIN   job_postings      other_jp ON other_jp.id = ja.job_id
-                    JOIN   employer_profiles ep        ON ep.id = other_jp.employer_id
-                    WHERE  ja.worker_id = $1
-                      AND  ja.id       != $2
-                      AND  ja.status   IN ('applied', 'shortlisted')
-                      AND  other_jp.start_date IS NOT NULL
-                      AND  other_jp.start_date <= $3
-                      AND  other_jp.start_date + other_jp.duration_days >= $4
-                    """,
-                    row["worker_id"], app_id, hired_end, hired_start,
-                )
                 worker_name = row["worker_name"] or "Worker"
-                date_range  = f"{hired_start.isoformat()} – {hired_end.isoformat()}"
-                for ov in overlap_apps:
-                    await db.execute(
-                        """
-                        UPDATE job_applications
-                        SET    status = 'withdrawn',
-                               employer_note = 'ผู้สมัครรับงานอื่นในช่วงเวลานี้แล้ว'
-                        WHERE  id = $1
-                        """,
-                        ov["app_id"],
-                    )
+
+                withdrawn = await db.fetch(
+                    """
+                    UPDATE job_applications
+                    SET    status        = 'withdrawn',
+                           employer_note = 'ผู้สมัครรับงานอื่นในช่วงเวลานี้แล้ว'
+                    WHERE  worker_id = $1
+                      AND  status IN ('applied', 'shortlisted')
+                      AND  job_id  != $2
+                      AND  job_id IN (
+                               SELECT id FROM job_postings
+                               WHERE  start_date IS NOT NULL
+                                 AND  start_date <= $3
+                                 AND  start_date + duration_days >= $4
+                           )
+                    RETURNING job_id
+                    """,
+                    row["worker_id"], row["job_id"], hired_end, hired_start,
+                )
+
+                if withdrawn:
+                    job_id_list = [r["job_id"] for r in withdrawn]
                     await db.execute(
                         """
                         INSERT INTO notifications (user_id, type, title, body)
-                        VALUES ($1, 'applicant_conflict', 'ผู้สมัครไม่พร้อมรับงาน', $2)
+                        SELECT ep.user_id,
+                               'worker_unavailable',
+                               'ผู้สมัครไม่พร้อมรับงาน',
+                               $1 || ' รับงานอื่นในช่วงนี้แล้ว'
+                        FROM   job_postings      jp
+                        JOIN   employer_profiles ep ON ep.id = jp.employer_id
+                        WHERE  jp.id = ANY($2::uuid[])
                         """,
-                        ov["employer_user_id"],
-                        f"{worker_name} รับงานอื่นในช่วง {date_range} แล้ว",
+                        worker_name, job_id_list,
                     )
                     logger.info(
-                        f"[decide] auto-withdrawn app={ov['app_id']} conflict worker={row['worker_id']}"
+                        f"[decide] auto-withdrawn {len(withdrawn)} overlap(s) worker={row['worker_id']}"
                     )
 
         notif_title = "ยินดีด้วย! คุณได้รับการคัดเลือก" if body.decision == "hired" else "ผลการสมัครงาน"
