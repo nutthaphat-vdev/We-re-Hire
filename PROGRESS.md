@@ -368,3 +368,32 @@ MAX: 10.00 | MIN: 0.00
 | **D-1 Reminder** | 18:00 ทุกวัน → push แจ้งเตือน hired worker ที่มีงานพรุ่งนี้ |
 | **Work Permit Lock** | foreign worker สมัครงานไม่ได้ถ้าไม่มี work_permit หรือหมดอายุแล้ว |
 | **Multi-language** | worker UI รองรับ 🇹🇭 TH / 🇬🇧 EN — toggle ได้ทันที ครอบคลุมทุกหน้า |
+| **Job Auto-Close** | `auto_close_at` — 48 ชม. ก่อน start_date → auto-close + notify employer พร้อมเหตุผล |
+
+---
+
+## ✅ Day 6 — 30 พฤษภาคม 2568 · วัน Business Strategy + Job Expiry
+
+### 💼 Job Auto-Close System (Migration 013)
+- [x] Migration: `013_job_expiry.sql` — ADD COLUMN `auto_close_at`, `auto_closed_reason` + partial index
+- [x] `POST /jobs` — คำนวณ `auto_close_at` อัตโนมัติ: start_date - 48h หรือ NOW() + 7d
+- [x] Cron `check_expired_jobs` รันทุก 30 นาที:
+  - ไม่มีผู้สมัครเลย → reason = `no_applicants`
+  - มีผู้สมัครแต่ไม่ hire → reason = `no_hire`
+  - auto-close + notify employer พร้อมเหตุผล + TODO refund hook (Phase 3)
+- [x] `GET /jobs/mine` — เพิ่ม `auto_close_at`, `auto_closed_reason` + return ทุก status
+- [x] `POST /admin/cron/trigger` — trigger ทั้ง `auto_verify` + `check_expired_jobs` ใน call เดียว
+- [x] Frontend: hint "⏰ งานจะปิดอัตโนมัติ..." เมื่อเลือก start_date
+- [x] Frontend: countdown badge ⏳ สีส้ม + reason badge สีเทาหลัง auto-close
+
+### 💰 Revenue Streams & Business Roadmap (บันทึกใน CLAUDE.md)
+- [x] Work Permit Service — ราคาขาย 10,000 บาท, margin ~7,500 บาท/คน (verified กรมการจัดหางาน)
+- [x] White Collar Job Board — Phase 3, upsell ฐาน employer เดิม
+- [x] Headhunter (HH) — Phase 5, ใบอนุญาตจัดหางาน 5,000 บาท/2 ปี
+- [x] Key insight: Rotation market = employer ต้องกลับมาใช้ platform เสมอ
+- [x] Key insight: Work permit = Lock-in mechanism ที่แข็งแกร่งที่สุด
+
+### 🔧 ต้องทำต่อ (เพิ่มเติม)
+- [ ] **Mobile Responsive** — sidebar บัง content บน mobile ต้องแก้ก่อนแจกใบปลิว
+- [ ] **Run 013_job_expiry.sql** ใน Supabase SQL Editor
+- [ ] **claude-bridge MCP** — ลบ `run_command` + เพิ่ม auth token + reconnect

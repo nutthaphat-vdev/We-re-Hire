@@ -418,3 +418,57 @@ GitHub redirect repo อัตโนมัติ → ดูเหมือนท
 | 7 | Railway Source Repo ไม่ได้ reconnect หลังย้าย GitHub account | ~2 ชม. | Railway → Settings → Source → reconnect |
 
 > Bug #3 (Google OAuth) กินเวลาข้ามคืน — debug ตั้งแต่บ่ายวันที่ 22 จนถึงตี 1 วันที่ 23
+
+---
+
+## Day 6 — 30 พฤษภาคม 2568 · วัน Business Strategy + Job Expiry
+
+### · 💼 Job Auto-Close System (Migration 013)
+Feature ใหม่: งานปิดอัตโนมัติถ้าไม่มีผู้ถูกเลือกภายใน 48 ชม. ก่อนวันเริ่มงาน
+
+**2 Case ที่ trigger auto-close:**
+
+| Case | เงื่อนไข | reason |
+|------|---------|--------|
+| No applicants | ไม่มีคนสมัครเลย | `no_applicants` |
+| No hire | มีคนสมัครแต่ไม่ได้รับการ hire | `no_hire` |
+
+**Schema (013_job_expiry.sql):**
+```sql
+ALTER TABLE job_postings
+  ADD COLUMN auto_close_at TIMESTAMPTZ,
+  ADD COLUMN auto_closed_reason VARCHAR(20)
+    CHECK (auto_closed_reason IN ('no_applicants', 'no_hire', 'manual'));
+CREATE INDEX idx_job_auto_close ON job_postings (auto_close_at, status) WHERE status = 'open';
+```
+
+**Logic:**
+- `POST /jobs` มี start_date → `auto_close_at = start_date - 48h`
+- `POST /jobs` ไม่มี start_date → `auto_close_at = NOW() + 7d`
+- Cron `check_expired_jobs` ทุก 30 นาที → close + notify employer + TODO refund hook Phase 3
+- `POST /admin/cron/trigger` → trigger ทั้ง `auto_verify` + `check_expired_jobs` พร้อมกัน
+
+**Frontend:**
+- hint "⏰ งานจะปิดอัตโนมัติ..." ใต้ช่อง start_date
+- countdown badge ⏳ สีส้ม ปิดใน N ชม.
+- reason badge สีเทาหลัง auto-close
+
+### · 💰 Business Strategy Session (Investor Discussion)
+pitch กับ ดร. — ได้ insight สำคัญ:
+
+**Revenue Streams ที่วางแผน:**
+- Work Permit Service: ขาย 10,000 บาท (ตลาด 12,000), ต้นทุนจริง ~2,500 บาท, margin ~7,500 บาท/คน (verified จากกรมการจัดหางาน 2025)
+- White Collar Job Board: flat fee โพสต์งาน, upsell ฐาน employer เดิม
+- HH: ใบอนุญาตจัดหางานในประเทศ 5,000 บาท/2 ปี, fee 15-20% เงินเดือนเดือนแรก
+
+**Key Business Insights:**
+- Platform Bypass ไม่ใช่ภัยคุกคาม — daily wage = rotation market, employer ต้องกลับมาใช้ platform เสมอ
+- Work permit = Lock-in mechanism ที่แข็งแกร่งที่สุด — employer ที่ทำ work permit ผ่าน WeHire ไม่มีวัน bypass
+- Gross margin target >80% ทุก revenue stream
+
+### · 🔌 claude-bridge MCP (In Progress)
+- OAuth connected แล้ว — แก้ ngrok interstitial ด้วยการ visit site ใน browser ก่อน
+- Tools ยังไม่ expose ได้ — server.js ต้องเพิ่ม `ListToolsRequestSchema` handler
+- ⚠️ Security: ลบ `run_command` tool ออกก่อน restart — unauthenticated RCE risk
+- TODO: เพิ่ม `MCP_AUTH_TOKEN` + reconnect
+
