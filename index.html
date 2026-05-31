@@ -415,6 +415,7 @@
       <div style="padding:32px">
         <div class="page-title">โปรไฟล์ของฉัน</div>
         <div class="page-sub">ข้อมูลส่วนตัวและทักษะ</div>
+        <div id="alertWorkerProfile"></div>
         <div id="workerProfileContent"></div>
       </div>
     </div>
@@ -1077,6 +1078,42 @@ function showPage(name) {
   if (name === 'admin-jobs')      loadAdminJobs();
 }
 
+// ─── KYC UPLOAD ────────────────────────────────────────────
+function previewKYCImg(input, previewId) {
+  const preview = document.getElementById(previewId);
+  if (!preview || !input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
+  reader.readAsDataURL(input.files[0]);
+}
+
+async function submitKYC() {
+  const faceFile = document.getElementById('kycFacePhoto')?.files[0];
+  const idFile   = document.getElementById('kycIDPhoto')?.files[0];
+  if (!faceFile || !idFile) { alert('กรุณาเลือกรูปทั้งสองรูป'); return; }
+  const btn = document.getElementById('kycSubmitBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังส่ง...'; }
+  try {
+    const form = new FormData();
+    form.append('face_photo', faceFile);
+    form.append('id_card_photo', idFile);
+    const r = await fetch(API + '/workers/kyc/upload', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token },
+      body: form,
+    });
+    if (!r.ok) {
+      const e = await r.json();
+      throw new Error(e.detail || 'Upload ล้มเหลว');
+    }
+    showAlert('alertWorkerProfile', '✅ ส่งเอกสาร KYC สำเร็จ รอ Admin ตรวจสอบ', 'success');
+    loadWorkerProfile();
+  } catch(e) {
+    showAlert('alertWorkerProfile', e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '📤 ส่งเอกสาร KYC'; }
+  }
+}
+
 // ─── ADMIN DASHBOARD ───────────────────────────────────────
 async function loadAdminStats() {
   const el = document.getElementById('adminStatsContent');
@@ -1155,6 +1192,19 @@ async function loadAdminKYC() {
           </div>
           <span class="badge badge-warn">pending</span>
         </div>
+        ${(w.face_signed_url || w.id_card_signed_url) ? `
+        <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+          ${w.face_signed_url ? `
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:4px">หน้าตรง</div>
+              <img src="${w.face_signed_url}" style="width:100px;height:75px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="window.open('${w.face_signed_url}','_blank')" title="คลิกดูขนาดใหญ่">
+            </div>` : ''}
+          ${w.id_card_signed_url ? `
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:4px">บัตรประชาชน</div>
+              <img src="${w.id_card_signed_url}" style="width:100px;height:75px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="window.open('${w.id_card_signed_url}','_blank')" title="คลิกดูขนาดใหญ่">
+            </div>` : ''}
+        </div>` : '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">⚠️ ยังไม่มีรูปเอกสาร</div>'}
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="adminKYCReview('${w.id}','verified')">✅ Verify</button>
           <button class="btn btn-danger btn-sm" onclick="adminKYCReview('${w.id}','failed')">❌ Reject</button>
@@ -1350,6 +1400,22 @@ async function loadWorkerProfile() {
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px">ทักษะ</div>
         <div class="tags">${p.skills.length ? p.skills.map(s=>`<span class="tag tag-match">${s}</span>`).join('') : '<span style="font-size:13px;color:var(--muted)">ยังไม่มีทักษะ</span>'}</div>
         ${wpSection}
+        ${p.background_check_status === 'pending' ? `
+        <div class="divider"></div>
+        <div style="background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.25);border-radius:10px;padding:16px">
+          <div style="font-weight:600;margin-bottom:12px;color:var(--warn)">🪪 ส่งเอกสาร KYC</div>
+          <div class="form-group">
+            <label>รูปถ่ายหน้าตรง (JPG/PNG สูงสุด 5MB)</label>
+            <input type="file" id="kycFacePhoto" accept="image/jpeg,image/png,image/webp" onchange="previewKYCImg(this,'kycFacePreview')" style="font-size:13px">
+            <img id="kycFacePreview" style="display:none;max-width:120px;margin-top:8px;border-radius:6px;border:1px solid var(--border)">
+          </div>
+          <div class="form-group">
+            <label>รูปบัตรประชาชน (JPG/PNG สูงสุด 5MB)</label>
+            <input type="file" id="kycIDPhoto" accept="image/jpeg,image/png,image/webp" onchange="previewKYCImg(this,'kycIDPreview')" style="font-size:13px">
+            <img id="kycIDPreview" style="display:none;max-width:120px;margin-top:8px;border-radius:6px;border:1px solid var(--border)">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="submitKYC()" id="kycSubmitBtn">📤 ส่งเอกสาร KYC</button>
+        </div>` : ''}
         <div class="divider"></div>
         <button class="btn btn-secondary btn-sm" onclick="showEditProfile()">✏️ แก้ไขโปรไฟล์</button>
       </div>

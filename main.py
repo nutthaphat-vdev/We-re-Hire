@@ -20,7 +20,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from typing import Optional
 from uuid import UUID
 
-from fastapi import FastAPI, Depends, HTTPException, Header, Request, status
+from fastapi import FastAPI, Depends, HTTPException, Header, Request, status, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, Field
@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     supabase_url:         str = "https://wexupoegrynxbhdzioym.supabase.co"
     supabase_anon_key:    str = ""
     supabase_jwt_secret:  str = ""  # Settings → API → JWT Secret
+    supabase_service_key: str = ""  # Settings → API → service_role key (สำหรับ Storage)
     admin_secret:         str = ""  # X-Admin-Secret header สำหรับ admin endpoints
 
     class Config:
@@ -489,6 +490,52 @@ async def require_admin(user: dict = Depends(get_current_user)) -> dict:
     return user
 
 
+# ---------------------------------------------------------------------------
+# Supabase Storage Helpers
+# ---------------------------------------------------------------------------
+_KYC_BUCKET = "kyc-documents"
+_ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
+_MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+
+
+async def _storage_upload(path: str, data: bytes, content_type: str) -> None:
+    """Upload bytes to Supabase Storage (upsert)."""
+    if not settings.supabase_service_key:
+        raise HTTPException(status_code=500, detail="SUPABASE_SERVICE_KEY ยังไม่ได้ตั้งค่า")
+    async with httpx.AsyncClient(timeout=30) as client:
+        r = await client.post(
+            f"{settings.supabase_url}/storage/v1/object/{_KYC_BUCKET}/{path}",
+            headers={
+                "Authorization": f"Bearer {settings.supabase_service_key}",
+                "Content-Type": content_type,
+                "x-upsert": "true",
+            },
+            content=data,
+        )
+        if r.status_code not in (200, 201):
+            raise HTTPException(status_code=500, detail=f"Storage upload ล้มเหลว: {r.text[:200]}")
+
+
+async def _storage_signed_url(path: str) -> str:
+    """Get 1-hour signed URL for a KYC storage path. Returns '' on failure."""
+    if not settings.supabase_service_key or not path:
+        return ""
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.post(
+            f"{settings.supabase_url}/storage/v1/object/sign/{_KYC_BUCKET}/{path}",
+            headers={"Authorization": f"Bearer {settings.supabase_service_key}"},
+            json={"expiresIn": 3600},
+        )
+        if r.status_code != 200:
+            return ""
+        signed = r.json().get("signedURL", "")
+        if not signed:
+            return ""
+        if signed.startswith("http"):
+            return signed
+        return f"{settings.supabase_url}/storage/v1{signed}"
+
+
 # ============================================================
 # AUTH ROUTES
 # ============================================================
@@ -706,6 +753,52 @@ async def get_worker_profile(
     if not row:
         raise HTTPException(status_code=404, detail="ไม่พบโปรไฟล์ Worker")
     return dict(row)
+
+@app.post("/workers/kyc/upload", tags=["Worker"])
+async def upload_kyc_photos(
+    face_photo:    UploadFile = File(...),
+    id_card_photo: UploadFile = File(...),
+    user: dict = Depends(require_worker),
+    db:   asyncpg.Connection = Depends(get_db),
+):
+    """Worker ส่งรูปถ่ายหน้าตรง + บัตรประชาชน เพื่อยืนยัน KYC"""
+    face_data    = await face_photo.read()
+    id_card_data = await id_card_photo.read()
+
+    for data, f, label in [
+        (face_data, face_photo, "รูปถ่ายหน้าตรง"),
+        (id_card_data, id_card_photo, "บัตรประชาชน"),
+    ]:
+        if f.content_type not in _ALLOWED_IMAGE_TYPES:
+            raise HTTPException(status_code=400, detail=f"{label}: รองรับเฉพาะ JPG, PNG, WebP")
+        if len(data) > _MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail=f"{label}: ขนาดไฟล์ต้องไม่เกิน 5MB")
+
+    worker_id = await db.fetchval(
+        "SELECT id FROM worker_profiles WHERE user_id=$1", UUID(user["sub"])
+    )
+    if not worker_id:
+        raise HTTPException(status_code=404, detail="ไม่พบ Worker Profile")
+
+    face_path    = f"kyc/{worker_id}/face.jpg"
+    id_card_path = f"kyc/{worker_id}/id_card.jpg"
+
+    await _storage_upload(face_path,    face_data,    face_photo.content_type)
+    await _storage_upload(id_card_path, id_card_data, id_card_photo.content_type)
+
+    await db.execute(
+        """
+        UPDATE worker_profiles
+        SET    face_photo_url          = $1,
+               id_card_photo_url       = $2,
+               kyc_submitted_at        = NOW(),
+               background_check_status = 'pending'
+        WHERE  id = $3
+        """,
+        face_path, id_card_path, worker_id,
+    )
+    return {"success": True, "message": "ส่งเอกสาร KYC สำเร็จ รอ Admin ตรวจสอบ"}
+
 
 @app.post("/workers/profile", status_code=201, tags=["Worker"])
 async def create_worker_profile(
@@ -2415,13 +2508,20 @@ async def admin_kyc_pending(
     rows = await db.fetch("""
         SELECT wp.id, wp.user_id, wp.full_name, wp.background_check_status,
                wp.kyc_submitted_at, wp.nationality_type, wp.kyc_note,
+               wp.face_photo_url, wp.id_card_photo_url,
                u.email
         FROM   worker_profiles wp
         JOIN   users u ON u.id = wp.user_id
         WHERE  wp.background_check_status = 'pending'
         ORDER  BY wp.kyc_submitted_at ASC NULLS LAST
     """)
-    return [dict(r) for r in rows]
+    result = []
+    for r in rows:
+        item = dict(r)
+        item["face_signed_url"]    = await _storage_signed_url(r["face_photo_url"]    or "")
+        item["id_card_signed_url"] = await _storage_signed_url(r["id_card_photo_url"] or "")
+        result.append(item)
+    return result
 
 
 @app.patch("/admin/kyc/{worker_id}/review", tags=["Admin"])
