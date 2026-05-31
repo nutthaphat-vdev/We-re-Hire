@@ -325,6 +325,28 @@
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
         <span data-i18n="nav_my_reviews">รีวิวของฉัน</span>
       </div>
+      <!-- ADMIN NAV -->
+      <div class="nav-section" id="navAdminSection">ADMIN</div>
+      <div class="nav-item" onclick="showPage('admin-stats')" id="nav-admin-stats">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <span>ภาพรวม</span>
+      </div>
+      <div class="nav-item" onclick="showPage('admin-users')" id="nav-admin-users">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg>
+        <span>จัดการผู้ใช้</span>
+      </div>
+      <div class="nav-item" onclick="showPage('admin-kyc')" id="nav-admin-kyc">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/></svg>
+        <span>KYC รอตรวจ</span>
+      </div>
+      <div class="nav-item" onclick="showPage('admin-disputes')" id="nav-admin-disputes">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+        <span>Disputes</span>
+      </div>
+      <div class="nav-item" onclick="showPage('admin-jobs')" id="nav-admin-jobs">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        <span>จัดการงาน</span>
+      </div>
     </nav>
     <div style="padding:8px 20px;display:flex;gap:8px;">
       <button class="lang-btn" data-lang="th" onclick="setLang('th')" style="background:none;border:none;cursor:pointer;font-size:13px;font-weight:600;padding:4px 0;color:var(--accent)">TH</button>
@@ -507,6 +529,61 @@
         <div class="page-title">งานของฉัน</div>
         <div class="page-sub">จัดการงานที่โพสต์ไว้</div>
         <div id="myJobsContent"></div>
+      </div>
+    </div>
+
+    <!-- ADMIN STATS -->
+    <div class="page" id="page-admin-stats">
+      <div style="padding:32px">
+        <div class="page-title">📊 ภาพรวมระบบ</div>
+        <div class="page-sub">ข้อมูลรวมทั้งหมด</div>
+        <div id="adminStatsContent"></div>
+      </div>
+    </div>
+
+    <!-- ADMIN USERS -->
+    <div class="page" id="page-admin-users">
+      <div style="padding:32px">
+        <div class="page-title">👥 จัดการผู้ใช้</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <button class="btn btn-secondary btn-sm" onclick="loadAdminUsers(null,null,1)">ทั้งหมด</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadAdminUsers('worker',null,1)">Worker</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadAdminUsers('employer',null,1)">Employer</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadAdminUsers(null,'suspended',1)">Suspended</button>
+        </div>
+        <div id="adminUsersContent"></div>
+      </div>
+    </div>
+
+    <!-- ADMIN KYC -->
+    <div class="page" id="page-admin-kyc">
+      <div style="padding:32px">
+        <div class="page-title">🪪 KYC รอตรวจสอบ</div>
+        <div class="page-sub">Workers ที่รอ Approve</div>
+        <div id="adminKYCContent"></div>
+      </div>
+    </div>
+
+    <!-- ADMIN DISPUTES -->
+    <div class="page" id="page-admin-disputes">
+      <div style="padding:32px">
+        <div class="page-title">⚖️ Disputes</div>
+        <div class="page-sub">งานที่มีข้อพิพาท — รอ Admin ตัดสิน</div>
+        <div id="adminDisputesContent"></div>
+      </div>
+    </div>
+
+    <!-- ADMIN JOBS -->
+    <div class="page" id="page-admin-jobs">
+      <div style="padding:32px">
+        <div class="page-title">💼 จัดการงาน</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <button class="btn btn-secondary btn-sm" onclick="loadAdminJobs(null,1)">ทั้งหมด</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadAdminJobs('open',1)">Open</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadAdminJobs('closed',1)">Closed</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadAdminJobs('filled',1)">Filled</button>
+        </div>
+        <div id="adminJobsContent"></div>
       </div>
     </div>
 
@@ -949,19 +1026,28 @@ function initApp() {
   document.getElementById('sidebarRole').innerHTML =
     `<span class="token-role role-${userRole}">${userRole.toUpperCase()}</span>`;
 
-  const isWorker = userRole === 'worker';
-  // Shared nav — แสดงทุก role
+  const isWorker   = userRole === 'worker';
+  const isEmployer = userRole === 'employer';
+  const isAdmin    = userRole === 'admin';
+  // Shared nav — แสดงทุก role ยกเว้น admin
   ['nav-notifications'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.style.display = 'flex';
+    if (el) el.style.display = isAdmin ? 'none' : 'flex';
   });
   ['navWorkerSection','nav-nearby','nav-myapps','nav-workerprofile','nav-myreviews-worker']
     .forEach(id => document.getElementById(id).style.display = isWorker ? (id.startsWith('nav-') ? 'flex' : 'block') : 'none');
   ['navEmployerSection','nav-postjob','nav-myjobs','nav-myreviews-employer']
-    .forEach(id => document.getElementById(id).style.display = !isWorker ? (id.startsWith('nav-') ? 'flex' : 'block') : 'none');
+    .forEach(id => document.getElementById(id).style.display = isEmployer ? (id.startsWith('nav-') ? 'flex' : 'block') : 'none');
+  ['navAdminSection','nav-admin-stats','nav-admin-users','nav-admin-kyc','nav-admin-disputes','nav-admin-jobs']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = isAdmin ? (id.startsWith('nav-') ? 'flex' : 'block') : 'none'; });
 
-  showPage('dashboard');
-  loadDashboard();
+  if (isAdmin) {
+    showPage('admin-stats');
+    loadAdminStats();
+  } else {
+    showPage('dashboard');
+    loadDashboard();
+  }
   initCategoryDropdowns();
   startNotifPolling();
   setLang(_lang);
@@ -977,13 +1063,180 @@ function showPage(name) {
   if (page) page.classList.add('active');
   if (nav)  nav.classList.add('active');
 
-  if (name === 'myapps')        loadMyApps();
-  if (name === 'myjobs')        loadMyJobs();
-  if (name === 'workerprofile') loadWorkerProfile();
-  if (name === 'postjob')       checkEmployerProfile();
-  if (name === 'myreviews')     loadMyReviews();
-  if (name === 'nearby')        searchNearby();
-  if (name === 'notifications') { _notifFilter = 'all'; setNotifFilter('all'); }
+  if (name === 'myapps')          loadMyApps();
+  if (name === 'myjobs')          loadMyJobs();
+  if (name === 'workerprofile')   loadWorkerProfile();
+  if (name === 'postjob')         checkEmployerProfile();
+  if (name === 'myreviews')       loadMyReviews();
+  if (name === 'nearby')          searchNearby();
+  if (name === 'notifications')   { _notifFilter = 'all'; setNotifFilter('all'); }
+  if (name === 'admin-stats')     loadAdminStats();
+  if (name === 'admin-users')     loadAdminUsers();
+  if (name === 'admin-kyc')       loadAdminKYC();
+  if (name === 'admin-disputes')  loadAdminDisputes();
+  if (name === 'admin-jobs')      loadAdminJobs();
+}
+
+// ─── ADMIN DASHBOARD ───────────────────────────────────────
+async function loadAdminStats() {
+  const el = document.getElementById('adminStatsContent');
+  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
+  try {
+    const d = await api('GET', '/admin/stats');
+    el.innerHTML = `
+      <div class="stats" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+        <div class="stat"><div class="stat-num">${d.total_workers}</div><div class="stat-label">Workers</div></div>
+        <div class="stat"><div class="stat-num">${d.total_employers}</div><div class="stat-label">Employers</div></div>
+        <div class="stat"><div class="stat-num">${d.total_applications}</div><div class="stat-label">Applications</div></div>
+        <div class="stat"><div class="stat-num">${d.jobs_open}</div><div class="stat-label">Jobs Open</div></div>
+        <div class="stat"><div class="stat-num">${d.jobs_filled}</div><div class="stat-label">Jobs Filled</div></div>
+        <div class="stat"><div class="stat-num">${d.hired_today}</div><div class="stat-label">Hired Today</div></div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div class="card" style="flex:1;min-width:160px;padding:16px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px">KYC รอตรวจ</div>
+          <div style="font-size:28px;font-weight:700;color:var(--warn)">${d.kyc_pending}</div>
+          <button class="btn btn-secondary btn-sm" onclick="showPage('admin-kyc')" style="margin-top:8px">ดู KYC →</button>
+        </div>
+        <div class="card" style="flex:1;min-width:160px;padding:16px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Disputes รอตัดสิน</div>
+          <div style="font-size:28px;font-weight:700;color:var(--danger)">${d.open_disputes}</div>
+          <button class="btn btn-secondary btn-sm" onclick="showPage('admin-disputes')" style="margin-top:8px">ดู Disputes →</button>
+        </div>
+      </div>`;
+  } catch(e) { el.innerHTML = `<div class="alert alert-error">${e.message}</div>`; }
+}
+
+async function loadAdminUsers(role=null, status=null, page=1) {
+  const el = document.getElementById('adminUsersContent');
+  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
+  try {
+    let q = `/admin/users?page=${page}`;
+    if (role)   q += `&role=${role}`;
+    if (status) q += `&status=${status}`;
+    const data = await api('GET', q);
+    if (!data.length) { el.innerHTML = '<div class="empty"><div class="empty-text">ไม่มีผู้ใช้</div></div>'; return; }
+    el.innerHTML = data.map(u => `
+      <div class="card" style="display:flex;align-items:center;gap:12px;padding:12px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600">${esc(u.name||'-')}</div>
+          <div style="font-size:12px;color:var(--muted)">${esc(u.email)} • ${u.role} • ${new Date(u.created_at).toLocaleDateString('th-TH')}</div>
+        </div>
+        <span class="badge ${u.is_active?'badge-green':'badge-danger'}">${u.is_active?'active':'suspended'}</span>
+        ${u.is_active
+          ? `<button class="btn btn-danger btn-sm" onclick="adminUpdateUserStatus('${u.id}','suspended')">Suspend</button>`
+          : `<button class="btn btn-secondary btn-sm" onclick="adminUpdateUserStatus('${u.id}','active')">Activate</button>`
+        }
+      </div>`).join('');
+  } catch(e) { el.innerHTML = `<div class="alert alert-error">${e.message}</div>`; }
+}
+
+async function adminUpdateUserStatus(userId, status) {
+  if (!confirm(`${status === 'active' ? 'Activate' : 'Suspend'} ผู้ใช้นี้?`)) return;
+  try {
+    await api('PATCH', `/admin/users/${userId}/status`, { status });
+    loadAdminUsers();
+  } catch(e) { alert(e.message); }
+}
+
+async function loadAdminKYC() {
+  const el = document.getElementById('adminKYCContent');
+  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
+  try {
+    const data = await api('GET', '/admin/kyc/pending');
+    if (!data.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">ไม่มี KYC รอตรวจ</div></div>'; return; }
+    el.innerHTML = data.map(w => `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div>
+            <div style="font-weight:600">${esc(w.full_name||'-')}</div>
+            <div style="font-size:12px;color:var(--muted)">${esc(w.email)} • ${w.nationality_type||'thai'}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">ส่งเมื่อ: ${w.kyc_submitted_at ? new Date(w.kyc_submitted_at).toLocaleDateString('th-TH') : '-'}</div>
+          </div>
+          <span class="badge badge-warn">pending</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="adminKYCReview('${w.id}','verified')">✅ Verify</button>
+          <button class="btn btn-danger btn-sm" onclick="adminKYCReview('${w.id}','failed')">❌ Reject</button>
+        </div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = `<div class="alert alert-error">${e.message}</div>`; }
+}
+
+async function adminKYCReview(workerId, decision) {
+  const note = decision === 'failed' ? (prompt('เหตุผลที่ reject (ใส่หรือเว้นว่าง):') || '') : '';
+  if (decision === 'failed' && note === null) return;
+  try {
+    await api('PATCH', `/admin/kyc/${workerId}/review`, { decision, note });
+    loadAdminKYC();
+  } catch(e) { alert(e.message); }
+}
+
+async function loadAdminDisputes() {
+  const el = document.getElementById('adminDisputesContent');
+  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
+  try {
+    const data = await api('GET', '/admin/disputes');
+    if (!data.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">⚖️</div><div class="empty-text">ไม่มี Dispute รอตัดสิน</div></div>'; return; }
+    el.innerHTML = data.map(d => `
+      <div class="card">
+        <div style="font-weight:600;margin-bottom:6px">${esc(d.job_title)} — ฿${d.daily_wage_rate}/วัน</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">
+          Worker: ${esc(d.worker_name)} (${esc(d.worker_email)})<br>
+          Employer: ${esc(d.company_name||'-')}
+        </div>
+        ${d.employer_note ? `<div style="font-size:12px;background:var(--surface2);padding:8px;border-radius:6px;margin-bottom:10px">${esc(d.employer_note)}</div>` : ''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="adminResolveDispute('${d.id}','worker_win')">👷 Worker ชนะ</button>
+          <button class="btn btn-secondary btn-sm" onclick="adminResolveDispute('${d.id}','employer_win')">🏭 Employer ชนะ</button>
+        </div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = `<div class="alert alert-error">${e.message}</div>`; }
+}
+
+async function adminResolveDispute(disputeId, decision) {
+  const note = prompt(`Note สำหรับ ${decision === 'worker_win' ? 'Worker ชนะ' : 'Employer ชนะ'} (ใส่หรือเว้นว่าง):`) || '';
+  if (note === null) return;
+  try {
+    await api('PATCH', `/admin/disputes/${disputeId}/resolve`, { decision, note });
+    loadAdminDisputes();
+  } catch(e) { alert(e.message); }
+}
+
+async function loadAdminJobs(status=null, page=1) {
+  const el = document.getElementById('adminJobsContent');
+  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
+  try {
+    let q = `/admin/jobs?page=${page}`;
+    if (status) q += `&status=${status}`;
+    const data = await api('GET', q);
+    if (!data.length) { el.innerHTML = '<div class="empty"><div class="empty-text">ไม่มีงาน</div></div>'; return; }
+    const sColor = { open:'badge-green', closed:'badge-gray', filled:'badge-blue', expired:'badge-danger' };
+    el.innerHTML = data.map(j => `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div>
+            <div style="font-weight:600">${esc(j.title)}</div>
+            <div style="font-size:12px;color:var(--muted)">${esc(j.company_name||'-')} • ${esc(j.location_name||'-')} • ฿${j.daily_wage_rate}/วัน</div>
+          </div>
+          <span class="badge ${sColor[j.status]||'badge-gray'}">${j.status}</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+          Slots: ${j.slots_filled}/${j.slots_available} • ${j.start_date||'-'}
+        </div>
+        <div style="display:flex;gap:8px">
+          ${j.status==='open' ? `<button class="btn btn-danger btn-sm" onclick="adminUpdateJobStatus('${j.id}','closed')">Close</button>` : ''}
+          ${j.status==='closed' ? `<button class="btn btn-secondary btn-sm" onclick="adminUpdateJobStatus('${j.id}','open')">Reopen</button>` : ''}
+        </div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = `<div class="alert alert-error">${e.message}</div>`; }
+}
+
+async function adminUpdateJobStatus(jobId, status) {
+  try {
+    await api('PATCH', `/admin/jobs/${jobId}/status`, { status });
+    loadAdminJobs();
+  } catch(e) { alert(e.message); }
 }
 
 // ─── SIDEBAR TOGGLE (mobile) ───────────────────────────────

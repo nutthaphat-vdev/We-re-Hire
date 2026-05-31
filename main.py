@@ -483,6 +483,11 @@ async def require_employer(user: dict = Depends(get_current_user)) -> dict:
         raise HTTPException(status_code=403, detail="เฉพาะ Employer เท่านั้น")
     return user
 
+async def require_admin(user: dict = Depends(get_current_user)) -> dict:
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="เฉพาะ Admin เท่านั้น")
+    return user
+
 
 # ============================================================
 # AUTH ROUTES
@@ -891,6 +896,20 @@ class JobCreate(BaseModel):
 
 class JobStatusUpdate(BaseModel):
     status: str = Field(..., pattern="^(open|closed|draft)$")
+
+class AdminUserStatus(BaseModel):
+    status: str = Field(..., pattern="^(active|suspended|banned)$")
+
+class AdminKYCReview(BaseModel):
+    decision: str = Field(..., pattern="^(verified|failed)$")
+    note: Optional[str] = None
+
+class AdminDisputeResolve(BaseModel):
+    decision: str = Field(..., pattern="^(worker_win|employer_win)$")
+    note: Optional[str] = None
+
+class AdminJobStatus(BaseModel):
+    status: str = Field(..., pattern="^(open|closed|expired)$")
 
 @app.post("/jobs", status_code=201, tags=["Jobs"])
 async def post_job(
@@ -2315,6 +2334,230 @@ async def trigger_cron(x_admin_secret: str = Header(default="")):
     await auto_verify_completed_jobs()
     await check_expired_jobs()
     return {"ok": True}
+
+
+# ── Admin Dashboard ────────────────────────────────────────
+
+@app.get("/admin/stats", tags=["Admin"])
+async def admin_stats(
+    user: dict = Depends(require_admin),
+    db:   asyncpg.Connection = Depends(get_db),
+):
+    row = await db.fetchrow("""
+        SELECT
+            (SELECT COUNT(*) FROM users WHERE role='worker')              AS total_workers,
+            (SELECT COUNT(*) FROM users WHERE role='employer')            AS total_employers,
+            (SELECT COUNT(*) FROM job_postings WHERE status='open')       AS jobs_open,
+            (SELECT COUNT(*) FROM job_postings WHERE status='closed')     AS jobs_closed,
+            (SELECT COUNT(*) FROM job_postings WHERE status='filled')     AS jobs_filled,
+            (SELECT COUNT(*) FROM job_applications)                       AS total_applications,
+            (SELECT COUNT(*) FROM job_applications
+             WHERE  status = 'hired' AND decided_at >= NOW()::date)       AS hired_today,
+            (SELECT COUNT(*) FROM job_applications WHERE status='disputed') AS open_disputes,
+            (SELECT COUNT(*) FROM worker_profiles
+             WHERE  background_check_status='pending')                    AS kyc_pending
+    """)
+    return dict(row)
+
+
+@app.get("/admin/users", tags=["Admin"])
+async def admin_list_users(
+    role:   Optional[str] = None,
+    status: Optional[str] = None,
+    page:   int = 1,
+    user:   dict = Depends(require_admin),
+    db:     asyncpg.Connection = Depends(get_db),
+):
+    conditions = ["u.role != 'admin'"]
+    params: list = []
+    if role in ("worker", "employer"):
+        params.append(role)
+        conditions.append(f"u.role = ${len(params)}")
+    if status == "active":
+        conditions.append("u.is_active = true")
+    elif status in ("suspended", "banned"):
+        conditions.append("u.is_active = false")
+    offset = (page - 1) * 20
+    params += [20, offset]
+    where = " AND ".join(conditions)
+    rows = await db.fetch(f"""
+        SELECT u.id, u.email, u.phone, u.role, u.is_active, u.created_at,
+               COALESCE(wp.full_name, ep.company_name) AS name
+        FROM   users u
+        LEFT JOIN worker_profiles   wp ON wp.user_id = u.id
+        LEFT JOIN employer_profiles ep ON ep.user_id = u.id
+        WHERE  {where}
+        ORDER  BY u.created_at DESC
+        LIMIT  ${len(params) - 1} OFFSET ${len(params)}
+    """, *params)
+    return [dict(r) for r in rows]
+
+
+@app.patch("/admin/users/{target_user_id}/status", tags=["Admin"])
+async def admin_update_user_status(
+    target_user_id: UUID,
+    body: AdminUserStatus,
+    user: dict = Depends(require_admin),
+    db:   asyncpg.Connection = Depends(get_db),
+):
+    await db.execute(
+        "UPDATE users SET is_active=$1 WHERE id=$2",
+        body.status == "active", target_user_id,
+    )
+    return {"user_id": str(target_user_id), "status": body.status}
+
+
+@app.get("/admin/kyc/pending", tags=["Admin"])
+async def admin_kyc_pending(
+    user: dict = Depends(require_admin),
+    db:   asyncpg.Connection = Depends(get_db),
+):
+    rows = await db.fetch("""
+        SELECT wp.id, wp.user_id, wp.full_name, wp.background_check_status,
+               wp.kyc_submitted_at, wp.nationality_type, wp.kyc_note,
+               u.email
+        FROM   worker_profiles wp
+        JOIN   users u ON u.id = wp.user_id
+        WHERE  wp.background_check_status = 'pending'
+        ORDER  BY wp.kyc_submitted_at ASC NULLS LAST
+    """)
+    return [dict(r) for r in rows]
+
+
+@app.patch("/admin/kyc/{worker_id}/review", tags=["Admin"])
+async def admin_kyc_review(
+    worker_id: UUID,
+    body:      AdminKYCReview,
+    user:      dict = Depends(require_admin),
+    db:        asyncpg.Connection = Depends(get_db),
+):
+    worker = await db.fetchrow(
+        "SELECT id, user_id FROM worker_profiles WHERE id=$1", worker_id
+    )
+    if not worker:
+        raise HTTPException(status_code=404, detail="ไม่พบ Worker")
+    await db.execute(
+        """
+        UPDATE worker_profiles
+        SET    background_check_status = $1,
+               kyc_reviewed_at = NOW(),
+               kyc_reviewed_by = $2,
+               kyc_note        = $3
+        WHERE  id = $4
+        """,
+        body.decision, UUID(user["sub"]), body.note, worker_id,
+    )
+    notif_title = "✅ KYC ผ่านการยืนยันแล้ว" if body.decision == "verified" else "❌ KYC ไม่ผ่าน"
+    notif_body  = body.note or (
+        "โปรไฟล์ของคุณได้รับ Badge KYC Verified แล้ว" if body.decision == "verified"
+        else "เอกสารไม่ผ่านการตรวจสอบ กรุณาอัปโหลดใหม่"
+    )
+    await db.execute(
+        "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, 'kyc_review', $2, $3)",
+        worker["user_id"], notif_title, notif_body,
+    )
+    return {"worker_id": str(worker_id), "status": body.decision}
+
+
+@app.get("/admin/disputes", tags=["Admin"])
+async def admin_list_disputes(
+    user: dict = Depends(require_admin),
+    db:   asyncpg.Connection = Depends(get_db),
+):
+    rows = await db.fetch("""
+        SELECT ja.id, ja.status, ja.employer_note, ja.work_started_at, ja.work_ended_at,
+               jp.title        AS job_title,    jp.daily_wage_rate,
+               wp.full_name    AS worker_name,  wu.email AS worker_email,
+               ep.company_name,                 eu.id    AS employer_user_id,
+               wu.id           AS worker_user_id
+        FROM   job_applications  ja
+        JOIN   job_postings      jp ON jp.id  = ja.job_id
+        JOIN   worker_profiles   wp ON wp.id  = ja.worker_id
+        JOIN   users             wu ON wu.id  = wp.user_id
+        JOIN   employer_profiles ep ON ep.id  = jp.employer_id
+        JOIN   users             eu ON eu.id  = ep.user_id
+        WHERE  ja.status = 'disputed'
+        ORDER  BY ja.work_ended_at DESC NULLS LAST
+    """)
+    return [dict(r) for r in rows]
+
+
+@app.patch("/admin/disputes/{dispute_id}/resolve", tags=["Admin"])
+async def admin_resolve_dispute(
+    dispute_id: UUID,
+    body:       AdminDisputeResolve,
+    user:       dict = Depends(require_admin),
+    db:         asyncpg.Connection = Depends(get_db),
+):
+    row = await db.fetchrow(
+        """
+        SELECT ja.id, wp.user_id AS worker_uid, eu.id AS employer_uid
+        FROM   job_applications  ja
+        JOIN   job_postings      jp ON jp.id  = ja.job_id
+        JOIN   worker_profiles   wp ON wp.id  = ja.worker_id
+        JOIN   employer_profiles ep ON ep.id  = jp.employer_id
+        JOIN   users             eu ON eu.id  = ep.user_id
+        WHERE  ja.id = $1 AND ja.status = 'disputed'
+        """,
+        dispute_id,
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="ไม่พบ dispute หรือ status ไม่ใช่ disputed")
+    winner      = "Worker" if body.decision == "worker_win" else "Employer"
+    outcome_note = f"[Admin: {winner} ชนะ] {body.note or ''}"
+    await db.execute(
+        "UPDATE job_applications SET status='verified', employer_note=$1 WHERE id=$2",
+        outcome_note, dispute_id,
+    )
+    notif_msg = f"Admin ตัดสิน: {winner} ชนะ — {body.note or ''}"
+    for uid in (row["worker_uid"], row["employer_uid"]):
+        await db.execute(
+            "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, 'dispute_resolved', '⚖️ Admin ตัดสินแล้ว', $2)",
+            uid, notif_msg,
+        )
+    return {"dispute_id": str(dispute_id), "decision": body.decision}
+
+
+@app.get("/admin/jobs", tags=["Admin"])
+async def admin_list_jobs(
+    status: Optional[str] = None,
+    page:   int = 1,
+    user:   dict = Depends(require_admin),
+    db:     asyncpg.Connection = Depends(get_db),
+):
+    params: list = []
+    where = "1=1"
+    if status:
+        params.append(status)
+        where = f"jp.status = ${len(params)}"
+    offset = (page - 1) * 20
+    params += [20, offset]
+    rows = await db.fetch(f"""
+        SELECT jp.id, jp.title, jp.status, jp.daily_wage_rate, jp.duration_days,
+               jp.slots_available, jp.slots_filled, jp.location_name,
+               jp.start_date,      jp.created_at,
+               ep.company_name
+        FROM   job_postings      jp
+        JOIN   employer_profiles ep ON ep.id = jp.employer_id
+        WHERE  {where}
+        ORDER  BY jp.created_at DESC
+        LIMIT  ${len(params) - 1} OFFSET ${len(params)}
+    """, *params)
+    return [dict(r) for r in rows]
+
+
+@app.patch("/admin/jobs/{job_id}/status", tags=["Admin"])
+async def admin_update_job_status(
+    job_id: UUID,
+    body:   AdminJobStatus,
+    user:   dict = Depends(require_admin),
+    db:     asyncpg.Connection = Depends(get_db),
+):
+    row = await db.fetchrow("SELECT id FROM job_postings WHERE id=$1", job_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="ไม่พบงาน")
+    await db.execute("UPDATE job_postings SET status=$1 WHERE id=$2", body.status, job_id)
+    return {"job_id": str(job_id), "status": body.status}
 
 
 @app.patch("/admin/workers/{worker_user_id}/verify", tags=["Admin"])
