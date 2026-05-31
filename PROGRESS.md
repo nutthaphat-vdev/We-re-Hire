@@ -1,7 +1,7 @@
 # We're Hired — Progress & Roadmap
 > **"ทำงานวันนี้ เสร็จงานได้เงินทันที"**
 
-อัปเดต: 27 พฤษภาคม 2568
+อัปเดต: 31 พฤษภาคม 2568
 
 ---
 
@@ -121,6 +121,43 @@
 - [x] **Work Permit section** บน worker profile — badge, link เอกสาร, คำเตือนใกล้หมดอายุ (< 30 วัน), error ถ้าหมดแล้ว
 - [x] Nationality selector ใน edit profile form — ไทย / ต่างด้าว
 
+### 🔒 Auto-Withdraw Overlap
+- [x] `PATCH /applications/{id}/decide` — เมื่อ hire แล้ว auto-withdraw applications อื่นของ worker คนเดียวกันที่วันซ้อนทับ
+- [x] Batch UPDATE + RETURNING + Batch INSERT notifications — O(1) queries ไม่ว่าจะมี overlap กี่ใบ
+- [x] Notify employer ที่ได้รับผลกระทบทันที
+
+### 📱 Mobile Responsive
+- [x] Hamburger ☰ button บนมุมบนซ้ายเมื่อ screen < 768px
+- [x] Sidebar slide in จากซ้าย (position:fixed) + overlay สีดำ semi-transparent
+- [x] `.main` width 100% บน mobile
+- [x] Font-size, card padding, stat grid, form-row ลดลงบน mobile
+
+### 🛡️ Admin Dashboard
+- [x] `require_admin` JWT dependency — role='admin' check
+- [x] `GET /admin/stats` — 9 platform metrics ใน single query
+- [x] `GET /admin/users?role=&status=&page=` — paginated user list
+- [x] `PATCH /admin/users/{id}/status` — active/suspended/banned
+- [x] `GET /admin/kyc/pending` — list workers รอ KYC review + signed URLs
+- [x] `PATCH /admin/kyc/{id}/review` — verified/failed + notify worker
+- [x] `GET /admin/disputes` — list disputed applications
+- [x] `PATCH /admin/disputes/{id}/resolve` — worker_win/employer_win + notify ทั้งคู่
+- [x] `GET /admin/jobs?status=&page=` — list all jobs
+- [x] `PATCH /admin/jobs/{id}/status` — close/reopen/expire
+- [x] Frontend: Admin nav section (ซ่อนถ้าไม่ใช่ admin)
+- [x] Frontend: 5 หน้า admin (stats/users/kyc/disputes/jobs)
+- [x] Admin user สร้างแล้วใน DB (`admin@wehire.th`)
+
+### 🪪 KYC Photo Upload
+- [x] `POST /workers/kyc/upload` — multipart face_photo + id_card_photo → Supabase Storage
+- [x] Validate: JPG/PNG/WebP เท่านั้น, ขนาดไม่เกิน 5MB ต่อไฟล์
+- [x] Path: `kyc/{worker_id}/face.jpg` / `kyc/{worker_id}/id_card.jpg`
+- [x] UPDATE `face_photo_url`, `id_card_photo_url`, `kyc_submitted_at`, `background_check_status='pending'`
+- [x] `GET /admin/kyc/pending` — signed URLs (expire 1h) สำหรับแต่ละรูป
+- [x] Frontend worker profile: upload form (status='pending') + file preview
+- [x] Frontend admin KYC: thumbnails คลิกดูขนาดใหญ่ได้
+- [x] Migration 014_kyc_photos.sql: `face_photo_url`, `id_card_photo_url`
+- [x] requirements.txt: `supabase==2.10.0`, `python-multipart==0.0.9`
+
 ### 🗄️ Database Migrations (run ครบแล้วทุกอัน)
 | ไฟล์ | สถานะ |
 |------|--------|
@@ -135,6 +172,8 @@
 | 010_kyc.sql | ✅ |
 | 011_job_categories_expanded.sql | ✅ |
 | 012_anti_ghosting.sql | ✅ |
+| 013_job_expiry.sql | ✅ |
+| 014_kyc_photos.sql | ✅ |
 
 ---
 
@@ -164,14 +203,16 @@
 - [x] Work Permit enforcement — block apply ถ้า foreign worker ไม่มีหรือหมดอายุ (403)
 - [x] Work Permit section บน worker profile card + expiry warning < 30 วัน
 - [x] Multi-language UI 🌐 TH/EN — ครอบคลุมทุกหน้า (MM ถอดออก ไม่เหมาะ pitch)
+- [x] `POST /workers/kyc/upload` — face_photo + id_card_photo → Supabase Storage
+- [x] `GET /admin/kyc/pending` + `PATCH /admin/kyc/{id}/review` (verified/failed + note)
+- [x] Admin KYC page พร้อม photo thumbnails + signed URLs
 
 **ยังต้องทำ**
-- [ ] Worker upload เอกสาร → Supabase Storage (endpoint `POST /workers/kyc/upload`)
-- [ ] Admin `GET /admin/kyc/pending` + `POST /admin/kyc/{id}/decide` (approve/reject + note)
-- [ ] Badge **✓ KYC Verified** แสดงบน profile card หลัง admin approve
+- [ ] Badge **✓ KYC Verified** แสดงบน profile card + candidate list หลัง admin approve
 - [ ] Cron รายวัน: Work Permit expiry alert + auto-reject ถ้า expired
 - [ ] รูปโปรไฟล์ worker (Supabase Storage)
 - [ ] Employer verification flow
+- [ ] **Supabase bucket `kyc-documents`** ต้องสร้างด้วยมือ + ตั้ง `SUPABASE_SERVICE_KEY` ใน Railway
 
 ### Phase 2B — Behavioral Score System 🧮
 > วัดความน่าเชื่อถือ worker จากพฤติกรรมจริง — ไม่ใช่แค่ review
@@ -394,6 +435,9 @@ MAX: 10.00 | MIN: 0.00
 - [x] Key insight: Work permit = Lock-in mechanism ที่แข็งแกร่งที่สุด
 
 ### 🔧 ต้องทำต่อ (เพิ่มเติม)
-- [ ] **Mobile Responsive** — sidebar บัง content บน mobile ต้องแก้ก่อนแจกใบปลิว
-- [ ] **Run 013_job_expiry.sql** ใน Supabase SQL Editor
+- [x] **Mobile Responsive** ✅ — hamburger + sidebar slide + smaller content < 768px
+- [x] **Run 013_job_expiry.sql** ✅ run แล้ว
+- [x] **Run 014_kyc_photos.sql** ✅ run แล้ว
+- [ ] **Supabase bucket `kyc-documents`** — สร้างด้วยมือ (Private) + ตั้ง `SUPABASE_SERVICE_KEY` ใน Railway
+- [ ] **เปลี่ยน admin password** — UPDATE users SET password_hash ใน Supabase SQL Editor
 - [ ] **claude-bridge MCP** — ลบ `run_command` + เพิ่ม auth token + reconnect

@@ -390,18 +390,112 @@ GitHub redirect repo อัตโนมัติ → ดูเหมือนท
 
 ---
 
+## Day 7 — 31 พฤษภาคม 2568 · วัน Admin Dashboard + KYC Upload + Auto-Withdraw
+
+### · 📱 Mobile Responsive — Phase 2
+ปรับ UX บน mobile ให้ใช้งานได้จริงก่อนแจกใบปลิว:
+
+| Feature | รายละเอียด |
+|---------|-----------|
+| Hamburger ☰ | position:fixed top-left, z-index 998, แสดงเฉพาะ < 768px |
+| Sidebar slide | transform translateX(-220px → 0) transition 0.25s ease |
+| Overlay | rgba(0,0,0,0.55) ปิด sidebar เมื่อกด |
+| Auto-close | `showPage()` เรียก `closeSidebar()` ทุกครั้งเปลี่ยนหน้า |
+| Content scale | body 13px, page-title 18px, card padding 12px, stats 2-col, form-row 1-col |
+
+### · 🔄 Auto-Withdraw Overlapping Applications
+เมื่อ employer hire worker → system ตรวจ applications อื่นที่วันซ้อนทับอัตโนมัติ:
+
+**Implementation:** Batch O(1) — 2 queries ไม่ว่า overlap กี่ใบ
+```sql
+-- 1. UPDATE RETURNING job_ids
+UPDATE job_applications SET status='withdrawn', employer_note='ผู้สมัครรับงานอื่นในช่วงเวลานี้แล้ว'
+WHERE worker_id=$1 AND status IN ('applied','shortlisted')
+  AND job_id IN (SELECT id FROM job_postings WHERE start_date <= $3 AND start_date + duration_days >= $4)
+RETURNING job_id
+
+-- 2. Batch INSERT notifications via JOIN
+INSERT INTO notifications (...) SELECT ep.user_id, ... FROM job_postings jp JOIN employer_profiles ep ...
+WHERE jp.id = ANY($2::uuid[])
+```
+
+**Performance:** เปลี่ยนจาก loop N+1 → 2 queries คงที่ O(N) → O(1)
+
+### · 🛡️ Admin Dashboard — Full Implementation
+ระบบ admin จัดการ platform ครบวงจร:
+
+**Auth:** `require_admin` — JWT role='admin' check (เหมือน require_worker/employer pattern)
+
+**9 Endpoints ใหม่:**
+
+| Endpoint | ใช้ทำ |
+|----------|------|
+| `GET /admin/stats` | 9 metrics: users/jobs/apps/hired_today/disputes/kyc_pending |
+| `GET /admin/users` | paginated + filter role/status |
+| `PATCH /admin/users/{id}/status` | active/suspended/banned → `is_active` |
+| `GET /admin/kyc/pending` | pending KYC + signed URLs (1h) |
+| `PATCH /admin/kyc/{id}/review` | verified/failed + notify worker |
+| `GET /admin/disputes` | disputed applications พร้อม worker+employer info |
+| `PATCH /admin/disputes/{id}/resolve` | worker_win/employer_win + notify ทั้งคู่ |
+| `GET /admin/jobs` | paginated + filter status |
+| `PATCH /admin/jobs/{id}/status` | open/closed/expired |
+
+**Frontend:** 5 admin pages พร้อม filter + action buttons ทุกหน้า
+**Admin user:** สร้างแล้วใน DB — `admin@wehire.th` (password เปลี่ยนแล้ว)
+
+### · 🪪 KYC Photo Upload System
+Worker อัปโหลดรูปหน้าตรง + บัตรประชาชน → Admin review ผ่าน dashboard:
+
+**Backend:**
+- `POST /workers/kyc/upload` — multipart/form-data (FastAPI UploadFile)
+- Validation: JPG/PNG/WebP เท่านั้น, ≤ 5MB ต่อไฟล์
+- Upload ไป Supabase Storage bucket `kyc-documents` ผ่าน REST API (httpx async)
+- Path: `kyc/{worker_id}/face.jpg` + `kyc/{worker_id}/id_card.jpg`
+- UPDATE worker_profiles + set `background_check_status = 'pending'`
+- Signed URLs (expire 1h) generate ทุกครั้ง admin request pending list
+
+**Frontend (worker profile):**
+- Upload form แสดงเมื่อ `background_check_status === 'pending'`
+- Preview รูปก่อน upload (FileReader API)
+- Submit ผ่าน `FormData` + `fetch()` — ไม่ผ่าน `api()` wrapper (multipart ไม่ set Content-Type)
+
+**Frontend (admin KYC):**
+- Thumbnails 100×75px สำหรับ face + id card
+- คลิกดูรูปขนาดใหญ่ใน new tab (window.open signed URL)
+- Fallback "ยังไม่มีรูปเอกสาร" ถ้ายังไม่ได้ upload
+
+**New packages:** `supabase==2.10.0`, `python-multipart==0.0.9`
+**New setting:** `SUPABASE_SERVICE_KEY` (service_role key — ไม่ใช่ anon key)
+
+### · 🔧 Migration 013 + 014
+- `013_job_expiry.sql` — `auto_close_at`, `auto_closed_reason` (run แล้ว)
+- `014_kyc_photos.sql` — `face_photo_url`, `id_card_photo_url` (run แล้ว)
+
+### · 🐛 Bug Fix — Employer Nav Logic
+```javascript
+// ❌ เดิม: employer เห็น nav เพราะ !isWorker รวม admin ด้วย
+!isWorker
+
+// ✅ ใหม่: แยก role ชัดเจน
+const isEmployer = userRole === 'employer';
+const isAdmin    = userRole === 'admin';
+```
+
+---
+
 ## Stats
 
 | | จำนวน |
 |--|--|
-| วันที่ใช้สร้าง | **5 วัน** |
-| Commits | **70+** |
-| Endpoints | **47+** |
-| Database migrations | **12 ไฟล์** |
+| วันที่ใช้สร้าง | **7 วัน** |
+| Commits | **85+** |
+| Endpoints | **60+** |
+| Database migrations | **14 ไฟล์** |
 | Bugs ที่เจอและแก้ | **7 critical** |
 | Security findings fixed | **7 (4 CRITICAL + 3 WARNING)** |
-| Lines of code (approx) | **~7,000+** |
+| Lines of code (approx) | **~9,000+** |
 | ภาษา UI รองรับ | **2 (TH/EN)** |
+| Admin pages | **5** |
 
 ---
 
