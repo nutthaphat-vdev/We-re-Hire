@@ -174,22 +174,50 @@ async def auto_verify_completed_jobs():
 
 
 async def check_noshow_workers():
-    """Cron ทุก 5 นาที: ตรวจ hired workers ที่ไม่เช็คอินหลังเวลาเริ่มงาน"""
+    """
+    Cron ทุก 5 นาที: ตรวจ hired workers ที่ไม่เช็คอินหลังเวลาเริ่มงาน
+
+    Logic:
+    - งานที่มี work_start  → ใช้ work_start เป็น anchor
+    - งานที่ไม่มี work_start → ใช้ start_date 08:00 Thai time เป็น anchor (fallback)
+    - alert  : anchor + 30 นาที ผ่านแล้ว และยังไม่เคย alert
+    - no_show: anchor + 60 นาที ผ่านแล้ว และยังไม่ mark no_show
+    - จับทั้ง start_date วันนี้และก่อนหน้า (กันงานค้าง)
+    - หลัง no_show → ส่ง backup offer อัตโนมัติให้ top candidate (applied/shortlisted)
+    - แยก try/except ต่อ row ไม่ให้ job หนึ่ง crash หยุดทั้ง cron
+    """
     if pool is None:
         return
+
     TH_TZ    = timezone(timedelta(hours=7))
     now_th   = datetime.now(TH_TZ)
     today_th = now_th.date()
-    now_time = now_th.time().replace(tzinfo=None)  # TIME ของ Thai ณ ตอนนี้
+    # now_th เป็น aware datetime → ใช้ compare กับ anchor datetime ที่สร้างใหม่
+
+    def anchor_dt(start_date, work_start) -> datetime:
+        """คืน aware datetime ของเวลาเริ่มงานจริง (Thai time)"""
+        if work_start is not None:
+            # work_start เป็น datetime.time object (naive) จาก asyncpg
+            return datetime(
+                start_date.year, start_date.month, start_date.day,
+                work_start.hour, work_start.minute,
+                tzinfo=TH_TZ,
+            )
+        # fallback: ถ้าไม่มี work_start ใช้ 08:00 Thai time
+        return datetime(start_date.year, start_date.month, start_date.day, 8, 0, tzinfo=TH_TZ)
 
     try:
         async with pool.acquire() as db:
-            # ── Alert ครั้งแรก: work_start + 30 นาที ผ่านไปแล้ว ─────────────
-            alert_rows = await db.fetch(
+            # ── ดึง hired applications ที่ start_date <= วันนี้ ──────────────
+            candidates = await db.fetch(
                 """
                 SELECT
                     ja.id,
+                    ja.job_id,
+                    ja.noshow_alerted_at,
+                    ja.noshow_marked_at,
                     jp.title          AS job_title,
+                    jp.start_date,
                     jp.work_start,
                     wp.full_name      AS worker_name,
                     wp.user_id        AS worker_user_id,
@@ -198,85 +226,114 @@ async def check_noshow_workers():
                 JOIN   job_postings      jp ON jp.id  = ja.job_id
                 JOIN   worker_profiles   wp ON wp.id  = ja.worker_id
                 JOIN   employer_profiles ep ON ep.id  = jp.employer_id
-                WHERE  ja.status              = 'hired'
-                  AND  ja.noshow_alerted_at  IS NULL
-                  AND  ja.noshow_marked_at   IS NULL
-                  AND  jp.start_date          = $1
-                  AND  jp.work_start         IS NOT NULL
-                  AND  jp.work_start + INTERVAL '30 minutes' < $2
+                WHERE  ja.status           = 'hired'
+                  AND  ja.noshow_marked_at IS NULL
+                  AND  jp.start_date       <= $1
                 """,
-                today_th, now_time,
+                today_th,
             )
-            for row in alert_rows:
-                await db.execute(
-                    "UPDATE job_applications SET noshow_alerted_at = NOW() WHERE id = $1",
-                    row["id"],
-                )
-                await db.execute(
-                    """
-                    INSERT INTO notifications (user_id, type, title, body)
-                    VALUES ($1, 'application_update', '⚠️ Worker ยังไม่เช็คอิน', $2)
-                    """,
-                    row["employer_user_id"],
-                    f"Worker {row['worker_name']} ยังไม่เช็คอินสำหรับงาน \"{row['job_title']}\" "
-                    f"(เริ่มงาน {str(row['work_start'])[:5]}) กรุณาตรวจสอบ",
-                )
-                logger.info(f"[noshow] alert sent for application {row['id']}")
 
-            # ── Auto no-show: work_start + 60 นาที ผ่านไปแล้ว ───────────────
-            noshow_rows = await db.fetch(
-                """
-                SELECT
-                    ja.id,
-                    ja.job_id,
-                    jp.title          AS job_title,
-                    wp.full_name      AS worker_name,
-                    wp.user_id        AS worker_user_id,
-                    ep.user_id        AS employer_user_id
-                FROM   job_applications ja
-                JOIN   job_postings      jp ON jp.id  = ja.job_id
-                JOIN   worker_profiles   wp ON wp.id  = ja.worker_id
-                JOIN   employer_profiles ep ON ep.id  = jp.employer_id
-                WHERE  ja.status             = 'hired'
-                  AND  ja.noshow_marked_at  IS NULL
-                  AND  jp.start_date         = $1
-                  AND  jp.work_start        IS NOT NULL
-                  AND  jp.work_start + INTERVAL '60 minutes' < $2
-                """,
-                today_th, now_time,
-            )
-            for row in noshow_rows:
-                async with db.transaction():
-                    await db.execute(
-                        "UPDATE job_applications SET status='no_show', noshow_marked_at=NOW() WHERE id=$1",
-                        row["id"],
-                    )
-                    await db.execute(
-                        "UPDATE job_postings SET slots_filled = GREATEST(0, slots_filled - 1) WHERE id=$1",
-                        row["job_id"],
-                    )
-                    await db.execute(
-                        """
-                        INSERT INTO notifications (user_id, type, title, body)
-                        VALUES ($1, 'application_update', '🚨 Worker ไม่มาทำงาน', $2)
-                        """,
-                        row["employer_user_id"],
-                        f"Worker {row['worker_name']} ถูกทำเครื่องหมาย No-Show อัตโนมัติ "
-                        f"สำหรับงาน \"{row['job_title']}\" กรุณาเลือก Worker สำรอง",
-                    )
-                    await db.execute(
-                        """
-                        INSERT INTO notifications (user_id, type, title, body)
-                        VALUES ($1, 'application_update', '❌ ถูกทำเครื่องหมาย No-Show', $2)
-                        """,
-                        row["worker_user_id"],
-                        f"คุณไม่ได้เช็คอินสำหรับงาน \"{row['job_title']}\" ใบสมัครถูกยกเลิกอัตโนมัติ",
-                    )
-                logger.info(f"[noshow] auto no_show for application {row['id']}")
+            alerted_count = 0
+            noshow_count  = 0
 
-            total = len(alert_rows) + len(noshow_rows)
-            if total:
-                logger.info(f"[noshow] alerted={len(alert_rows)} no_show={len(noshow_rows)}")
+            for row in candidates:
+                try:
+                    anc = anchor_dt(row["start_date"], row["work_start"])
+                    elapsed = now_th - anc  # timedelta
+
+                    # ── Alert: +30 นาที และยังไม่เคย alert ──────────────────
+                    if elapsed.total_seconds() >= 30 * 60 and row["noshow_alerted_at"] is None:
+                        await db.execute(
+                            "UPDATE job_applications SET noshow_alerted_at = NOW() WHERE id = $1",
+                            row["id"],
+                        )
+                        await db.execute(
+                            """
+                            INSERT INTO notifications (user_id, type, title, body)
+                            VALUES ($1, 'application_update', '⚠️ Worker ยังไม่เช็คอิน', $2)
+                            """,
+                            row["employer_user_id"],
+                            f"Worker {row['worker_name']} ยังไม่เช็คอินสำหรับงาน \"{row['job_title']}\" "
+                            f"(เริ่มงาน {anc.strftime('%H:%M')}) กรุณาตรวจสอบ",
+                        )
+                        alerted_count += 1
+                        logger.info(f"[noshow] alert app={row['id']} elapsed={elapsed}")
+
+                    # ── Auto no-show: +60 นาที ───────────────────────────────
+                    if elapsed.total_seconds() >= 60 * 60:
+                        async with db.transaction():
+                            await db.execute(
+                                "UPDATE job_applications SET status='no_show', noshow_marked_at=NOW() WHERE id=$1",
+                                row["id"],
+                            )
+                            await db.execute(
+                                "UPDATE job_postings SET slots_filled = GREATEST(0, slots_filled - 1) WHERE id=$1",
+                                row["job_id"],
+                            )
+                            # แจ้ง employer
+                            await db.execute(
+                                """
+                                INSERT INTO notifications (user_id, type, title, body)
+                                VALUES ($1, 'application_update', '🚨 Worker ไม่มาทำงาน', $2)
+                                """,
+                                row["employer_user_id"],
+                                f"Worker {row['worker_name']} ถูกทำเครื่องหมาย No-Show อัตโนมัติ "
+                                f"สำหรับงาน \"{row['job_title']}\" — ระบบกำลังหา Worker สำรองให้",
+                            )
+                            # แจ้ง worker
+                            await db.execute(
+                                """
+                                INSERT INTO notifications (user_id, type, title, body)
+                                VALUES ($1, 'application_update', '❌ ถูกทำเครื่องหมาย No-Show', $2)
+                                """,
+                                row["worker_user_id"],
+                                f"คุณไม่ได้เช็คอินสำหรับงาน \"{row['job_title']}\" "
+                                f"ใบสมัครถูกยกเลิกอัตโนมัติ",
+                            )
+
+                            # ── Auto backup offer → top candidate ──────────
+                            backup = await db.fetchrow(
+                                """
+                                SELECT ja2.id, wp2.user_id AS worker_user_id
+                                FROM   job_applications ja2
+                                JOIN   worker_profiles  wp2 ON wp2.id = ja2.worker_id
+                                WHERE  ja2.job_id          = $1
+                                  AND  ja2.status          IN ('applied', 'shortlisted')
+                                  AND  ja2.backup_offered_at IS NULL
+                                ORDER  BY ja2.match_score DESC
+                                LIMIT  1
+                                """,
+                                row["job_id"],
+                            )
+                            if backup:
+                                next_priority = await db.fetchval(
+                                    "SELECT COALESCE(MAX(backup_priority), 0) + 1 FROM job_applications WHERE job_id=$1",
+                                    row["job_id"],
+                                )
+                                await db.execute(
+                                    "UPDATE job_applications SET backup_priority=$1, backup_offered_at=NOW() WHERE id=$2",
+                                    next_priority, backup["id"],
+                                )
+                                await db.execute(
+                                    """
+                                    INSERT INTO notifications (user_id, type, title, body)
+                                    VALUES ($1, 'application_update', '🔔 มีงานเร่งด่วนสำหรับคุณ!', $2)
+                                    """,
+                                    backup["worker_user_id"],
+                                    f"งาน \"{row['job_title']}\" มีตำแหน่งว่างกะทันหัน "
+                                    f"คุณได้รับเลือกเป็น Worker สำรอง — ตอบรับภายใน 30 นาที",
+                                )
+                                logger.info(f"[noshow] backup_offered app={backup['id']} for job={row['job_id']}")
+
+                        noshow_count += 1
+                        logger.info(f"[noshow] auto no_show app={row['id']} elapsed={elapsed}")
+
+                except Exception as row_err:
+                    logger.error(f"[noshow] row error app={row['id']}: {row_err}")
+                    continue
+
+            if alerted_count or noshow_count:
+                logger.info(f"[noshow] done alerted={alerted_count} no_show={noshow_count}")
 
     except Exception as e:
         logger.error(f"[noshow] cron error: {e}")
