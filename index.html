@@ -169,33 +169,175 @@
 <body>
 
 <!-- LANDING PAGE -->
-<div id="landingPage" style="min-height:100vh;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;text-align:center">
-  <div style="max-width:560px;width:100%">
-    <div style="font-size:42px;font-weight:800;color:var(--accent);letter-spacing:-1px;margin-bottom:6px">We're Hired</div>
-    <div style="font-size:14px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:40px">แพลตฟอร์มจ้างงานรายวัน • กรุงเทพฯ MVP</div>
+<style>
+  /* ── Landing ───────────────────────────────────────────── */
+  #landingPage {
+    min-height:100vh;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    overflow:hidden;
+    padding:32px 16px;
+    text-align:center;
+  }
+  #landingBg {
+    position:absolute;inset:0;z-index:0;
+    background:
+      linear-gradient(135deg,rgba(0,229,160,.18) 0%,transparent 50%),
+      linear-gradient(225deg,rgba(0,153,255,.12) 0%,transparent 60%),
+      #0d0f12;
+  }
+  #landingBg::before {
+    content:'';
+    position:absolute;inset:0;
+    background-image:url('https://images.unsplash.com/photo-1563245372-f21724e3856d?w=1600&q=60&auto=format');
+    background-size:cover;background-position:center;
+    opacity:.18;mix-blend-mode:luminosity;
+  }
+  #landingBg::after {
+    content:'';
+    position:absolute;inset:0;
+    background:radial-gradient(ellipse 80% 60% at 50% 100%,rgba(0,229,160,.08),transparent);
+  }
+  .lp-wrap { position:relative;z-index:1;max-width:680px;width:100%; }
+  .lp-eyebrow {
+    display:inline-flex;align-items:center;gap:8px;
+    background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.25);
+    border-radius:20px;padding:4px 14px;
+    font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--accent);
+    letter-spacing:.12em;text-transform:uppercase;
+    margin-bottom:20px;
+    animation:lp-fade-up .6s ease both;
+  }
+  .lp-title {
+    font-size:clamp(42px,8vw,72px);font-weight:800;
+    line-height:1;letter-spacing:-2px;
+    margin-bottom:18px;
+    animation:lp-fade-up .7s .1s ease both;
+  }
+  .lp-title span { color:var(--accent); }
+  .lp-sub {
+    font-size:15px;color:var(--muted);max-width:400px;margin:0 auto 44px;
+    line-height:1.7;
+    animation:lp-fade-up .7s .18s ease both;
+  }
+  .lp-cards {
+    display:grid;grid-template-columns:repeat(3,1fr);gap:14px;
+    margin-bottom:44px;
+    animation:lp-fade-up .7s .26s ease both;
+  }
+  .lp-card {
+    background:rgba(22,26,32,.7);
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:16px;padding:24px 16px;
+    backdrop-filter:blur(16px);
+    transition:border-color .2s,transform .2s;
+  }
+  .lp-card:hover { border-color:rgba(0,229,160,.35);transform:translateY(-3px); }
+  .lp-card-icon {
+    width:46px;height:46px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;margin:0 auto 14px;
+  }
+  .lp-card-icon.green { background:rgba(0,229,160,.15); }
+  .lp-card-icon.blue  { background:rgba(0,153,255,.15);  }
+  .lp-card-icon.warn  { background:rgba(255,107,53,.15);  }
+  .lp-card h3 { font-size:14px;font-weight:700;margin-bottom:6px;color:var(--text); }
+  .lp-card p  { font-size:12px;color:var(--muted);line-height:1.6; }
+  .lp-cta {
+    animation:lp-fade-up .7s .34s ease both;
+  }
+  .lp-btn {
+    display:inline-flex;align-items:center;gap:10px;
+    background:var(--accent);color:#0d0f12;
+    font-size:16px;font-weight:700;font-family:'Sarabun',sans-serif;
+    padding:16px 44px;border-radius:50px;
+    border:none;cursor:pointer;
+    box-shadow:0 0 40px rgba(0,229,160,.35);
+    transition:all .2s;
+  }
+  .lp-btn:hover { background:#00ffb3;transform:translateY(-2px);box-shadow:0 0 56px rgba(0,229,160,.5); }
+  .lp-btn-arrow { transition:transform .2s; }
+  .lp-btn:hover .lp-btn-arrow { transform:translateX(4px); }
+  .lp-free { margin-top:14px;font-size:12px;color:var(--muted); }
+  @keyframes lp-fade-up {
+    from { opacity:0;transform:translateY(20px); }
+    to   { opacity:1;transform:translateY(0); }
+  }
+  @media(max-width:600px) {
+    .lp-cards { grid-template-columns:1fr;max-width:320px;margin-left:auto;margin-right:auto; }
+    .lp-title { font-size:42px; }
+  }
 
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:40px">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 14px">
-        <div style="font-size:28px;margin-bottom:8px">👷</div>
-        <div style="font-weight:600;font-size:14px;margin-bottom:4px">หางาน</div>
-        <div style="font-size:12px;color:var(--muted);line-height:1.5">รับงานใกล้บ้าน ตรงสาย ตรงราคา</div>
+  /* ── Session timeout warning modal ──────────────────────── */
+  #sessionWarning {
+    display:none;position:fixed;inset:0;
+    background:rgba(0,0,0,.75);z-index:99999;
+    align-items:center;justify-content:center;
+  }
+  #sessionWarning.active { display:flex; }
+  #sessionWarningBox {
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:16px;padding:32px;max-width:360px;width:90%;text-align:center;
+  }
+</style>
+
+<div id="landingPage">
+  <div id="landingBg"></div>
+  <div class="lp-wrap">
+    <div class="lp-eyebrow">
+      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent)"></span>
+      DAILY JOB PLATFORM &bull; BANGKOK
+    </div>
+    <div class="lp-title">We're <span>Hired</span></div>
+    <div class="lp-sub">เชื่อมต่อ Worker กับ Employer ในกรุงเทพฯ<br>ระบบจับคู่อัตโนมัติ รายวัน ปลอดภัย ตรวจสอบได้</div>
+
+    <div class="lp-cards">
+      <div class="lp-card">
+        <div class="lp-card-icon green">
+          <svg width="22" height="22" fill="none" stroke="#00e5a0" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        <h3>Find Jobs</h3>
+        <p>Get jobs near you that match your skills</p>
       </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 14px">
-        <div style="font-size:28px;margin-bottom:8px">🏭</div>
-        <div style="font-weight:600;font-size:14px;margin-bottom:4px">จ้างงาน</div>
-        <div style="font-size:12px;color:var(--muted);line-height:1.5">โพสต์งาน ระบบจับคู่อัตโนมัติ</div>
+      <div class="lp-card">
+        <div class="lp-card-icon blue">
+          <svg width="22" height="22" fill="none" stroke="#0099ff" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        </div>
+        <h3>Hire Workers</h3>
+        <p>Post jobs with automated matching</p>
       </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 14px">
-        <div style="font-size:28px;margin-bottom:8px">🛡️</div>
-        <div style="font-weight:600;font-size:14px;margin-bottom:4px">ปลอดภัย</div>
-        <div style="font-size:12px;color:var(--muted);line-height:1.5">Verified Badge + Blind Review</div>
+      <div class="lp-card">
+        <div class="lp-card-icon warn">
+          <svg width="22" height="22" fill="none" stroke="#ff6b35" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <h3>Safe &amp; Secure</h3>
+        <p>Verified Badge + Blind Review</p>
       </div>
     </div>
 
-    <button class="btn btn-primary" onclick="showAuthFromLanding()" style="font-size:16px;padding:14px 40px;border-radius:10px">
-      เริ่มใช้งาน →
-    </button>
-    <div style="margin-top:16px;font-size:12px;color:var(--muted)">ฟรี ไม่มีค่าสมัคร</div>
+    <div class="lp-cta">
+      <button class="lp-btn" onclick="showAuthFromLanding()">
+        Get Started
+        <svg class="lp-btn-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+      </button>
+      <div class="lp-free">Free Registration • ฟรี ไม่มีค่าสมัคร</div>
+    </div>
+  </div>
+</div>
+
+<!-- SESSION TIMEOUT WARNING -->
+<div id="sessionWarning">
+  <div id="sessionWarningBox">
+    <div style="font-size:36px;margin-bottom:12px">⏰</div>
+    <div style="font-weight:700;font-size:18px;margin-bottom:8px">Session กำลังหมดอายุ</div>
+    <div style="font-size:14px;color:var(--muted);margin-bottom:20px">จะออกจากระบบอัตโนมัติใน <strong id="sessionCountdown" style="color:var(--warn)">5:00</strong> นาที<br>เพื่อความปลอดภัยของบัญชีคุณ</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-secondary" onclick="doLogout()" style="flex:1">ออกเลย</button>
+      <button class="btn btn-primary" onclick="extendSession()" style="flex:1">อยู่ต่อ</button>
+    </div>
   </div>
 </div>
 
@@ -2696,10 +2838,88 @@ async function submitReview(appId, targetRole) {
   }
 }
 
+// ─── SESSION TIMEOUT ─────────────────────────────────────
+const SESSION_TIMEOUT_MS  = 8 * 60 * 60 * 1000;  // 8 hours idle
+const SESSION_WARN_MS     = 5 * 60 * 1000;        // warn 5 min before
+const SESSION_STORAGE_KEY = 'wh_last_active';
+
+let _sessionTimer    = null;
+let _sessionWarnTimer = null;
+let _countdownTimer  = null;
+
+function _resetSessionTimers() {
+  if (!token) return;
+  localStorage.setItem(SESSION_STORAGE_KEY, Date.now());
+  clearTimeout(_sessionTimer);
+  clearTimeout(_sessionWarnTimer);
+  // hide warning if showing
+  document.getElementById('sessionWarning').classList.remove('active');
+  clearInterval(_countdownTimer);
+  // re-schedule
+  _sessionWarnTimer = setTimeout(_showSessionWarning,
+    SESSION_TIMEOUT_MS - SESSION_WARN_MS);
+  _sessionTimer = setTimeout(() => {
+    log('warn', 'Session expired — auto logout');
+    doLogout();
+  }, SESSION_TIMEOUT_MS);
+}
+
+function _showSessionWarning() {
+  document.getElementById('sessionWarning').classList.add('active');
+  let remaining = SESSION_WARN_MS / 1000;
+  _countdownTimer = setInterval(() => {
+    remaining--;
+    const m = String(Math.floor(remaining / 60)).padStart(1,'0');
+    const s = String(remaining % 60).padStart(2,'0');
+    const el = document.getElementById('sessionCountdown');
+    if (el) el.textContent = `${m}:${s}`;
+    if (remaining <= 0) clearInterval(_countdownTimer);
+  }, 1000);
+}
+
+function extendSession() {
+  _resetSessionTimers();
+  log('ok', 'Session extended');
+}
+
+// Track user activity
+['click','keydown','touchstart','scroll'].forEach(ev =>
+  document.addEventListener(ev, () => {
+    if (token) _resetSessionTimers();
+  }, { passive: true })
+);
+
+// Override saveSession + doLogout to hook into timer system
+const _origSaveSession = saveSession;
+saveSession = function(data) {
+  _origSaveSession(data);
+  _resetSessionTimers();
+};
+
+const _origDoLogout = doLogout;
+doLogout = function() {
+  clearTimeout(_sessionTimer);
+  clearTimeout(_sessionWarnTimer);
+  clearInterval(_countdownTimer);
+  _origDoLogout();
+  // Show landing after logout
+  document.getElementById('landingPage').style.display = 'flex';
+};
+
 // ─── START ─────────────────────────────────────────────────
 if (token && userRole) {
   log('info', `Auto-login: ${userRole}`);
-  initApp();
+  // Check if token was stored too long ago (offline case)
+  const lastActive = parseInt(localStorage.getItem(SESSION_STORAGE_KEY) || '0');
+  if (lastActive && (Date.now() - lastActive) > SESSION_TIMEOUT_MS) {
+    log('warn', 'Stored session expired — require re-login');
+    localStorage.clear();
+    token = ''; userRole = ''; userId = '';
+    document.getElementById('landingPage').style.display = 'flex';
+  } else {
+    initApp();
+    _resetSessionTimers();
+  }
 } else {
   handleGoogleCallback().then(handled => {
     if (!handled) {
