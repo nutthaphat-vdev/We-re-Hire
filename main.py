@@ -375,7 +375,7 @@ async def check_expired_jobs():
                 )
                 logger.info(
                     f"[check_expired_jobs] closed job={job['id']} reason={reason} "
-                    f"apps={total_apps} hired={total_hired}"
+                    f"apps={total_apps}"
                 )
                 closed_count += 1
 
