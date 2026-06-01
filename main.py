@@ -180,8 +180,8 @@ async def check_noshow_workers():
     Logic:
     - งานที่มี work_start  → ใช้ work_start เป็น anchor
     - งานที่ไม่มี work_start → ใช้ start_date 08:00 Thai time เป็น anchor (fallback)
-    - alert  : anchor + 30 นาที ผ่านแล้ว และยังไม่เคย alert
-    - no_show: anchor + 60 นาที ผ่านแล้ว และยังไม่ mark no_show
+    - alert  : anchor + 10 นาที ผ่านแล้ว และยังไม่เคย alert → แจ้ง employer รอต่อหรือหา backup
+    - no_show: anchor + 30 นาที ผ่านแล้ว และยังไม่ mark no_show → auto no_show + backup offer
     - จับทั้ง start_date วันนี้และก่อนหน้า (กันงานค้าง)
     - หลัง no_show → ส่ง backup offer อัตโนมัติให้ top candidate (applied/shortlisted)
     - แยก try/except ต่อ row ไม่ให้ job หนึ่ง crash หยุดทั้ง cron
@@ -241,8 +241,8 @@ async def check_noshow_workers():
                     anc = anchor_dt(row["start_date"], row["work_start"])
                     elapsed = now_th - anc  # timedelta
 
-                    # ── Alert: +30 นาที และยังไม่เคย alert ──────────────────
-                    if elapsed.total_seconds() >= 30 * 60 and row["noshow_alerted_at"] is None:
+                    # ── Alert: +10 นาที → แจ้ง employer รอต่อหรือหา backup ──
+                    if elapsed.total_seconds() >= 10 * 60 and row["noshow_alerted_at"] is None:
                         await db.execute(
                             "UPDATE job_applications SET noshow_alerted_at = NOW() WHERE id = $1",
                             row["id"],
@@ -254,13 +254,14 @@ async def check_noshow_workers():
                             """,
                             row["employer_user_id"],
                             f"Worker {row['worker_name']} ยังไม่เช็คอินสำหรับงาน \"{row['job_title']}\" "
-                            f"(เริ่มงาน {anc.strftime('%H:%M')}) กรุณาตรวจสอบ",
+                            f"(เริ่มงาน {anc.strftime('%H:%M')}) — หากไม่มาภายใน 30 นาที ระบบจะ No-Show อัตโนมัติ "
+                            f"หรือไปที่ My Jobs → หา Worker สำรองได้เลย",
                         )
                         alerted_count += 1
                         logger.info(f"[noshow] alert app={row['id']} elapsed={elapsed}")
 
-                    # ── Auto no-show: +60 นาที ───────────────────────────────
-                    if elapsed.total_seconds() >= 60 * 60:
+                    # ── Auto no-show: +30 นาที ───────────────────────────────
+                    if elapsed.total_seconds() >= 30 * 60:
                         async with db.transaction():
                             await db.execute(
                                 "UPDATE job_applications SET status='no_show', noshow_marked_at=NOW() WHERE id=$1",
