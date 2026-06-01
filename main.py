@@ -2452,6 +2452,20 @@ async def trigger_cron(x_admin_secret: str = Header(default="")):
     return {"ok": True}
 
 
+# ── Public Stats (landing page) ────────────────────────────
+
+@app.get("/public/stats", tags=["Public"])
+async def public_stats(db: asyncpg.Connection = Depends(get_db)):
+    """Stats สาธารณะสำหรับ landing page — ไม่ต้อง auth"""
+    row = await db.fetchrow("""
+        SELECT
+            (SELECT COUNT(*) FROM users WHERE role='worker')         AS total_workers,
+            (SELECT COUNT(*) FROM users WHERE role='employer')       AS total_employers,
+            (SELECT COUNT(*) FROM job_postings WHERE status='open')  AS jobs_open
+    """)
+    return dict(row)
+
+
 # ── Admin Dashboard ────────────────────────────────────────
 
 @app.get("/admin/stats", tags=["Admin"])

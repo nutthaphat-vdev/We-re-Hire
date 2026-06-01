@@ -176,11 +176,17 @@
     display:none;
     flex-direction:column;
     align-items:center;
-    justify-content:center;
+    justify-content:flex-start;
     position:relative;
-    overflow:hidden;
-    padding:32px 16px;
+    overflow-y:auto;
+    padding:0;
     text-align:center;
+  }
+  .lp-hero {
+    min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:32px 16px;
+    position:relative;width:100%;
   }
   #landingBg {
     position:absolute;inset:0;z-index:0;
@@ -266,9 +272,83 @@
     from { opacity:0;transform:translateY(20px); }
     to   { opacity:1;transform:translateY(0); }
   }
+  /* ── Landing sections ──────────────────────────────────── */
+  .lp-section {
+    width:100%;padding:72px 24px;
+    position:relative;z-index:1;
+  }
+  .lp-section-inner { max-width:860px;margin:0 auto; }
+  .lp-section-label {
+    font-size:10px;font-family:'IBM Plex Mono',monospace;
+    color:var(--accent);letter-spacing:.15em;text-transform:uppercase;
+    margin-bottom:12px;
+  }
+  .lp-section-title { font-size:clamp(24px,4vw,36px);font-weight:800;margin-bottom:12px; }
+  .lp-section-sub { font-size:14px;color:var(--muted);line-height:1.7;max-width:540px;margin:0 auto 44px; }
+  /* stats bar */
+  .lp-stats-bar {
+    width:100%;background:rgba(0,229,160,.05);
+    border-top:1px solid rgba(0,229,160,.12);border-bottom:1px solid rgba(0,229,160,.12);
+    padding:20px 24px;
+    display:flex;justify-content:center;gap:0;
+    position:relative;z-index:1;
+  }
+  .lp-stat-item {
+    flex:1;max-width:200px;text-align:center;
+    border-right:1px solid rgba(255,255,255,.06);
+    padding:0 20px;
+  }
+  .lp-stat-item:last-child { border-right:none; }
+  .lp-stat-num { font-size:32px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:var(--accent); }
+  .lp-stat-label { font-size:11px;color:var(--muted);margin-top:2px; }
+  /* how it works */
+  .lp-steps { display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:left; }
+  .lp-step {
+    background:rgba(22,26,32,.6);border:1px solid rgba(255,255,255,.06);
+    border-radius:16px;padding:24px;
+    backdrop-filter:blur(10px);
+  }
+  .lp-step-num {
+    width:32px;height:32px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;font-family:'IBM Plex Mono',monospace;
+    margin-bottom:14px;
+  }
+  .lp-step-num.accent { background:rgba(0,229,160,.15);color:var(--accent); }
+  .lp-step-num.blue   { background:rgba(0,153,255,.15);color:var(--accent2); }
+  .lp-step h4 { font-size:14px;font-weight:700;margin-bottom:6px; }
+  .lp-step p  { font-size:12px;color:var(--muted);line-height:1.6; }
+  /* features */
+  .lp-features { display:grid;grid-template-columns:repeat(2,1fr);gap:16px;text-align:left; }
+  .lp-feature {
+    display:flex;gap:16px;align-items:flex-start;
+    background:rgba(22,26,32,.5);border:1px solid rgba(255,255,255,.06);
+    border-radius:12px;padding:20px;
+  }
+  .lp-feature-icon { font-size:24px;flex-shrink:0;line-height:1; }
+  .lp-feature h4 { font-size:14px;font-weight:700;margin-bottom:4px; }
+  .lp-feature p  { font-size:12px;color:var(--muted);line-height:1.6; }
+  /* market */
+  .lp-market { display:grid;grid-template-columns:repeat(3,1fr);gap:16px; }
+  .lp-market-item {
+    background:rgba(22,26,32,.5);border:1px solid rgba(255,255,255,.06);
+    border-radius:12px;padding:20px;text-align:center;
+  }
+  .lp-market-num { font-size:28px;font-weight:800;color:var(--accent2);font-family:'IBM Plex Mono',monospace; }
+  .lp-market-label { font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5; }
+  /* footer cta */
+  .lp-footer-cta {
+    width:100%;padding:64px 24px;text-align:center;
+    background:linear-gradient(180deg,transparent,rgba(0,229,160,.04));
+    border-top:1px solid rgba(255,255,255,.04);
+    position:relative;z-index:1;
+  }
   @media(max-width:600px) {
-    .lp-cards { grid-template-columns:1fr;max-width:320px;margin-left:auto;margin-right:auto; }
+    .lp-cards,.lp-steps,.lp-features,.lp-market { grid-template-columns:1fr; }
     .lp-title { font-size:42px; }
+    .lp-stats-bar { flex-wrap:wrap; }
+    .lp-stat-item { border-right:none;border-bottom:1px solid rgba(255,255,255,.06);padding:12px 0; }
+    .lp-stat-item:last-child { border-bottom:none; }
   }
 
   /* ── Session timeout warning modal ──────────────────────── */
@@ -286,44 +366,215 @@
 
 <div id="landingPage">
   <div id="landingBg"></div>
-  <div class="lp-wrap">
-    <div class="lp-eyebrow">
-      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent)"></span>
-      DAILY JOB PLATFORM &bull; BANGKOK
-    </div>
-    <div class="lp-title">We're <span>Hired</span></div>
-    <div class="lp-sub">เชื่อมต่อ Worker กับ Employer ในกรุงเทพฯ<br>ระบบจับคู่อัตโนมัติ รายวัน ปลอดภัย ตรวจสอบได้</div>
 
-    <div class="lp-cards">
-      <div class="lp-card">
-        <div class="lp-card-icon green">
-          <svg width="22" height="22" fill="none" stroke="#00e5a0" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        </div>
-        <h3>Find Jobs</h3>
-        <p>Get jobs near you that match your skills</p>
+  <!-- ── HERO ─────────────────────────────────────────────── -->
+  <div class="lp-hero">
+    <div class="lp-wrap">
+      <div class="lp-eyebrow">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent)"></span>
+        DAILY JOB PLATFORM &bull; BANGKOK
       </div>
-      <div class="lp-card">
-        <div class="lp-card-icon blue">
-          <svg width="22" height="22" fill="none" stroke="#0099ff" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+      <div class="lp-title">We're <span>Hired</span></div>
+      <div class="lp-sub">แพลตฟอร์มจ้างงานรายวัน เชื่อมต่อ Worker ↔ Employer<br>ในกรุงเทพฯ ด้วยระบบ AI Matching อัตโนมัติ</div>
+
+      <div class="lp-cards">
+        <div class="lp-card">
+          <div class="lp-card-icon green">
+            <svg width="22" height="22" fill="none" stroke="#00e5a0" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </div>
+          <h3>หางานใกล้บ้าน</h3>
+          <p>ระบบ GPS จับคู่งานที่ตรง skills ในระยะ 5-15 กม.</p>
         </div>
-        <h3>Hire Workers</h3>
-        <p>Post jobs with automated matching</p>
+        <div class="lp-card">
+          <div class="lp-card-icon blue">
+            <svg width="22" height="22" fill="none" stroke="#0099ff" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          </div>
+          <h3>หาคนได้ภายในชั่วโมง</h3>
+          <p>โพสต์งาน → ระบบ rank candidates → จ้างได้ทันที</p>
+        </div>
+        <div class="lp-card">
+          <div class="lp-card-icon warn">
+            <svg width="22" height="22" fill="none" stroke="#ff6b35" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </div>
+          <h3>ปลอดภัย ตรวจสอบได้</h3>
+          <p>KYC Verified · Blind Review · Anti-ghosting อัตโนมัติ</p>
+        </div>
       </div>
-      <div class="lp-card">
-        <div class="lp-card-icon warn">
-          <svg width="22" height="22" fill="none" stroke="#ff6b35" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-        </div>
-        <h3>Safe &amp; Secure</h3>
-        <p>Verified Badge + Blind Review</p>
+
+      <div class="lp-cta">
+        <button class="lp-btn" onclick="showAuthFromLanding()">
+          เริ่มใช้งานฟรี
+          <svg class="lp-btn-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+        </button>
+        <div class="lp-free">ฟรี ไม่มีค่าสมัคร • ชำระเฉพาะเมื่อจ้างงานสำเร็จ</div>
+      </div>
+
+      <div style="margin-top:48px;opacity:.5;animation:lp-fade-up 1s .8s ease both">
+        <svg width="20" height="20" fill="none" stroke="var(--muted)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
       </div>
     </div>
+  </div>
 
-    <div class="lp-cta">
-      <button class="lp-btn" onclick="showAuthFromLanding()">
-        Get Started
-        <svg class="lp-btn-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-      </button>
-      <div class="lp-free">Free Registration • ฟรี ไม่มีค่าสมัคร</div>
+  <!-- ── STATS BAR ──────────────────────────────────────────── -->
+  <div class="lp-stats-bar" id="lpStatsBar">
+    <div class="lp-stat-item">
+      <div class="lp-stat-num" id="lpStatWorkers">—</div>
+      <div class="lp-stat-label">Workers ลงทะเบียนแล้ว</div>
+    </div>
+    <div class="lp-stat-item">
+      <div class="lp-stat-num" id="lpStatEmployers">—</div>
+      <div class="lp-stat-label">Employers ใช้งาน</div>
+    </div>
+    <div class="lp-stat-item">
+      <div class="lp-stat-num" id="lpStatJobs">—</div>
+      <div class="lp-stat-label">Jobs ที่เปิดรับอยู่</div>
+    </div>
+    <div class="lp-stat-item">
+      <div class="lp-stat-num">50+</div>
+      <div class="lp-stat-label">เขตในกรุงเทพฯ + ปริมณฑล</div>
+    </div>
+  </div>
+
+  <!-- ── HOW IT WORKS ───────────────────────────────────────── -->
+  <div class="lp-section" style="background:rgba(0,0,0,.2)">
+    <div class="lp-section-inner">
+      <div class="lp-section-label">How it works</div>
+      <div class="lp-section-title">ใช้งานได้ใน 3 ขั้นตอน</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;text-align:left;margin-top:8px">
+        <!-- Worker flow -->
+        <div>
+          <div style="font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--accent);margin-bottom:20px;letter-spacing:.1em">👷 สำหรับ Worker</div>
+          <div class="lp-steps" style="grid-template-columns:1fr">
+            <div class="lp-step">
+              <div class="lp-step-num accent">01</div>
+              <h4>สมัครและสร้างโปรไฟล์</h4>
+              <p>ระบุ skills, ที่อยู่, และค่าแรงที่ต้องการ ฟรี 100%</p>
+            </div>
+            <div class="lp-step">
+              <div class="lp-step-num accent">02</div>
+              <h4>ค้นหางานใกล้บ้าน</h4>
+              <p>ระบบ GPS + AI จับคู่งานที่ตรงกับ skills คุณโดยอัตโนมัติ พร้อม match score</p>
+            </div>
+            <div class="lp-step">
+              <div class="lp-step-num accent">03</div>
+              <h4>เช็คอิน GPS → รับค่าแรง</h4>
+              <p>เช็คอินที่หน้างานด้วย GPS ทำงานเสร็จ → verified → รอรับเงิน</p>
+            </div>
+          </div>
+        </div>
+        <!-- Employer flow -->
+        <div>
+          <div style="font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--accent2);margin-bottom:20px;letter-spacing:.1em">🏭 สำหรับ Employer</div>
+          <div class="lp-steps" style="grid-template-columns:1fr">
+            <div class="lp-step">
+              <div class="lp-step-num blue">01</div>
+              <h4>โพสต์งานใน 2 นาที</h4>
+              <p>ระบุตำแหน่ง, skills ที่ต้องการ, ค่าแรง และวันเริ่มงาน</p>
+            </div>
+            <div class="lp-step">
+              <div class="lp-step-num blue">02</div>
+              <h4>รับ ranked candidates ทันที</h4>
+              <p>ระบบ rank ผู้สมัครด้วย match score (skills + ระยะทาง + ค่าแรง) ให้อัตโนมัติ</p>
+            </div>
+            <div class="lp-step">
+              <div class="lp-step-num blue">03</div>
+              <h4>จ้าง → ระบบจัดการ lifecycle</h4>
+              <p>Anti-ghosting อัตโนมัติ ถ้า worker ไม่มา ระบบหา backup ให้ทันที</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── KEY FEATURES ───────────────────────────────────────── -->
+  <div class="lp-section">
+    <div class="lp-section-inner">
+      <div class="lp-section-label">Platform Features</div>
+      <div class="lp-section-title">ออกแบบมาเพื่อแก้ปัญหาจริง</div>
+      <div class="lp-section-sub">ปัญหาหลักของตลาดแรงงานรายวันคือ ghosting, ข้อมูลปลอม, และไม่มีระบบ accountability — WeHire แก้ทุกจุด</div>
+
+      <div class="lp-features">
+        <div class="lp-feature">
+          <div class="lp-feature-icon">🛡️</div>
+          <div>
+            <h4>Anti-Ghosting อัตโนมัติ</h4>
+            <p>Worker hired แต่ไม่เช็คอิน → +30 นาที แจ้ง employer → +60 นาที ระบบ mark no-show และเปิด backup queue ทันที ไม่ต้องรอ</p>
+          </div>
+        </div>
+        <div class="lp-feature">
+          <div class="lp-feature-icon">📍</div>
+          <div>
+            <h4>GPS Check-in ยืนยันตัวตน</h4>
+            <p>Worker ต้องเช็คอิน GPS ภายใน 150 เมตรจากหน้างาน ป้องกัน fake check-in ก่อนเริ่มงานจริง</p>
+          </div>
+        </div>
+        <div class="lp-feature">
+          <div class="lp-feature-icon">⭐</div>
+          <div>
+            <h4>Blind Review System</h4>
+            <p>Review ซ่อนจนกว่าทั้งสองฝ่ายส่ง หรือครบ 7 วัน ป้องกัน bias — ได้ข้อมูลตรงจริงไม่ถูกกดดัน</p>
+          </div>
+        </div>
+        <div class="lp-feature">
+          <div class="lp-feature-icon">✅</div>
+          <div>
+            <h4>KYC Verified Badge</h4>
+            <p>Worker ยืนยันตัวตนด้วยบัตรประชาชน + Selfie ผ่าน Admin review — Employer เห็น verified badge ก่อนตัดสินใจจ้าง</p>
+          </div>
+        </div>
+        <div class="lp-feature">
+          <div class="lp-feature-icon">🤖</div>
+          <div>
+            <h4>AI Match Score</h4>
+            <p>คะแนน 0-100 คำนวณจาก skills overlap (60%) + ระยะทาง (25%) + ค่าแรง (15%) — เรียง candidates ให้อัตโนมัติ</p>
+          </div>
+        </div>
+        <div class="lp-feature">
+          <div class="lp-feature-icon">🔔</div>
+          <div>
+            <h4>D-1 Reminder อัตโนมัติ</h4>
+            <p>วันก่อนงาน ระบบส่ง reminder ให้ทุก worker ที่ hired อัตโนมัติ ทุกวัน 18:00 — ลด no-show rate</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MARKET CONTEXT ─────────────────────────────────────── -->
+  <div class="lp-section" style="background:rgba(0,0,0,.2)">
+    <div class="lp-section-inner">
+      <div class="lp-section-label">Market Opportunity</div>
+      <div class="lp-section-title">ตลาดแรงงานรายวันในไทย</div>
+      <div class="lp-section-sub">กรุงเทพฯ มีแรงงานในระบบกว่า 5 ล้านคน — ส่วนใหญ่ยังหางานผ่าน Facebook group, โทรศัพท์, และปากต่อปาก</div>
+      <div class="lp-market">
+        <div class="lp-market-item">
+          <div class="lp-market-num">5M+</div>
+          <div class="lp-market-label">แรงงานรายวันในกรุงเทพฯ<br><span style="color:var(--accent);font-size:10px">กรมการจัดหางาน 2025</span></div>
+        </div>
+        <div class="lp-market-item">
+          <div class="lp-market-num">฿400</div>
+          <div class="lp-market-label">ค่าแรงเฉลี่ยต่อวัน<br><span style="color:var(--accent);font-size:10px">platform fee 6% = ฿24/วัน</span></div>
+        </div>
+        <div class="lp-market-item">
+          <div class="lp-market-num">90%</div>
+          <div class="lp-market-label">ยังไม่ใช้ platform<br><span style="color:var(--accent);font-size:10px">โอกาสที่ยังไม่มีใครจับ</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FOOTER CTA ─────────────────────────────────────────── -->
+  <div class="lp-footer-cta">
+    <div style="font-size:clamp(24px,4vw,36px);font-weight:800;margin-bottom:12px">พร้อมเริ่มแล้วใช่ไหม?</div>
+    <div style="font-size:14px;color:var(--muted);margin-bottom:32px">สมัครฟรี ไม่มีค่าใช้จ่ายรายเดือน ชำระเฉพาะเมื่อจ้างงานสำเร็จ</div>
+    <button class="lp-btn" onclick="showAuthFromLanding()">
+      เริ่มใช้งานเลย
+      <svg class="lp-btn-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+    </button>
+    <div style="margin-top:40px;font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;opacity:.5">
+      WeHire · BKK MVP v0.1 · Built in Bangkok 🇹🇭
     </div>
   </div>
 </div>
@@ -1041,6 +1292,20 @@ function esc(str) {
 function showAuthFromLanding() {
   document.getElementById('landingPage').style.display = 'none';
   document.getElementById('authPage').style.display = 'flex';
+}
+
+async function loadLandingStats() {
+  try {
+    const res = await fetch(API + '/public/stats', { cache: 'no-store' });
+    if (!res.ok) return;
+    const d = await res.json();
+    const w = document.getElementById('lpStatWorkers');
+    const e = document.getElementById('lpStatEmployers');
+    const j = document.getElementById('lpStatJobs');
+    if (w) w.textContent = d.total_workers ?? '—';
+    if (e) e.textContent = d.total_employers ?? '—';
+    if (j) j.textContent = d.jobs_open ?? '—';
+  } catch(e) {}
 }
 
 // ─── AUTH ──────────────────────────────────────────────────
@@ -2967,6 +3232,7 @@ doLogout = function() {
   _origDoLogout();
   // Show landing after logout
   document.getElementById('landingPage').style.display = 'flex';
+  loadLandingStats();
 };
 
 // ─── START ─────────────────────────────────────────────────
@@ -2987,6 +3253,7 @@ if (token && userRole) {
   handleGoogleCallback().then(handled => {
     if (!handled) {
       document.getElementById('landingPage').style.display = 'flex';
+      loadLandingStats();
       log('info', 'Ready — waiting for login');
     }
   });
