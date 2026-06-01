@@ -1909,11 +1909,15 @@ async function loadDashboard() {
         💡 ยังไม่มีงานที่เปิดรับอยู่ — <span style="cursor:pointer;text-decoration:underline" onclick="showPage('postjob')">โพสต์งานแรก</span>
       </div>`;
 
-    // employer not verified nudge
-    const verifyNudge = empProfile && !empProfile.verified_status ? `
-      <div class="alert" style="background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.2);color:var(--warn)">
-        ⚠️ <strong>บัญชียังไม่ verified</strong> — ติดต่อ Admin เพื่อ verify บริษัทและเพิ่มความน่าเชื่อถือ
-      </div>` : '';
+    // employer verification status bar
+    const verifyStatus = empProfile ? (
+      empProfile.verified_status === 'verified'
+        ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.2);border-radius:8px"><span class="badge badge-green">✅ Verified Employer</span><span style="font-size:12px;color:var(--muted)">${esc(empProfile.company_name)}</span></div>`
+        : empProfile.verified_status === 'pending'
+          ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.2);border-radius:8px"><span class="badge badge-warn">⏳ รอ Admin Verify</span><span style="font-size:12px;color:var(--muted)">ทีมงานจะตรวจสอบภายใน 1-2 วันทำการ</span></div>`
+          : `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.2);border-radius:8px"><div style="display:flex;align-items:center;gap:8px"><span class="badge badge-danger">⚠️ ยังไม่ verified</span><span style="font-size:12px;color:var(--muted)">Verify บริษัทเพื่อเพิ่มความน่าเชื่อถือ</span></div><button class="btn btn-secondary btn-sm" onclick="requestEmployerVerify(this)" style="font-size:11px">ขอ Verify →</button></div>`
+    ) : '';
+    const verifyNudge = verifyStatus;
 
     contentEl.innerHTML = `
       ${verifyNudge}
@@ -2529,13 +2533,19 @@ async function loadCandidates(jobId, jobTitle) {
           <div class="candidate-info">
             <div class="candidate-name">
               ${esc(c.full_name)}
-              ${c.background_check_status === 'verified' ? '<span class="badge badge-green" style="font-size:10px;margin-left:6px">✓ KYC Verified</span>' : ''}
+              ${c.background_check_status === 'verified' ? '<span class="badge badge-green" style="font-size:10px;margin-left:6px">✓ KYC</span>' : ''}
             </div>
             <div class="candidate-meta">
               Match: <strong style="color:var(--accent)">${c.match_score}/100</strong> •
               ${c.distance_km} กม.
               ${c.background_check_status !== 'verified' ? `• <span class="badge ${bgColor[c.background_check_status]||'badge-gray'}" style="font-size:10px">${esc(c.background_check_status)}</span>` : ''}
             </div>
+            ${c.review_summary ? `
+            <div style="display:flex;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap">
+              <span style="font-size:13px">${'⭐'.repeat(Math.round(c.review_summary.avg_score))}${'☆'.repeat(5-Math.round(c.review_summary.avg_score))}</span>
+              <span style="font-size:11px;color:var(--muted)">${c.review_summary.avg_score.toFixed(1)} (${c.review_summary.total_reviews} รีวิว)</span>
+              ${c.review_summary.would_rehire_pct != null ? `<span style="font-size:11px;color:var(--accent)">👍 ${Math.round(c.review_summary.would_rehire_pct)}% รับอีก</span>` : ''}
+            </div>` : ''}
             <div class="tags" style="margin-top:6px">
               ${c.matched_skills.map(s=>`<span class="tag tag-match" style="font-size:10px">✓ ${esc(s)}</span>`).join('')}
             </div>

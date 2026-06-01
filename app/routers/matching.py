@@ -274,10 +274,15 @@ async def get_candidates(
             ja.distance_km,
             ja.matched_skills,
             ja.status,
-            jp.required_skills
+            jp.required_skills,
+            wrs.total_reviews,
+            wrs.avg_score,
+            wrs.would_rehire_pct,
+            wrs.top_tags
         FROM   job_applications ja
-        JOIN   worker_profiles  wp ON wp.id = ja.worker_id
-        JOIN   job_postings     jp ON jp.id = ja.job_id
+        JOIN   worker_profiles        wp  ON wp.id  = ja.worker_id
+        JOIN   job_postings           jp  ON jp.id  = ja.job_id
+        LEFT JOIN worker_review_summary wrs ON wrs.worker_id = wp.id
         WHERE  ja.job_id = $1
           AND  ja.status IN ('applied', 'shortlisted')
         ORDER  BY ja.match_score DESC, ja.distance_km ASC
@@ -301,6 +306,12 @@ async def get_candidates(
                 set(s.lower() for s in (row["matched_skills"] or []))
             ),
             "status": row["status"],
+            "review_summary": {
+                "total_reviews":    row["total_reviews"],
+                "avg_score":        float(row["avg_score"]) if row["avg_score"] else None,
+                "would_rehire_pct": float(row["would_rehire_pct"]) if row["would_rehire_pct"] else None,
+                "top_tags":         row["top_tags"] or [],
+            } if row["total_reviews"] else None,
         }
         for row in rows
     ]
