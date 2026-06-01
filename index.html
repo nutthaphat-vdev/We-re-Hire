@@ -2271,9 +2271,9 @@ async function loadMyApps() {
         + (ACTIVE.includes(a.status) && a.maps_link ? (
             '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
             + '<a href="' + a.maps_link + '" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">' + t('nav_btn') + '</a>'
-            + '<button class="btn btn-secondary btn-sm" onclick="showContact('' + a.id + '',this)">' + t('contact_btn') + '</button>'
-            + (a.status === 'hired' ? '<button class="btn btn-primary btn-sm" onclick="doCheckin('' + a.id + '',this)">' + t('checkin_btn') + '</button>' : '')
-            + (a.status === 'working' ? '<button class="btn btn-primary btn-sm" onclick="doComplete('' + a.id + '',this)">' + t('complete_btn') + '</button>' : '')
+            + '<button class="btn btn-secondary btn-sm" onclick="showContact(\'' + a.id + '\',this)">' + t('contact_btn') + '</button>'
+            + (a.status === 'hired' ? '<button class="btn btn-primary btn-sm" onclick="doCheckin(\'' + a.id + '\',this)">' + t('checkin_btn') + '</button>' : '')
+            + (a.status === 'working' ? '<button class="btn btn-primary btn-sm" onclick="doComplete(\'' + a.id + '\',this)">' + t('complete_btn') + '</button>' : '')
             + (a.status === 'checked_in' ? '<span style="font-size:12px;color:var(--muted)">' + t('wait_start') + '</span>' : '')
             + (a.status === 'completed' ? '<span style="font-size:12px;color:var(--muted)">' + t('wait_verify') + '</span>' : '')
             + (a.status === 'verified' ? '<span style="font-size:12px;color:var(--accent)">✅ ' + t('job_success') + '</span>' : '')
@@ -3422,4 +3422,5 @@ if (token && userRole) {
 }
 </script>
 </body>
+</html>
 </html>
