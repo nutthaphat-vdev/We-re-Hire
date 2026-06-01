@@ -327,7 +327,7 @@ async def send_d1_reminders():
 
 
 async def check_expired_jobs():
-    """Cron ทุก 30 นาที: ปิด job ที่ถึง auto_close_at แล้วยังไม่มี hired"""
+    """Cron ทุก 30 นาที: ปิด job ที่ถึง auto_close_at แล้ว และยังไม่มี hired worker"""
     if pool is None:
         return
     try:
@@ -339,6 +339,12 @@ async def check_expired_jobs():
                 JOIN   employer_profiles ep ON ep.id = jp.employer_id
                 WHERE  jp.status = 'open'
                   AND  jp.auto_close_at <= NOW()
+                  AND  jp.slots_filled = 0
+                  AND  NOT EXISTS (
+                      SELECT 1 FROM job_applications
+                      WHERE  job_id = jp.id
+                        AND  status IN ('hired','checked_in','working','completed','verified')
+                  )
                 """
             )
             closed_count = 0
@@ -346,19 +352,14 @@ async def check_expired_jobs():
                 total_apps = await db.fetchval(
                     "SELECT COUNT(*) FROM job_applications WHERE job_id=$1", job["id"]
                 )
-                total_hired = await db.fetchval(
-                    "SELECT COUNT(*) FROM job_applications WHERE job_id=$1 AND status='hired'", job["id"]
-                )
                 if total_apps == 0:
                     reason = "no_applicants"
                     msg = (f"งาน '{job['title']}' ของคุณปิดอัตโนมัติ "
-                           f"เนื่องจากไม่มีผู้สมัครภายใน 48 ชม. ก่อนวันเริ่มงาน "
-                           f"(TODO: refund เมื่อเปิด Wallet)")
+                           f"เนื่องจากไม่มีผู้สมัครภายใน 48 ชม. ก่อนวันเริ่มงาน ")
                 else:
                     reason = "no_hire"
                     msg = (f"งาน '{job['title']}' ของคุณปิดอัตโนมัติ "
-                           f"เนื่องจากยังไม่ได้เลือกผู้สมัครภายใน 48 ชม. ก่อนวันเริ่มงาน "
-                           f"(TODO: refund เมื่อเปิด Wallet)")
+                           f"เนื่องจากยังไม่ได้เลือกผู้สมัครภายใน 48 ชม. ก่อนวันเริ่มงาน ")
 
                 await db.execute(
                     "UPDATE job_postings SET status='closed', auto_closed_reason=$1 WHERE id=$2",
