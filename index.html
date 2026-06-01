@@ -1262,25 +1262,74 @@ async function loadAdminStats() {
   el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
   try {
     const d = await api('GET', '/admin/stats');
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+    const dateStr = now.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'numeric' });
+    const compRate = d.completion_rate_pct != null ? d.completion_rate_pct + '%' : 'N/A';
+    const timeToHire = d.avg_time_to_hire_hours != null ? d.avg_time_to_hire_hours + ' ชม.' : 'N/A';
+    const compColor = d.completion_rate_pct >= 70 ? 'var(--accent)' : d.completion_rate_pct >= 50 ? 'var(--warn)' : 'var(--danger)';
+
     el.innerHTML = `
-      <div class="stats" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
-        <div class="stat"><div class="stat-num">${d.total_workers}</div><div class="stat-label">Workers</div></div>
-        <div class="stat"><div class="stat-num">${d.total_employers}</div><div class="stat-label">Employers</div></div>
-        <div class="stat"><div class="stat-num">${d.total_applications}</div><div class="stat-label">Applications</div></div>
-        <div class="stat"><div class="stat-num">${d.jobs_open}</div><div class="stat-label">Jobs Open</div></div>
-        <div class="stat"><div class="stat-num">${d.jobs_filled}</div><div class="stat-label">Jobs Filled</div></div>
-        <div class="stat"><div class="stat-num">${d.hired_today}</div><div class="stat-label">Hired Today</div></div>
+      <div style="font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:20px">
+        อัปเดต ${dateStr} ${timeStr}
+        <button onclick="loadAdminStats()" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:11px;margin-left:8px">↻ รีเฟรช</button>
       </div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <div class="card" style="flex:1;min-width:160px;padding:16px">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:4px">KYC รอตรวจ</div>
-          <div style="font-size:28px;font-weight:700;color:var(--warn)">${d.kyc_pending}</div>
-          <button class="btn btn-secondary btn-sm" onclick="showPage('admin-kyc')" style="margin-top:8px">ดู KYC →</button>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">
+        <div class="stat" style="border-left:3px solid var(--accent)">
+          <div class="stat-num">${d.total_workers}</div>
+          <div class="stat-label">Workers</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:4px">+${d.new_users_today||0} วันนี้</div>
         </div>
-        <div class="card" style="flex:1;min-width:160px;padding:16px">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Disputes รอตัดสิน</div>
-          <div style="font-size:28px;font-weight:700;color:var(--danger)">${d.open_disputes}</div>
-          <button class="btn btn-secondary btn-sm" onclick="showPage('admin-disputes')" style="margin-top:8px">ดู Disputes →</button>
+        <div class="stat" style="border-left:3px solid var(--accent2)">
+          <div class="stat-num">${d.total_employers}</div>
+          <div class="stat-label">Employers</div>
+          <div style="font-size:11px;color:var(--accent2);margin-top:4px">${d.jobs_posted_today||0} jobs วันนี้</div>
+        </div>
+        <div class="stat" style="border-left:3px solid var(--accent)">
+          <div class="stat-num">${d.total_hired_alltime||0}</div>
+          <div class="stat-label">Total Hired</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:4px">${d.hired_today} วันนี้</div>
+        </div>
+        <div class="stat" style="border-left:3px solid var(--accent)">
+          <div class="stat-num">${d.total_completed||0}</div>
+          <div class="stat-label">งานสำเร็จ</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:4px">completion ${compRate}</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px">
+        <div class="card" style="padding:16px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:8px;letter-spacing:.08em">COMPLETION RATE</div>
+          <div style="font-size:38px;font-weight:800;color:${compColor};line-height:1">${compRate}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">งานจบครบ / งานที่รับ</div>
+        </div>
+        <div class="card" style="padding:16px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:8px;letter-spacing:.08em">AVG TIME-TO-HIRE</div>
+          <div style="font-size:38px;font-weight:800;color:var(--accent2);line-height:1">${timeToHire}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">ตั้งแต่โพสต์ถึงจ้างงาน</div>
+        </div>
+        <div class="card" style="padding:16px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:8px;letter-spacing:.08em">JOBS IN MARKET</div>
+          <div style="font-size:38px;font-weight:800;color:var(--accent);line-height:1">${d.jobs_open}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">${d.jobs_filled} filled · ${d.jobs_closed} closed</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="card" style="padding:16px;${d.kyc_pending>0?'border-color:rgba(255,107,53,.5)':''}">
+          <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:10px;letter-spacing:.08em">⚠️ KYC รอตรวจสอบ</div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:36px;font-weight:800;color:${d.kyc_pending>0?'var(--warn)':'var(--accent)'}">${d.kyc_pending}</div>
+            <button class="btn btn-secondary btn-sm" onclick="showPage('admin-kyc')">ตรวจ KYC →</button>
+          </div>
+        </div>
+        <div class="card" style="padding:16px;${d.open_disputes>0?'border-color:rgba(255,71,87,.5)':''}">
+          <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:10px;letter-spacing:.08em">🚨 DISPUTES รอตัดสิน</div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:36px;font-weight:800;color:${d.open_disputes>0?'var(--danger)':'var(--accent)'}">${d.open_disputes}</div>
+            <button class="btn btn-secondary btn-sm" onclick="showPage('admin-disputes')">ดู Disputes →</button>
+          </div>
         </div>
       </div>`;
   } catch(e) { el.innerHTML = `<div class="alert alert-error">${e.message}</div>`; }

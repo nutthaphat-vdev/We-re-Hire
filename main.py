@@ -2471,7 +2471,21 @@ async def admin_stats(
              WHERE  status = 'hired' AND decided_at >= NOW()::date)       AS hired_today,
             (SELECT COUNT(*) FROM job_applications WHERE status='disputed') AS open_disputes,
             (SELECT COUNT(*) FROM worker_profiles
-             WHERE  background_check_status='pending')                    AS kyc_pending
+             WHERE  background_check_status='pending')                    AS kyc_pending,
+            (SELECT COUNT(*) FROM job_applications WHERE status='verified') AS total_completed,
+            (SELECT COUNT(*) FROM job_applications
+             WHERE  status IN ('hired','checked_in','working','completed','verified')) AS total_hired_alltime,
+            (SELECT ROUND(
+                COUNT(*) FILTER (WHERE status='verified') * 100.0 /
+                NULLIF(COUNT(*) FILTER (WHERE status IN ('hired','checked_in','working','completed','verified','no_show')), 0)
+            , 1) FROM job_applications)                                    AS completion_rate_pct,
+            (SELECT ROUND(EXTRACT(EPOCH FROM AVG(decided_at - jp.created_at))/3600, 1)
+             FROM   job_applications ja
+             JOIN   job_postings jp ON jp.id = ja.job_id
+             WHERE  ja.status = 'hired' AND ja.decided_at IS NOT NULL)    AS avg_time_to_hire_hours,
+            (SELECT COUNT(*) FROM users WHERE created_at >= NOW()::date)  AS new_users_today,
+            (SELECT COUNT(*) FROM job_postings
+             WHERE  created_at >= NOW()::date)                            AS jobs_posted_today
     """)
     return dict(row)
 
