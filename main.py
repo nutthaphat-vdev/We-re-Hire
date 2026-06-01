@@ -21,6 +21,10 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import FastAPI, Depends, HTTPException, Header, Request, status, File, UploadFile
+from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, Field
@@ -34,7 +38,7 @@ class Settings(BaseSettings):
     database_url:         str
     jwt_secret:           str
     jwt_algorithm:        str = "HS256"
-    jwt_expire_minutes:   int = 1440
+    jwt_expire_minutes:   int = 120
     cors_origins:         str = "http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000,null"
     frontend_url:         str = ""   # Railway frontend URL เช่น https://wehire.up.railway.app
     supabase_url:         str = "https://wexupoegrynxbhdzioym.supabase.co"
@@ -428,6 +432,13 @@ app = FastAPI(
     redoc_url=None if os.getenv("RAILWAY_ENVIRONMENT") else "/redoc",
 )
 
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+
+async def _rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(status_code=429, content={"detail": "คำขอมากเกินไป กรุณารอสักครู่แล้วลองใหม่"})
+app.add_exception_handler(RateLimitExceeded, _rate_limit_handler)
+
 origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
 if settings.frontend_url:
     origins.append(settings.frontend_url.strip())
@@ -473,7 +484,15 @@ def decode_token(token: str) -> dict:
 async def get_current_user(
     creds: HTTPAuthorizationCredentials = Depends(security),
 ) -> dict:
-    return decode_token(creds.credentials)
+    payload = decode_token(creds.credentials)
+    if pool:
+        async with pool.acquire() as db:
+            is_active = await db.fetchval(
+                "SELECT is_active FROM users WHERE id=$1", UUID(payload["sub"])
+            )
+            if is_active is False:
+                raise HTTPException(status_code=403, detail="บัญชีถูกระงับ")
+    return payload
 
 async def require_worker(user: dict = Depends(get_current_user)) -> dict:
     if user["role"] != "worker":
@@ -677,7 +696,8 @@ async def register(body: RegisterRequest, db: asyncpg.Connection = Depends(get_d
 
 
 @app.post("/auth/login", tags=["Auth"])
-async def login(body: LoginRequest, db: asyncpg.Connection = Depends(get_db)):
+@limiter.limit("10/minute")
+async def login(request: Request, body: LoginRequest, db: asyncpg.Connection = Depends(get_db)):
     user = await db.fetchrow(
         "SELECT id, password_hash, role, is_active FROM users WHERE email=$1",
         body.email,
@@ -1225,7 +1245,9 @@ class ApplyRequest(BaseModel):
     lng: float = Field(..., ge=-180, le=180)
 
 @app.post("/jobs/{job_id}/apply", status_code=201, tags=["Matching"])
+@limiter.limit("20/minute")
 async def apply_to_job(
+    request: Request,
     job_id: UUID,
     body:   ApplyRequest,
     user:   dict = Depends(require_worker),

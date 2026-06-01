@@ -2098,18 +2098,21 @@ async function decide(appId, decision, btn) {
     });
     btn.innerHTML = decision === 'hired' ? t('cand_hire_done') : t('cand_reject_done');
 
-    // แสดง contact ทันทีหลัง hired ไม่ต้อง reload
-    if (decision === 'hired' && data.contact) {
-      const c = data.contact;
-      const candidateEl = btn.closest('.candidate');
-      if (candidateEl) {
-        const contactDiv = document.createElement('div');
-        contactDiv.style.cssText = 'margin-top:8px;padding:8px 12px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:8px;font-size:12px;width:100%';
-        contactDiv.innerHTML = `
-          <div style="font-weight:600">${c.contact_name}</div>
-          ${c.phone ? `<a href="tel:${c.phone}" style="color:var(--accent);text-decoration:none;font-family:'IBM Plex Mono',monospace">📱 ${c.phone}</a>` : ''}
-          <div style="color:var(--muted)">${c.email}</div>`;
-        candidateEl.appendChild(contactDiv);
+    // แสดง hired UI + contact ทันทีโดยไม่ต้อง reload
+    if (decision === 'hired') {
+      const actionsEl = btn.closest('.candidate-actions');
+      if (actionsEl) {
+        const c = data.contact;
+        const contactHtml = c ? `
+          <div style="margin-top:4px;padding:8px 10px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:6px;font-size:11px;text-align:right">
+            <div style="font-weight:600">${esc(c.contact_name||'')}</div>
+            ${c.phone ? `<div><a href="tel:${c.phone}" style="color:var(--accent);text-decoration:none;font-family:'IBM Plex Mono',monospace">📱 ${esc(c.phone)}</a></div>` : ''}
+            <div style="color:var(--muted)">${esc(c.email||'')}</div>
+          </div>` : '';
+        actionsEl.innerHTML = `
+          <span class="badge badge-green" style="font-size:10px">${t('cand_waiting_checkin')}</span>
+          <button class="btn btn-secondary btn-sm" onclick="showContact('${appId}',this)" style="font-size:11px">${t('cand_see_contact')}</button>
+          <div id="contact-${appId}" style="font-size:11px;text-align:right;margin-top:4px">${contactHtml}</div>`;
       }
     }
   } catch(e) {
