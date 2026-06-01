@@ -153,6 +153,12 @@ async def update_worker_profile(
             detail="ไม่พบโปรไฟล์"
         )
 
+    # Column allowlist — ป้องกัน SQL injection จาก dynamic SET clause
+    ALLOWED_COLUMNS = {
+        "full_name", "skills", "experience_years",
+        "daily_rate_expected", "location_name", "is_available",
+    }
+
     # Build dynamic SET clause เฉพาะ field ที่ส่งมา
     updates = {}
     if data.full_name           is not None: updates["full_name"]           = data.full_name
@@ -161,6 +167,11 @@ async def update_worker_profile(
     if data.daily_rate_expected is not None: updates["daily_rate_expected"] = data.daily_rate_expected
     if data.location_name       is not None: updates["location_name"]       = data.location_name
     if data.is_available        is not None: updates["is_available"]        = data.is_available
+
+    # Validate allowlist (defense-in-depth)
+    for col in updates:
+        if col not in ALLOWED_COLUMNS:
+            raise HTTPException(status_code=400, detail=f"Invalid field: {col}")
 
     # location ต้องใช้ PostGIS ไม่สามารถ SET ธรรมดาได้
     has_location = data.lat is not None and data.lng is not None
