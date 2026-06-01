@@ -1521,7 +1521,11 @@ async function loadWorkerProfile() {
     el.innerHTML = `
       <div class="card">
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
-          <div class="avatar" style="width:56px;height:56px;font-size:20px">${p.full_name.charAt(0).toUpperCase()}</div>
+          <div class="avatar" style="width:56px;height:56px;font-size:20px;${p.profile_photo_url ? 'padding:0;overflow:hidden;background:none;' : ''}">
+            ${p.profile_photo_url
+              ? `<img src="${esc(p.profile_photo_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.textContent='${p.full_name.charAt(0).toUpperCase()}'">`
+              : p.full_name.charAt(0).toUpperCase()}
+          </div>
           <div>
             <div style="font-size:18px;font-weight:700">${p.full_name}</div>
             <div style="font-size:13px;color:var(--muted);margin-top:2px">${p.location_name||'ไม่ระบุสถานที่'}</div>
@@ -2043,13 +2047,20 @@ async function loadCandidates(jobId, jobTitle) {
       `<div style="font-size:16px;font-weight:600;margin-bottom:16px">${esc(jobTitle)} — ${data.length} ${t('cand_applied')}</div>` +
       data.map(c => `
         <div class="candidate">
-          <div class="avatar">${esc(c.full_name.charAt(0).toUpperCase())}</div>
+          <div class="avatar" style="${c.profile_photo_url ? 'padding:0;overflow:hidden;background:none;' : ''}">
+            ${c.profile_photo_url
+              ? `<img src="${esc(c.profile_photo_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='${esc(c.full_name.charAt(0).toUpperCase())}'">`
+              : esc(c.full_name.charAt(0).toUpperCase())}
+          </div>
           <div class="candidate-info">
-            <div class="candidate-name">${esc(c.full_name)}</div>
+            <div class="candidate-name">
+              ${esc(c.full_name)}
+              ${c.background_check_status === 'verified' ? '<span class="badge badge-green" style="font-size:10px;margin-left:6px">✓ KYC Verified</span>' : ''}
+            </div>
             <div class="candidate-meta">
               Match: <strong style="color:var(--accent)">${c.match_score}/100</strong> •
-              ${c.distance_km} กม. •
-              <span class="badge ${bgColor[c.background_check_status]||'badge-gray'}" style="font-size:10px">${esc(c.background_check_status)}</span>
+              ${c.distance_km} กม.
+              ${c.background_check_status !== 'verified' ? `• <span class="badge ${bgColor[c.background_check_status]||'badge-gray'}" style="font-size:10px">${esc(c.background_check_status)}</span>` : ''}
             </div>
             <div class="tags" style="margin-top:6px">
               ${c.matched_skills.map(s=>`<span class="tag tag-match" style="font-size:10px">✓ ${esc(s)}</span>`).join('')}

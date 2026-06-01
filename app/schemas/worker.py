@@ -90,6 +90,7 @@ class WorkerOut(BaseModel):
     location_name:           Optional[str]
     is_available:            bool
     updated_at:              datetime
+    profile_photo_url:       Optional[str] = None
     review_summary:          Optional[ReviewSummaryOut] = None
 
     model_config = {"from_attributes": True}
@@ -105,6 +106,7 @@ class WorkerPublicOut(BaseModel):
     background_check_status: BackgroundCheckStatus
     location_name:           Optional[str]
     is_available:            bool
+    profile_photo_url:       Optional[str] = None
     review_summary:          Optional[ReviewSummaryOut] = None
 
     model_config = {"from_attributes": True}

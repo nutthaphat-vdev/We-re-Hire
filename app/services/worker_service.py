@@ -49,7 +49,8 @@ async def create_worker_profile(
         RETURNING
             id, user_id, full_name, skills, experience_years,
             daily_rate_expected, background_check_status,
-            background_checked_at, location_name, is_available, updated_at
+            background_checked_at, location_name, is_available, updated_at,
+            profile_photo_url
         """,
         user_id,
         data.full_name,
@@ -80,6 +81,7 @@ async def get_my_profile(
             wp.experience_years, wp.daily_rate_expected,
             wp.background_check_status, wp.background_checked_at,
             wp.location_name, wp.is_available, wp.updated_at,
+            wp.profile_photo_url,
             -- review summary (LEFT JOIN — อาจยังไม่มี)
             wrs.total_reviews, wrs.avg_score,
             wrs.would_rehire_pct, wrs.top_tags
@@ -113,7 +115,7 @@ async def get_worker_public(
             wp.id, wp.full_name, wp.skills,
             wp.experience_years, wp.daily_rate_expected,
             wp.background_check_status, wp.location_name,
-            wp.is_available,
+            wp.is_available, wp.profile_photo_url,
             wrs.total_reviews, wrs.avg_score,
             wrs.would_rehire_pct, wrs.top_tags
         FROM   worker_profiles wp
@@ -188,7 +190,8 @@ async def update_worker_profile(
         RETURNING
             id, user_id, full_name, skills, experience_years,
             daily_rate_expected, background_check_status,
-            background_checked_at, location_name, is_available, updated_at
+            background_checked_at, location_name, is_available, updated_at,
+            profile_photo_url
         """,
         user_id, *values,
     )
