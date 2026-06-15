@@ -2637,13 +2637,28 @@ function initPlacesAutocomplete(inputId, latId, lngId, displayId, mapPreviewId) 
     document.getElementById(lngId).value = lng;
     const display = document.getElementById(displayId);
     if (display) display.textContent = `📍 ${place.name || place.formatted_address} (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
-    showMapPreview(mapPreviewId, lat, lng, place.name || place.formatted_address);
+    showMapPreview(mapPreviewId, lat, lng, place.name || place.formatted_address, latId, lngId, displayId);
     log('ok', `📍 Place selected: ${place.name} (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
   });
   autocompletes[inputId] = ac;
 }
 
-function showMapPreview(containerId, lat, lng, label) {
+// อัปเดต hidden lat/lng inputs + display text เมื่อผู้ใช้ลากหมุดหรือคลิกแผนที่
+function updatePinLocation(lat, lng, latId, lngId, displayId) {
+  if (latId) document.getElementById(latId).value = lat;
+  if (lngId) document.getElementById(lngId).value = lng;
+  const display = displayId ? document.getElementById(displayId) : null;
+  if (display) display.textContent = `⏳ กำลังค้นหาที่อยู่...`;
+  if (!window.google) return;
+  const geocoder = new google.maps.Geocoder();
+  geocoder.geocode({ location: { lat, lng }, language: 'th' }, (results, status) => {
+    const name = status === 'OK' && results[0] ? results[0].formatted_address : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    if (display) display.textContent = `📍 ${name} (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+    log('ok', `📍 หมุดย้ายไป: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+  });
+}
+
+function showMapPreview(containerId, lat, lng, label, latId, lngId, displayId) {
   const el = document.getElementById(containerId);
   if (!el || !window.google) return;
   el.style.display = 'block';
@@ -2661,11 +2676,30 @@ function showMapPreview(containerId, lat, lng, label) {
       { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0d1117' }] },
     ],
   });
-  new google.maps.Marker({
+  const marker = new google.maps.Marker({
     position: { lat, lng },
     map,
     title: label,
-    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#00e5a0', fillOpacity: 1, strokeColor: '#0d0f12', strokeWeight: 2 },
+    draggable: true,
+    icon: {
+      path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z',
+      fillColor: '#e53935',
+      fillOpacity: 1,
+      strokeColor: '#8c1d18',
+      strokeWeight: 1,
+      scale: 1.8,
+      anchor: new google.maps.Point(12, 22),
+    },
+  });
+  // ลากหมุดเพื่อปรับตำแหน่ง
+  marker.addListener('dragend', () => {
+    const pos = marker.getPosition();
+    updatePinLocation(pos.lat(), pos.lng(), latId, lngId, displayId);
+  });
+  // คลิกบนแผนที่เพื่อย้ายหมุดไปจุดนั้น
+  map.addListener('click', (e) => {
+    marker.setPosition(e.latLng);
+    updatePinLocation(e.latLng.lat(), e.latLng.lng(), latId, lngId, displayId);
   });
 }
 
@@ -2688,7 +2722,7 @@ function setLocationFromGPS(latId, lngId, displayId, mapPreviewId, inputId) {
         const name = status === 'OK' && results[0] ? results[0].formatted_address : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
         if (display) display.textContent = `📍 ${name}`;
         if (inputId) document.getElementById(inputId).value = name;
-        showMapPreview(mapPreviewId, lat, lng, 'ตำแหน่งของฉัน');
+        showMapPreview(mapPreviewId, lat, lng, 'ตำแหน่งของฉัน', latId, lngId, displayId);
         log('ok', `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
       });
     },
