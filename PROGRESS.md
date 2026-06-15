@@ -502,3 +502,24 @@ MAX: 10.00 | MIN: 0.00
 - [x] เชื่อมต่อ Canva MCP connector
 - [x] แก้ 5 content issues: Roadmap Phase 5→4, Traction ⬜→🔜/🗺️, on-chain proof→fully logged, Team duplicate, SOM formula +12 เดือน
 - [x] คิด tagline ใหม่: **"The Right Worker. Right Now. Right Here."**
+
+---
+
+## ✅ Day 9 — 15 มิถุนายน 2568 · Repo Hygiene + Map Pin Fix
+
+### 🔐 Repo Hygiene
+- [x] **GitHub PAT** "we re hire" ใกล้หมดอายุ → regenerate token + อัปเดต git remote URL
+- [x] **`.env` ถูก track ใน git** → `git rm --cached .env` + commit (repo เป็น Private อยู่แล้ว, ความเสี่ยงต่ำ)
+- [x] ลบ `__pycache__/main.cpython-312.pyc` ที่ค้างอยู่
+- [x] Commit doc updates ค้าง (CHANGELOG.md, CLAUDE.md, PROGRESS.md) → push `ee4365d`
+
+### 📍 Map Location Pinning Fix (index.html)
+- [x] **Bug**: หน้า post job — พิมหาที่อยู่ได้ (Places Autocomplete ทำงาน) แต่ **ลากหมุดปรับตำแหน่งไม่ได้**
+- [x] **Fix**: `showMapPreview()` — เพิ่ม `draggable: true` ให้ marker
+- [x] เพิ่ม `dragend` listener — ลากหมุดแล้ว reverse geocode อัปเดต lat/lng + ที่อยู่ที่แสดง
+- [x] เพิ่ม `click` listener บนแผนที่ — คลิกจุดไหนหมุดย้ายไปจุดนั้นทันที
+- [x] เปลี่ยน marker icon จากวงกลมเขียว → เข็มหมุดสีแดง (teardrop pin)
+- [x] ใช้ร่วมกันทั้ง 3 จุด: post job, search location, create worker profile
+- [x] Push `d2f0a46` → Cloudflare auto-deploy → ทดสอบแล้วใช้งานได้ ✅
+
+⚠️ **Note**: reverse geocode เรียก Google Geocoding API ทุกครั้งที่ลาก/คลิกหมุด — cost เล็กน้อย อยู่ใน free tier ปกติ

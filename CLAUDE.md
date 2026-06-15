@@ -406,6 +406,7 @@ curl -I -X OPTIONS "https://web-production-1db39.up.railway.app/auth/google/url"
 | uvicorn not found | requirements.txt ถูก Cloudflare install | ใช้ NIXPACKS_INSTALL_CMD |
 | Dropdown ว่าง | initCategoryDropdowns() ก่อน form render | เรียกอีกครั้งหลัง form render |
 | Railway URL เปลี่ยน | redeploy บางครั้งเปลี่ยน subdomain | เช็ค Railway dashboard ทุกครั้ง |
+| ลากหมุดแผนที่ไม่ได้ | `showMapPreview()` marker ไม่ได้ตั้ง `draggable: true` และไม่มี listener | เพิ่ม `draggable: true` + `dragend`/map `click` listener → reverse geocode อัปเดต lat/lng (fixed 15 มิ.ย. 2568, commit `d2f0a46`) |
 
 ---
 
