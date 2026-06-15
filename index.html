@@ -760,8 +760,9 @@
     <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
       <div style="padding:32px">
-        <div class="page-title">สวัสดี 👋</div>
-        <div class="page-sub" id="dashGreeting">ยินดีต้อนรับสู่ We're Hired</div>
+        <div class="page-title" id="dashTitle" style="display:none">สวัสดี 👋</div>
+        <div class="page-sub" id="dashGreeting" style="display:none">ยินดีต้อนรับสู่ We're Hired</div>
+        <div id="dashHeader" style="margin-bottom:16px"></div>
         <div class="stats" id="dashStats" style="margin-bottom:20px"></div>
         <div id="dashContent" style="display:flex;flex-direction:column;gap:16px"></div>
       </div>
@@ -1759,12 +1760,21 @@ function toggleSidebar() {
 }
 
 // ─── DASHBOARD ─────────────────────────────────────────────
+function dashInitials(name) {
+  const s = (name || '').trim();
+  if (!s) return userRole === 'worker' ? '👤' : '🏢';
+  // เอา 2 ตัวอักษรแรก รองรับทั้งไทย/อังกฤษ
+  return Array.from(s).slice(0, 2).join('');
+}
+
 async function loadDashboard() {
   const statsEl   = document.getElementById('dashStats');
   const contentEl = document.getElementById('dashContent');
+  const headerEl  = document.getElementById('dashHeader');
   const greetEl   = document.getElementById('dashGreeting');
   greetEl.textContent = userRole === 'worker' ? t('dash_worker_greeting') : t('dash_employer_greeting');
   statsEl.innerHTML = '';
+  headerEl.innerHTML = '';
   contentEl.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
 
   if (userRole === 'worker') {
@@ -1793,37 +1803,71 @@ async function loadDashboard() {
     const pending  = statusCount['applied'] || 0;
     const done     = statusCount['verified'] || 0;
 
-    // greeting with name
-    greetEl.innerHTML = `สวัสดี, <strong>${esc(name)}</strong> 👋`;
+    // header bar — avatar + name + badges
+    const reliability = (profile?.reliability_score != null) ? Number(profile.reliability_score) : null;
+    headerEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px">
+        <div class="avatar" style="width:52px;height:52px;font-size:18px">${esc(dashInitials(name))}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:17px;font-weight:700">สวัสดี, ${esc(name)} 👋</div>
+          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+            ${kycBadge}
+            ${stars ? `<span class="badge badge-blue" style="font-size:10px">${stars}</span>` : ''}
+          </div>
+        </div>
+        ${reliability != null ? `
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace">Reliability</div>
+          <div style="font-size:22px;font-weight:700;color:var(--accent);font-family:'IBM Plex Mono',monospace">${reliability.toFixed(1)}</div>
+        </div>` : ''}
+      </div>`;
 
     statsEl.innerHTML = `
       <div class="stat" style="border-left:3px solid var(--accent)">
-        <div class="stat-num">${pending}</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="stat-num">${pending}</div>
+          <span style="font-size:18px">⏳</span>
+        </div>
         <div class="stat-label">รอผล</div>
       </div>
       <div class="stat" style="border-left:3px solid var(--accent2)">
-        <div class="stat-num">${hired + working}</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="stat-num">${hired + working}</div>
+          <span style="font-size:18px">💼</span>
+        </div>
         <div class="stat-label">งานที่ได้รับ</div>
       </div>
       <div class="stat" style="border-left:3px solid var(--accent)">
-        <div class="stat-num">${done}</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="stat-num">${done}</div>
+          <span style="font-size:18px">✅</span>
+        </div>
         <div class="stat-label">งานสำเร็จ</div>
       </div>`;
 
-    // active hired jobs warning
-    const activeJobs = (apps||[]).filter(a => ['hired','checked_in','working'].includes(a.status));
+    // active hired jobs — progress stepper สำหรับงานล่าสุด
+    const activeJobs = (apps||[]).filter(a => ['hired','checked_in','working','completed'].includes(a.status));
+    const STEP_LABELS = ['ได้งาน','เช็คอิน','กำลังทำงาน','เสร็จงาน'];
+    const STEP_INDEX  = { hired:0, checked_in:1, working:2, completed:3 };
+    const stepperHtml = (a) => {
+      const cur = STEP_INDEX[a.status] ?? 0;
+      return STEP_LABELS.map((label, i) => `
+          ${i > 0 ? `<div style="flex:1;height:2px;background:${i <= cur ? 'var(--accent)' : 'var(--border)'};margin-bottom:18px"></div>` : ''}
+          <div style="flex:${i===0?'0 0 auto':'1'};display:flex;flex-direction:column;align-items:center;gap:4px;min-width:48px">
+            <div style="width:22px;height:22px;border-radius:50%;background:${i <= cur ? 'var(--accent)' : 'var(--surface2)'};border:1px solid ${i <= cur ? 'var(--accent)' : 'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:11px;color:${i <= cur ? '#0d0f12' : 'var(--muted)'};font-weight:700">${i < cur ? '✓' : i+1}</div>
+            <div style="font-size:10px;color:${i <= cur ? 'var(--accent)' : 'var(--muted)'};text-align:center;white-space:nowrap">${label}</div>
+          </div>`).join('');
+    };
     const activeHtml = activeJobs.length ? `
       <div class="card" style="border-color:rgba(0,229,160,.3)">
-        <div style="font-size:11px;color:var(--accent);font-family:'IBM Plex Mono',monospace;margin-bottom:10px;letter-spacing:.06em">🟢 งานที่กำลังดำเนินการ (${activeJobs.length})</div>
-        ${activeJobs.slice(0,3).map(a => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
-            <div>
-              <div style="font-weight:600;font-size:14px">${esc(a.job.title)}</div>
-              <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(a.job.location_name||'')} · ฿${a.job.daily_wage_rate}/วัน</div>
-            </div>
-            <span class="badge ${a.status==='hired'?'badge-blue':a.status==='working'?'badge-green':'badge-warn'}" style="font-size:10px">${a.status}</span>
+        <div style="font-size:11px;color:var(--accent);font-family:'IBM Plex Mono',monospace;margin-bottom:12px;letter-spacing:.06em">🟢 งานที่กำลังดำเนินการ (${activeJobs.length})</div>
+        ${activeJobs.slice(0,2).map(a => `
+          <div style="${activeJobs.length>1?'border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:14px':''}">
+            <div style="font-weight:700;font-size:14px">${esc(a.job.title)}</div>
+            <div style="font-size:12px;color:var(--muted);margin:2px 0 12px">${esc(a.job.location_name||'')} · ฿${a.job.daily_wage_rate}/วัน</div>
+            <div style="display:flex;align-items:flex-start">${stepperHtml(a)}</div>
           </div>`).join('')}
-        <button class="btn btn-secondary btn-sm" onclick="showPage('myapps')" style="margin-top:12px">ดูทั้งหมด →</button>
+        <button class="btn btn-secondary btn-sm" onclick="showPage('myapps')" style="margin-top:4px">ดูทั้งหมด →</button>
       </div>` : '';
 
     // KYC nudge
@@ -1868,21 +1912,40 @@ async function loadDashboard() {
     const companyName = empProfile?.company_name || 'Employer';
     greetEl.innerHTML = `สวัสดี, <strong>${esc(companyName)}</strong> 👋`;
 
+    const empVerified = empProfile?.verified_status === 'verified';
+    headerEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px">
+        <div class="avatar" style="width:52px;height:52px;font-size:18px">${esc(dashInitials(companyName))}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:17px;font-weight:700">สวัสดี, ${esc(companyName)} 👋</div>
+          ${empVerified ? `<div style="margin-top:6px"><span class="badge badge-green" style="font-size:10px">✅ Verified Employer</span></div>` : ''}
+        </div>
+      </div>`;
+
     const openJobs   = (jobs||[]).filter(j => j.status === 'open').length;
     const filledJobs = (jobs||[]).filter(j => j.status === 'filled').length;
     const totalSlotsFilled = (jobs||[]).reduce((s,j) => s + (j.slots_filled||0), 0);
 
     statsEl.innerHTML = `
       <div class="stat" style="border-left:3px solid var(--accent2)">
-        <div class="stat-num">${openJobs}</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="stat-num">${openJobs}</div>
+          <span style="font-size:18px">📋</span>
+        </div>
         <div class="stat-label">งานเปิดรับอยู่</div>
       </div>
       <div class="stat" style="border-left:3px solid var(--accent)">
-        <div class="stat-num">${totalSlotsFilled}</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="stat-num">${totalSlotsFilled}</div>
+          <span style="font-size:18px">🤝</span>
+        </div>
         <div class="stat-label">จ้างสำเร็จทั้งหมด</div>
       </div>
       <div class="stat" style="border-left:3px solid var(--accent)">
-        <div class="stat-num">${filledJobs}</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="stat-num">${filledJobs}</div>
+          <span style="font-size:18px">📁</span>
+        </div>
         <div class="stat-label">งานที่รับครบแล้ว</div>
       </div>`;
 
@@ -1894,25 +1957,32 @@ async function loadDashboard() {
     const jobsHtml = activeJobsWithApps.length ? `
       <div class="card" style="border-color:rgba(0,153,255,.25)">
         <div style="font-size:11px;color:var(--accent2);font-family:'IBM Plex Mono',monospace;margin-bottom:10px;letter-spacing:.06em">🔵 งานที่เปิดรับอยู่ (${openJobs})</div>
-        ${activeJobsWithApps.map(j => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer"
+        ${activeJobsWithApps.map(j => {
+          const pct = j.slots_available > 0 ? Math.round((j.slots_filled / j.slots_available) * 100) : 0;
+          return `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer"
                onclick="loadCandidates('${j.id}','${esc(j.title)}')">
-            <div>
+            <div style="min-width:0">
               <div style="font-weight:600;font-size:14px">${esc(j.title)}</div>
-              <div style="font-size:12px;color:var(--muted);margin-top:2px">฿${j.daily_wage_rate}/วัน · ${j.slots_filled}/${j.slots_available} คน · ${esc(j.location_name||'')}</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px">฿${j.daily_wage_rate}/วัน · ${esc(j.location_name||'')}</div>
             </div>
-            <span style="font-size:12px;color:var(--accent2);white-space:nowrap">ดู candidates →</span>
-          </div>`).join('')}
+            <div style="text-align:right;min-width:80px;flex-shrink:0">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${j.slots_filled}/${j.slots_available} คน</div>
+              <div style="height:5px;background:var(--surface2);border-radius:3px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:var(--accent2)"></div>
+              </div>
+            </div>
+          </div>`;}).join('')}
         <button class="btn btn-secondary btn-sm" onclick="showPage('myjobs')" style="margin-top:12px">จัดการงานทั้งหมด →</button>
       </div>` : `
       <div class="alert alert-info">
         💡 ยังไม่มีงานที่เปิดรับอยู่ — <span style="cursor:pointer;text-decoration:underline" onclick="showPage('postjob')">โพสต์งานแรก</span>
       </div>`;
 
-    // employer verification status bar
+    // employer verification status bar (verified แสดงไว้ใน header bar แล้ว ไม่ต้องซ้ำ)
     const verifyStatus = empProfile ? (
       empProfile.verified_status === 'verified'
-        ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.2);border-radius:8px"><span class="badge badge-green">✅ Verified Employer</span><span style="font-size:12px;color:var(--muted)">${esc(empProfile.company_name)}</span></div>`
+        ? ''
         : empProfile.verified_status === 'pending'
           ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.2);border-radius:8px"><span class="badge badge-warn">⏳ รอ Admin Verify</span><span style="font-size:12px;color:var(--muted)">ทีมงานจะตรวจสอบภายใน 1-2 วันทำการ</span></div>`
           : `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.2);border-radius:8px"><div style="display:flex;align-items:center;gap:8px"><span class="badge badge-danger">⚠️ ยังไม่ verified</span><span style="font-size:12px;color:var(--muted)">Verify บริษัทเพื่อเพิ่มความน่าเชื่อถือ</span></div><button class="btn btn-secondary btn-sm" onclick="requestEmployerVerify(this)" style="font-size:11px">ขอ Verify →</button></div>`
