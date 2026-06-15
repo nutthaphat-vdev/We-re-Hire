@@ -438,6 +438,67 @@ MAX: 10.00 | MIN: 0.00
 - [x] **Mobile Responsive** ✅ — hamburger + sidebar slide + smaller content < 768px
 - [x] **Run 013_job_expiry.sql** ✅ run แล้ว
 - [x] **Run 014_kyc_photos.sql** ✅ run แล้ว
-- [ ] **Supabase bucket `kyc-documents`** — สร้างด้วยมือ (Private) + ตั้ง `SUPABASE_SERVICE_KEY` ใน Railway
-- [ ] **เปลี่ยน admin password** — UPDATE users SET password_hash ใน Supabase SQL Editor
+- [x] **Supabase bucket `kyc-documents`** ✅ 2026-06-01
+- [x] **เปลี่ยน admin password** ✅ 2026-06-01
+- [x] **SUPABASE_SERVICE_KEY** ตั้งใน Railway ✅ 2026-06-01
 - [ ] **claude-bridge MCP** — ลบ `run_command` + เพิ่ม auth token + reconnect
+
+## ✅ Day 7 — 1 มิถุนายน 2568 · วัน MCP Setup
+
+- [x] **MCP wehire-fs** — ติดตั้ง `@modelcontextprotocol/server-filesystem` ผ่าน Claude Desktop config ✅
+- [x] **Claude Desktop เชื่อมต่อ filesystem ได้แล้ว** — read_file, write_file, list_directory ทำงานได้ที่ `C:\Users\User\Downloads\Hire`
+
+## ✅ Day 8 — 2 มิถุนายน 2568 · วัน Pre-Pitch Polish + Bug Fixes
+
+### 🎯 W1 — KYC Badge + Profile Photo
+- [x] **Backend**: เพิ่ม `profile_photo_url` ใน candidates query (JOIN `worker_review_summary`)
+- [x] **Backend**: `WorkerOut` / `WorkerPublicOut` schemas เพิ่ม `profile_photo_url`
+- [x] **Backend**: `worker_service.py` SELECT ครบทุก query (get_my_profile, get_worker_public, create, update)
+- [x] **Frontend**: Candidate card — avatar แสดงรูปจริง + ✓ KYC badge สีเขียวติดชื่อ
+- [x] **Frontend**: Worker profile page — avatar แสดงรูปจริง
+- [x] **Frontend**: Badge ซ่อนถ้า verified แล้ว (ไม่แสดง status text ซ้ำ)
+
+### 📊 W2 — Admin Dashboard Redesign
+- [x] **Backend**: `/admin/stats` เพิ่ม 6 metrics ใหม่: `total_completed`, `total_hired_alltime`, `completion_rate_pct`, `avg_time_to_hire_hours`, `new_users_today`, `jobs_posted_today`
+- [x] **Backend**: `/public/stats` endpoint ใหม่ (ไม่ต้อง auth) สำหรับ landing page
+- [x] **Frontend**: Admin dashboard redesign — 3 rows: KPI stats → performance metrics (completion rate / time-to-hire / jobs) → action required (KYC + disputes) พร้อม color coding
+
+### 🛡️ W3 — Security Hardening
+- [x] **worker.js**: Security headers ครบ — CSP, X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Referrer-Policy, Permissions-Policy
+- [x] **worker_service.py**: Column allowlist + validation ก่อนสร้าง dynamic SET clause ป้องกัน SQL injection
+
+### 🏠 Landing Page Redesign
+- [x] Landing page เป็น full-scroll (5 sections): Hero → Stats bar → How it works → Key features → Market context + Footer CTA
+- [x] Stats bar ดึง live data จาก `/public/stats` API
+- [x] How it works: Worker flow vs Employer flow คู่กัน 3 steps each
+- [x] Key features: 6 cards (Anti-ghosting, GPS, Blind review, KYC, AI Match Score, D-1 Reminder)
+- [x] Market context: 5M+ workers / ฿400/วัน / 90% ยังไม่ใช้ platform
+
+### 🎨 Dashboard Redesign (Worker + Employer)
+- [x] **Worker**: Greeting ชื่อจริง + 3 stats จริง (รอผล / ได้รับ / สำเร็จ) + active jobs widget + KYC nudge + 4 quick actions
+- [x] **Employer**: Greeting ชื่อบริษัท + 3 stats + active jobs list กด direct เข้า candidates + verify nudge
+- [x] **Employer verification badge**: ✅ Verified / ⏳ รอ Admin / ⚠️ ยังไม่ verified พร้อมปุ่ม
+
+### 🎨 UI Redesign — ทุกหน้า
+- [x] **Find Job**: job card ใหม่ — match score ตัวเลขใหญ่สีตาม threshold, meta เป็น chip, apply full-width
+- [x] **Applications**: แยก active vs history, left border สีตาม status, match score circle, disputed orange box
+- [x] **Notifications**: icon circle สีตาม type, unread มี accent left border + tint
+- [x] **Reviews**: stars 32px, received reviews แสดงดาว + tags chip, would_rehire badge
+- [x] **Worker Profile**: header gradient, stats 3-col grid, skills chip, edit button ย้ายขึ้น header
+- [x] **Candidate card**: review stars ⭐ + avg score + รีวิว count + % รับอีก (จาก `worker_review_summary`)
+
+### 🐛 Bug Fixes
+- [x] **check_expired_jobs cron**: `NameError: total_hired` — ทำให้ auto-close ไม่ทำงานเลย ✅ fixed
+- [x] **check_noshow_workers cron**: ปรับ alert +10 นาที (เดิม +30), auto no-show +30 นาที (เดิม +60)
+- [x] **check_noshow_workers cron**: `start_date = today` → `start_date <= today` — จับงานค้างจากวันก่อน
+- [x] **check_noshow_workers cron**: งานไม่มี `work_start` → fallback 08:00 Thai time
+- [x] **check_noshow_workers cron**: Auto backup offer อัตโนมัติหลัง no-show (top match_score candidate)
+- [x] **check_noshow_workers cron**: per-row try/except ป้องกัน 1 job crash หยุด cron ทั้งหมด
+- [x] **JS syntax error**: `onclick="showContact('' + a.id...)"` → escape quote ถูกต้อง
+- [x] **index.html truncation**: ไฟล์ขาด `</html>` หลาย episode — restore จาก git + Python patch
+- [x] **requirements.txt**: bust Railway pip cache (เปลี่ยน comment วันที่)
+
+### 🎤 Pitch Deck (Canva)
+- [x] เชื่อมต่อ Canva MCP connector
+- [x] แก้ 5 content issues: Roadmap Phase 5→4, Traction ⬜→🔜/🗺️, on-chain proof→fully logged, Team duplicate, SOM formula +12 เดือน
+- [x] คิด tagline ใหม่: **"The Right Worker. Right Now. Right Here."**

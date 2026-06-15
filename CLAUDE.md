@@ -4,6 +4,29 @@
 
 ---
 
+## 🔌 Cowork Connectors & Tools (อัปเดต 2 มิ.ย. 2568)
+
+> เครื่องมือที่ใช้งานได้ใน Cowork session — บอก Claude ให้ใช้ให้ถูก tool
+
+| Tool | ใช้ทำอะไร |
+|------|-----------|
+| `mcp__wehire-fs__*` | อ่าน/เขียนไฟล์ใน `C:\Users\User\Downloads\Hire` โดยตรง |
+| `mcp__shell__run_command` | รัน shell command บนเครื่อง Windows (git, powershell ฯลฯ) |
+| `mcp__workspace__bash` | bash ใน Linux sandbox (สำหรับ Python, grep, file processing) |
+| `mcp__54bf20c7-...__*` | Canva MCP — อ่าน/แก้ไข/บันทึก Canva designs |
+| `mcp__computer-use__*` | ควบคุม desktop (screenshot, click, type) |
+| `mcp__Claude_in_Chrome__*` | ควบคุม Chrome browser — navigate, click, read page (ใช้แทน computer-use สำหรับ web) |
+
+**หลักการเลือก tool:**
+1. แก้ไฟล์ใน Hire folder → `mcp__wehire-fs__edit_file` หรือ `Edit` tool
+2. รัน git / powershell → `mcp__shell__run_command`
+3. Python script / bash → `mcp__workspace__bash`
+4. เปิด/อ่านเว็บ → `mcp__Claude_in_Chrome__*` ก่อนเสมอ (เร็วกว่า computer-use)
+5. native desktop app → `mcp__computer-use__*`
+6. Canva deck → `mcp__54bf20c7-...__*`
+
+---
+
 ## 🏗️ Project Overview
 
 **WeHire** — แพลตฟอร์มจ้างงานรายวัน เชื่อมต่อ Worker ↔ Employer ในกรุงเทพฯ

@@ -566,3 +566,66 @@ pitch กับ ดร. — ได้ insight สำคัญ:
 - ⚠️ Security: ลบ `run_command` tool ออกก่อน restart — unauthenticated RCE risk
 - TODO: เพิ่ม `MCP_AUTH_TOKEN` + reconnect
 
+---
+
+## [Day 8] — 2 มิถุนายน 2568 · Pre-Pitch Polish + Bug Fixes
+
+### · 🎯 W1 — KYC Badge + Profile Photo
+- Backend: `profile_photo_url` ในทุก query (candidates, get_my_profile, get_worker_public, create, update)
+- Backend: `WorkerOut` / `WorkerPublicOut` schemas เพิ่ม `profile_photo_url`
+- Backend: candidates query JOIN `worker_review_summary` — ดึงดาว + รีวิว count + % รับอีก
+- Frontend: Candidate card — avatar รูปจริง + KYC badge + review stars
+- Frontend: Worker profile avatar รูปจริง
+
+### · 📊 W2 — Admin Dashboard Redesign
+- Backend: `/admin/stats` เพิ่ม 6 metrics: completion_rate_pct, avg_time_to_hire_hours, total_hired_alltime, total_completed, new_users_today, jobs_posted_today
+- Backend: `/public/stats` endpoint ใหม่ (no auth) — total_workers, total_employers, jobs_open สำหรับ landing page
+- Frontend: Admin dashboard — 3-row layout, color-coded metrics, completion rate / time-to-hire / disputes
+
+### · 🛡️ W3 — Security Hardening
+- `worker.js`: CSP, X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Referrer-Policy, Permissions-Policy
+- `worker_service.py`: Column allowlist (ALLOWED_COLUMNS) + validate ก่อน dynamic SET clause
+
+### · 🏠 Landing Page Redesign (Full Scroll)
+- เปลี่ยนจาก single hero เป็น 5 sections: Hero → Stats bar → How it works → Key features → Market context + Footer CTA
+- Stats bar: live data จาก `/public/stats`
+- How it works: Worker 3 steps + Employer 3 steps แสดงคู่กัน
+- 6 feature cards + market opportunity (5M workers, 90% untapped)
+
+### · 🎨 Dashboard + UI Redesign ทุกหน้า
+- Worker/Employer dashboard: real data, active jobs widget, verification badge, KYC nudge
+- Find Job: match score circle, chip meta, full-width apply btn
+- Applications: active/history split, colored left border, disputed warning
+- Notifications: type-colored icon circle, unread accent
+- Reviews: 32px stars, tag chips, would_rehire badge
+- Worker Profile: gradient header, 3-col stats, skill chips
+- Candidate card: review stars + avg + rehire %
+
+### · 🐛 Bug Fixes
+- `check_expired_jobs`: fix `NameError: total_hired` — auto-close ไม่เคยทำงาน ✅
+- `check_noshow_workers`: alert เร็วขึ้นเป็น +10 นาที, no-show +30 นาที, พร้อม auto backup offer, per-row error isolation
+- `check_noshow_workers`: `start_date <= today` (เดิม = today ทำให้งานค้างหลุด), fallback 08:00 ถ้าไม่มี work_start
+- JS syntax: escape quotes ใน onclick handlers (หน้า apps crash)
+- index.html truncation หลาย episode: restore จาก git HEAD + Python patch
+- requirements.txt: bust Railway pip cache
+
+### · 🎤 Pitch Deck (Canva MCP)
+- เชื่อมต่อ Canva ผ่าน MCP connector
+- แก้ 5 issues: Phase 5→4, Traction ⬜→🔜/🗺️ + reframe, on-chain proof, Team duplicate, SOM +12 เดือน
+- Tagline ใหม่: **"The Right Worker. Right Now. Right Here."**
+
+### Commits
+- `fa91e03` W1: profile photo + KYC badge
+- `95d1a1e` fix: bust Railway pip cache
+- `7115363` W2: admin dashboard redesign + new metrics
+- `f7e2245` W3: security headers + column allowlist
+- `47820a9` landing: full-page redesign + public stats API
+- `c55f3e8` dashboard: worker + employer redesign with real data
+- `3bc09c3` UI: redesign search, applications, notifications, reviews, profile
+- `fdb1c8e` fix: JS syntax error loadMyApps onclick
+- `c94a7ed` fix: dashboard cards gap and spacing
+- `4893109` fix: NameError total_hired in check_expired_jobs
+- `0191746` noshow: alert +10min, auto no-show +30min
+- `2a9d19a` fix: noshow cron — past dates, fallback, auto backup, per-row isolation
+- `ab555fc` feat: review stars on candidate card + employer verification badge
+
