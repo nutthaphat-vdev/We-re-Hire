@@ -1661,8 +1661,10 @@ function saveSession(data) {
 function doLogout() {
   localStorage.clear();
   token = ''; userRole = ''; userId = '';
-  document.getElementById('authPage').style.display = 'flex';
-  document.getElementById('mainApp').style.display  = 'none';
+  document.getElementById('landingPage').style.display = 'block';
+  document.getElementById('authPage').style.display   = 'none';
+  document.getElementById('mainApp').style.display    = 'none';
+  window.scrollTo(0, 0);
   log('info', 'Logged out');
 }
 
