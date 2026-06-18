@@ -1445,6 +1445,8 @@ async def get_nearby_jobs(
             jp.slots_available - jp.slots_filled AS slots_remaining,
             jp.location_name, jp.zone_name, jp.start_date,
             jp.work_start, jp.work_end, jp.ot_rate,
+            ST_Y(jp.location::geometry) AS job_lat,
+            ST_X(jp.location::geometry) AS job_lng,
             ST_Distance(
                 ST_MakePoint($1, $2)::geography,
                 jp.location
@@ -1493,6 +1495,8 @@ async def get_nearby_jobs(
             "work_end":        str(row["work_end"])[:5]   if row["work_end"]   else None,
             "ot_rate":         float(row["ot_rate"]) if row["ot_rate"] else None,
             "distance_km":     round(float(row["distance_km"]), 2),
+            "job_lat":         float(row["job_lat"]),
+            "job_lng":         float(row["job_lng"]),
             "match_score":     score,
             "matched_skills":  matched,
             "missing_skills":  missing,
