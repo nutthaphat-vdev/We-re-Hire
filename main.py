@@ -1145,6 +1145,38 @@ async def post_job(
     )
     return dict(row)
 
+@app.get("/employers/last-location", tags=["Employer"])
+async def get_last_job_location(
+    user: dict = Depends(require_employer),
+    db:   asyncpg.Connection = Depends(get_db),
+):
+    """Return location from employer's most recent job posting."""
+    emp_id = await db.fetchval(
+        "SELECT id FROM employer_profiles WHERE user_id=$1", UUID(user["sub"])
+    )
+    if not emp_id:
+        return {}
+    row = await db.fetchrow(
+        """
+        SELECT location_name,
+               ST_Y(location::geometry) AS lat,
+               ST_X(location::geometry) AS lng
+        FROM   job_postings
+        WHERE  employer_id = $1
+          AND  location IS NOT NULL
+        ORDER  BY created_at DESC
+        LIMIT  1
+        """,
+        emp_id,
+    )
+    if not row:
+        return {}
+    return {
+        "location_name": row["location_name"],
+        "lat":           float(row["lat"]),
+        "lng":           float(row["lng"]),
+    }
+
 @app.get("/jobs/mine", tags=["Jobs"])
 async def get_my_jobs(
     user: dict = Depends(require_employer),

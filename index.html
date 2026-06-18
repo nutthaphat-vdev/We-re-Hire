@@ -1147,6 +1147,10 @@ html, body { margin:0; padding:0; background:#0d0f12; }
           </div>
           <div class="form-group">
             <label>ที่ตั้งงาน</label>
+            <div id="lastLocationHint" style="display:none;margin-bottom:8px;padding:10px 12px;background:rgba(0,229,160,.07);border:1px solid rgba(0,229,160,.2);border-radius:8px;display:flex;align-items:center;gap:10px">
+              <input type="checkbox" id="useLastLocation" onchange="toggleLastLocation(this)" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
+              <label for="useLastLocation" style="font-size:12px;color:var(--accent);cursor:pointer;margin:0">ใช้สถานที่เดิม: <span id="lastLocationName" style="font-weight:600"></span></label>
+            </div>
             <div style="display:flex;gap:8px">
               <input type="text" id="jobPlaceInput" placeholder="พิมพ์ที่อยู่หรือชื่อสถานที่..." style="flex:1">
               <button class="btn btn-secondary btn-sm" onclick="useMyLocationForJob()" style="white-space:nowrap">📍 GPS</button>
@@ -1720,7 +1724,7 @@ function showPage(name) {
   if (name === 'myapps')          loadMyApps();
   if (name === 'myjobs')          loadMyJobs();
   if (name === 'workerprofile')   loadWorkerProfile();
-  if (name === 'postjob')         checkEmployerProfile();
+  if (name === 'postjob')         { checkEmployerProfile(); loadLastLocation(); }
   if (name === 'myreviews')       loadMyReviews();
   if (name === 'nearby')          { initNearbyMap(); searchNearby(); }
   if (name === 'notifications')   { _notifFilter = 'all'; setNotifFilter('all'); }
@@ -3175,6 +3179,42 @@ function setLocationFromGPS(latId, lngId, displayId, mapPreviewId, inputId) {
 
 function useMyLocation()           { setLocationFromGPS('searchLat','searchLng','searchLocationDisplay','searchMapPreview','searchPlaceInput'); }
 function useMyLocationForJob()     { setLocationFromGPS('jobLat','jobLng','jobLocationDisplay','jobMapPreview','jobPlaceInput'); }
+
+let _lastLocation = null;
+
+async function loadLastLocation() {
+  try {
+    const data = await api('GET', '/employers/last-location');
+    const hint = document.getElementById('lastLocationHint');
+    if (!hint) return;
+    if (data && data.location_name && data.lat && data.lng) {
+      _lastLocation = data;
+      document.getElementById('lastLocationName').textContent = data.location_name;
+      hint.style.display = 'flex';
+      // uncheck on each open
+      document.getElementById('useLastLocation').checked = false;
+    } else {
+      hint.style.display = 'none';
+    }
+  } catch(e) {
+    // ไม่มี job เก่า — ซ่อน hint ปกติ
+  }
+}
+
+function toggleLastLocation(cb) {
+  if (!_lastLocation) return;
+  if (cb.checked) {
+    document.getElementById('jobPlaceInput').value = _lastLocation.location_name;
+    document.getElementById('jobLat').value = _lastLocation.lat;
+    document.getElementById('jobLng').value = _lastLocation.lng;
+    document.getElementById('jobLocationDisplay').textContent = _lastLocation.location_name;
+  } else {
+    document.getElementById('jobPlaceInput').value = '';
+    document.getElementById('jobLat').value = '13.7018';
+    document.getElementById('jobLng').value = '100.6011';
+    document.getElementById('jobLocationDisplay').textContent = '';
+  }
+}
 function useMyLocationForProfile() { setLocationFromGPS('createLat','createLng','createLocationDisplay','createMapPreview','createPlaceInput'); }
 
 // init autocomplete เมื่อ Google Maps โหลดเสร็จ
