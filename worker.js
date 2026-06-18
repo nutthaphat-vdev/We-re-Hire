@@ -6,7 +6,7 @@ const CSP = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob: https: http:",
-  "connect-src 'self' https://web-production-1db39.up.railway.app https://maps.googleapis.com https://wexupoegrynxbhdzioym.supabase.co",
+  "connect-src 'self' https://we-re-hire.onrender.com https://maps.googleapis.com https://wexupoegrynxbhdzioym.supabase.co",
   "frame-ancestors 'none'",
 ].join('; ');
 
