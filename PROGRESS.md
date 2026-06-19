@@ -5,6 +5,50 @@
 
 ---
 
+## 🧭 Strategy — ภาพรวมที่ต้องจำไว้เสมอ
+
+> บันทึก 18 มิถุนายน 2568
+
+### Core Strategy: น้ำซึมหิน
+ไม่ชนตลาดใหญ่ตรงๆ — เริ่มจากช่องที่ไม่มีใครสน แล้วซึมเข้าไปทีละตลาด
+
+```
+daily wage (ไม่มีใครทำจริงจัง)
+  → สะสม volume + data + trust
+  → calendar + full-time job board (แย่ง SME จาก JobThai/JobsDB)
+  → behavioral score + HH mode (แย่ง enterprise จาก headhunter)
+  → work permit (ล็อก employer ต่างด้าวออกไม่ได้)
+```
+
+### Moats ที่มีอยู่แล้ว
+| Moat | ที่มา | ทำไมคู่แข่ง copy ไม่ได้ |
+|------|-------|------------------------|
+| **Data** | behavioral score สะสมจากการใช้จริง | ต้องใช้เวลา — มาทีหลังไม่มีทาง catch up |
+| **Work Permit** | employer ทำ work permit ผ่าน WeHire | ออกจาก platform ไม่ได้ |
+| **Trust** | KYC + NDID + behavioral รวมกัน | ไม่มีแพลตฟอร์มไหนในไทยทำครบขนาดนี้ |
+| **Network** | worker เยอะ → employer มา → วนซ้ำ | ยิ่ง dense ยิ่งทำลายยาก |
+| **Switching Cost** | เงินอยู่ใน wallet (Phase 3) | ไม่มีใครอยากย้าย |
+
+### คู่แข่งและช่องว่าง
+| เจ้า | ทำอะไร | ที่ WeHire เข้าแทรกได้ |
+|------|--------|----------------------|
+| JobsDB / JobThai | งานประจำอย่างเดียว | ไม่มี daily wage, ไม่มี GPS, ไม่มี behavioral data |
+| Workmate / Temp agency | มีคนกลาง, แพง, ช้า | real-time matching, ถูกกว่า, direct |
+| Fastwork | freelance ดิจิทัล | คนละตลาด — blue-collar general ไม่มีใครทำ |
+| LINE MAN / Grab | gig delivery | ไม่ครอบ general labor |
+
+**ความเสี่ยงจริง:** เจ้าใหญ่ที่มีทุนหนา (Grab, SCB) pivot มาชน → ต้องรีบสร้าง moat ก่อน
+
+### Ladder Model
+```
+ตลาดล่าง  → daily wage → volume + data
+ตลาดกลาง → calendar + full-time → SME จ่ายมากขึ้น
+ตลาดบน   → HH mode → enterprise → margin สูงสุด
+```
+feature แต่ละอันไม่ได้รู้สึกว่ากำลังบุก — แต่พอมองย้อนหลัง 3 ปี ซึมเข้าไปในทุกตลาดแล้ว
+
+---
+
 ## ✅ Production — Live แล้ว
 
 ### 🔧 Infrastructure
@@ -288,7 +332,173 @@ MAX: 10.00 | MIN: 0.00
 - [ ] Matching v2: รองรับ job description แบบ free text (ไม่ต้อง select skill เท่านั้น)
 - [ ] Cost guardrail: Haiku limit 1,000 tokens/req, Sonnet limit 2,000 tokens/req
 
-### Phase 5 — Notifications & Communication
+### Phase 4B — Voice-First Onboarding 🎙️
+> แก้ pain point หลักของ daily wage worker — อ่านหนังสือไม่คล่อง / ไม่ถนัด smartphone
+> ต้นทุน API ต่ำมาก (~$0.02–0.05/user ตลอด onboarding) เพราะ conversation สั้น
+
+**Core Flow:**
+```
+Worker กรอกไม่ถูก / สับสน
+→ กด Live Chat (floating button)
+→ AI ถามทีละขั้น + พูดออกเสียงให้ฟัง (TTS)
+→ Worker ตอบด้วยเสียง (STT) หรือพิมพ์ก็ได้
+→ AI interpret → กรอก form ให้อัตโนมัติ
+→ เสนอ action เชิงรุก เช่น "พรุ่งนี้ว่าง → ทำตารางสมัครงานเลยไหม?"
+```
+
+**OCR บัตรประชาชน:**
+```
+Worker ถ่ายบัตรประชาชน → Haiku vision → extract ชื่อ/นามสกุล/เลขบัตร/วันเกิด
+→ กรอก profile form ให้อัตโนมัติ — worker แค่กด confirm
+ต้นทุน: ~$0.002/ครั้ง (ทำครั้งเดียวตอน onboard)
+```
+
+**STT/TTS Stack:**
+| ฟีเจอร์ | วิธีทำ | Cost |
+|---------|--------|------|
+| Speech-to-Text | Web Speech API (browser native) | ฟรี |
+| Text-to-Speech | Web Speech Synthesis API (browser native) | ฟรี |
+| AI interpret + respond | Haiku | ~$0.001–0.003/message |
+| Fallback STT (ถ้า browser ไม่รองรับ) | Whisper API | ~$0.006/นาที |
+
+**⚠️ Risk ที่ต้องทดสอบ:**
+- Web Speech API รองรับภาษาไทยสำเนียงต่างจังหวัด / สำเนียงต่างด้าวได้แค่ไหน
+- ถ้า STT accuracy ต่ำ → fallback เป็น text input พร้อม AI guide แทน
+
+**Tasks:**
+- [ ] Prototype live chat widget (floating button → chat drawer)
+- [ ] OCR บัตรประชาชน: Haiku vision → auto-fill profile fields
+- [ ] Voice input: Web Speech API → Haiku → interpret intent → action
+- [ ] TTS: AI ถาม/ตอบออกเสียง ให้ worker ฟังแทนอ่าน
+- [ ] Proactive suggestion: เช่น detect "ว่าง" → เสนอ "สมัครงานเลยไหม?"
+- [ ] ทดสอบ STT กับสำเนียงไทย (อีสาน/เหนือ/ใต้) + ภาษาเมียนมา/ลาว
+
+### Phase 4C — Full-Time Job Board 📋
+> ขยาย platform จาก "หางานวันนี้" → "หางานประจำ" ในแอพเดียวกัน
+> ใช้ฐาน employer เดิมที่มีอยู่แล้ว — upsell โดยไม่ต้อง CAC ใหม่
+
+**Product Vision:**
+- Worker เห็น 2 tab: **"งานรายวัน"** | **"งานประจำ"**
+- Employer โพสต์งานประจำได้ในหน้าเดิม — เลือก type = `full_time`
+- Platform ดูแข็งแกร่งขึ้น — ไม่ใช่แค่ gig economy แต่เป็น full employment platform
+
+**Revenue Model:**
+- Flat fee โพสต์งานประจำ (ไม่มี % transaction)
+- เป้า: ฿500–1,500/โพสต์ (SME/โรงงาน จ่ายง่าย vs headhunter ที่แพงกว่า 10x)
+- ไม่ต้องการใบอนุญาตพิเศษ (ต่างจาก Phase 5 HH)
+
+**Difference จากงานรายวัน:**
+| | งานรายวัน | งานประจำ |
+|--|----------|----------|
+| ระยะสัญญา | 1 วัน – 1 เดือน | 3 เดือนขึ้นไป |
+| ค่าจ้าง | รายวัน (฿/วัน) | รายเดือน (฿/เดือน) |
+| Matching | AI score + GPS | Resume/profile match |
+| Employer จ่าย | % per hire | Flat posting fee |
+| Checkin/GPS | ✅ required | ❌ ไม่มี |
+| Escrow | ✅ Phase 3 | ❌ ไม่มี (จ่ายตรง) |
+
+**DB Changes:**
+```sql
+ALTER TABLE job_postings
+  ADD COLUMN IF NOT EXISTS job_type VARCHAR(20) DEFAULT 'daily'
+    CHECK (job_type IN ('daily', 'full_time', 'part_time'));
+-- full_time: salary_min/salary_max แทน daily_rate
+-- แสดงผลแยก tab ใน frontend
+```
+
+**Tasks:**
+- [ ] `job_type` column + migration
+- [ ] Frontend: tab switch "งานรายวัน / งานประจำ" บนหน้า Find Job
+- [ ] Employer: form ใหม่สำหรับโพสต์งานประจำ (salary range, job description, benefits)
+- [ ] Worker: resume/skills profile เพิ่ม expected_salary, work_experience
+- [ ] Matching สำหรับงานประจำ (skills + salary range — ไม่มี GPS requirement)
+- [ ] Payment: flat posting fee flow (Phase 3 wallet หรือ PromptPay direct)
+- [ ] Admin: approve งานประจำก่อน publish (quality control)
+
+### Phase 4D — Smart Calendar 📅
+> Two-sided calendar — Worker เห็นงานใกล้ตัว, Employer วางแผนธุรกิจ + โพสต์งานได้เลย
+
+**Worker View — "งานใกล้ฉัน วันนี้/พรุ่งนี้":**
+```
+เปิด Calendar → เห็น 2–3 วันข้างหน้า
+→ แต่ละวันแสดง top 5 งานใกล้ที่สุด (sort: distance ASC)
+→ ถ้ามีงานรอ 10 อัน → แสดง 5 ก่อน + "ดูเพิ่มเติม"
+→ กดการ์ดงาน → apply ได้เลยใน 1 tap
+→ วันที่ worker มีงาน hired แล้ว → block สีเขียว (ไม่แสดงงานอื่น)
+```
+
+**Employer View — "วางแผนธุรกิจ":**
+```
+เปิด Calendar → เห็น timeline งานที่โพสต์แล้วทั้งหมด
+→ วันที่มีคนครบ → สีเขียว ✅
+→ วันที่ยังขาดคน → สีส้ม ⚠️ + แสดงจำนวนที่ขาด
+→ วันที่ยังไม่ได้โพสต์งานเลย → สีเทา (ว่าง)
+→ กดวันที่ว่าง/ขาดคน → เปิด quick job post form ทันที
+```
+
+**Key Insight:**
+- Worker: ไม่ต้องค้นหาเอง — งานมาหา ตามวันที่ว่าง
+- Employer: เห็น gap ในธุรกิจชัดเจน → โพสต์งานเร็วขึ้น → fill rate สูงขึ้น
+- Platform: เพิ่ม job posting frequency โดยธรรมชาติ
+
+**DB Changes:**
+```sql
+-- ไม่ต้องเพิ่ม table ใหม่ — ใช้ job_postings.start_date + slot_filled ที่มีอยู่
+-- เพิ่ม index สำหรับ calendar query:
+CREATE INDEX IF NOT EXISTS idx_jobs_start_date_status
+  ON job_postings(start_date, status)
+  WHERE status = 'open';
+```
+
+**Tasks:**
+- [ ] Worker calendar: weekly view + top 5 nearby jobs per day (sort distance)
+- [ ] Worker: 1-tap apply จาก calendar card
+- [ ] Worker: วันที่ hired แล้ว → block + แสดง job ที่ confirm ไว้
+- [ ] Employer calendar: monthly/weekly view + color coding (ครบ/ขาด/ว่าง)
+- [ ] Employer: quick post form เมื่อกดวันที่ว่าง
+- [ ] Employer: "ขาดอีก N คน" badge บนแต่ละวัน
+- [ ] Sync: worker accept → employer calendar อัปเดต slot ทันที
+- [ ] **GeoPosting**: employer กดวันว่างใน calendar → เห็น available workers บนแผนที่รัศมี X km
+  - ใช้ PostGIS `ST_DWithin` เดิม — query กลับทิศ (workers → job location แทน)
+  - แสดง worker pins บนแผนที่ พร้อม match score + KYC badge
+  - กด pin → ดู profile → invite / โพสต์งานเจาะจงรัศมีนั้น
+
+### Phase 5 — AI Headhunter Mode 🎯
+> ใช้ data ที่สะสมมาจาก daily wage + งานประจำ + behavioral score
+> WeHire รู้จัก worker จริงกว่า headhunter ทั่วไปที่ดูแค่ resume
+
+**Insight หลัก:**
+- Headhunter ทั่วไป: รู้จาก CV + interview → เดา
+- WeHire: รู้จากพฤติกรรมจริง — มาตรงเวลา, ทำงานครบ, employer review, no-show rate → วัดได้จริง
+
+**Data ที่มีอยู่แล้ว (ไม่ต้องเก็บใหม่):**
+```
+reliability_score  — completion rate, no-show, review avg
+job history        — ทำงานประเภทไหน, กี่ครั้ง, กับ employer ไหน
+behavioral pattern — checkin ตรงเวลา, OT รับได้ไหม, ระยะทางยอมเดินทางไกลแค่ไหน
+skill match history — skill ไหน match แล้วงานสำเร็จจริง
+```
+
+**AI Headhunter Flow:**
+```
+Employer โพสต์ตำแหน่งระดับสูง (ผ่าน Full-time Job Board)
+→ WeHire AI วิเคราะห์ data ทั้งหมด → recommend top 3–5 candidates
+→ พร้อม reasoning: "คนนี้ทำงานกับ logistics 47 ครั้ง, completion 98%, ไม่เคย no-show"
+→ Employer จ่าย HH fee เมื่อ hire สำเร็จ (15–20% เงินเดือนเดือนแรก)
+```
+
+**ต้องมีก่อน implement:**
+- [ ] ใบอนุญาตจัดหางานในประเทศ (5,000 บาท/2 ปี — กรมการจัดหางาน ดินแดง)
+- [ ] Track record พอ + employer trust สูงพอ
+- [ ] Data สะสมครบ (Phase 2B behavioral score ต้อง live ก่อน)
+
+**Tasks:**
+- [ ] AI scoring model สำหรับ headhunter tier (Sonnet)
+- [ ] Employer HH request flow + fee model
+- [ ] Candidate recommendation engine พร้อม reasoning
+- [ ] HH fee payment + escrow
+
+### Phase 6 — Notifications & Communication
 - [ ] Push notifications (LINE Notify หรือ Firebase FCM)
 - [ ] Worker ↔ Employer in-app chat (เฉพาะหลัง hired)
 - [ ] Email notification backup
@@ -523,3 +733,37 @@ MAX: 10.00 | MIN: 0.00
 - [x] Push `d2f0a46` → Cloudflare auto-deploy → ทดสอบแล้วใช้งานได้ ✅
 
 ⚠️ **Note**: reverse geocode เรียก Google Geocoding API ทุกครั้งที่ลาก/คลิกหมุด — cost เล็กน้อย อยู่ใน free tier ปกติ
+
+---
+
+## ✅ Day 10 — 19 มิถุนายน 2568 · Bilingual i18n
+
+### 🌐 Full Bilingual Support (TH/EN)
+- [x] **i18n architecture**: LANG object (`th`/`en`) + `t('key')` function + `data-i18n` on static HTML + `setLang()` re-renders dynamic pages
+- [x] **Lang toggle**: Flag images (🇹🇭 🇺🇸) via flagcdn.com — absolute top-right on landing page, no border/box
+- [x] **Landing page** — ทุก section (hero, stats bar, how-it-works worker/employer flows, key features, market context, footer CTA)
+- [x] **Notifications page** — title, badges, buttons, read state
+- [x] **Find Jobs page** — title, radius, search button, map labels
+- [x] **My Applications page** — title, section headers, status labels
+- [x] **My Reviews page** — pending/received headers, star form, rehire buttons, empty state
+- [x] **Worker Profile page** — title, stats grid, KYC section, edit form labels
+- [x] **Post Job page** — title + all 16 form labels
+- [x] **My Jobs page** — title, status badges, auto-close reason labels
+- [x] **Employer Dashboard** — stats, open jobs list, verify nudge banner
+- [x] **Employer create profile form** — labels + biz type dropdown options
+- [x] **Candidates page** — all action buttons (hire/reject/checkin/verify/dispute/contact)
+- [x] **Notification titles** — `_notifTranslateTitle()` map 24 Thai titles → English (frontend-only, no backend change)
+- [x] **Review summary widget** — stars, count, rehire %
+- [x] **Category / zone / title dropdowns** — dynamic, uses `name_en` when available
+- [x] **`_autoCloseReasonLabel`** — changed const object → function (evaluates `t()` at call time)
+
+### 🟡 i18n ยังเหลือ (ดู I18N_HANDOFF.md)
+- [ ] Post job validation errors + success message
+- [ ] Button state text (doCheckin, doComplete, doStart, doVerify, doDispute)
+- [ ] Worker profile create form
+- [ ] Session timeout buttons + login loading state
+- [ ] Report modal
+- [ ] Work permit status text
+- [ ] Review validation + success message
+- [ ] GPS / map status text
+- [ ] Admin UI (low priority)
