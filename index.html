@@ -2616,7 +2616,7 @@ async function searchNearby() {
     return;
   }
   const el  = document.getElementById('nearbyResults');
-  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div><div class="empty-text" style="margin-top:12px">${t('searching_lbl')}</div></div>';
+  el.innerHTML = `<div class="empty"><div class="loading" style="width:24px;height:24px"></div><div class="empty-text" style="margin-top:12px">${t('searching_lbl')}</div></div>`;
   try {
     const data = await api('GET', `/jobs/nearby?lat=${lat}&lng=${lng}&radius_km=${r}`);
     // Clear previous job markers
@@ -2624,7 +2624,7 @@ async function searchNearby() {
     _jobMarkers = [];
 
     if (!data.jobs.length) {
-      el.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">${t('no_jobs_found')}<br><small style="color:var(--muted)">${t('no_jobs_tip')}</small></div></div>';
+      el.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">${t('no_jobs_found')}<br><small style="color:var(--muted)">${t('no_jobs_tip')}</small></div></div>`;
       return;
     }
 
@@ -2726,7 +2726,7 @@ async function loadMyApps() {
   try {
     const data = await api('GET', '/workers/applications');
     if (!data.length) {
-      el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">${t('no_apps')}</div></div>';
+      el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">${t('no_apps')}</div></div>`;
       return;
     }
     const sColor = {
