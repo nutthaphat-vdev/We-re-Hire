@@ -336,6 +336,65 @@ async def check_noshow_workers():
             if alerted_count or noshow_count:
                 logger.info(f"[noshow] done alerted={alerted_count} no_show={noshow_count}")
 
+            # ── Auto-start: checked_in + 30 นาที → auto working ──────────────
+            auto_start_rows = await db.fetch(
+                """
+                SELECT
+                    ja.id,
+                    ja.checkin_at,
+                    ja.job_id,
+                    jp.title          AS job_title,
+                    wp.user_id        AS worker_user_id,
+                    ep.user_id        AS employer_user_id
+                FROM   job_applications ja
+                JOIN   job_postings      jp ON jp.id  = ja.job_id
+                JOIN   worker_profiles   wp ON wp.id  = ja.worker_id
+                JOIN   employer_profiles ep ON ep.id  = jp.employer_id
+                WHERE  ja.status             = 'checked_in'
+                  AND  ja.auto_confirmed_at  IS NULL
+                  AND  ja.checkin_at         <= NOW() - INTERVAL '30 minutes'
+                """
+            )
+            auto_start_count = 0
+            for row in auto_start_rows:
+                try:
+                    async with db.transaction():
+                        await db.execute(
+                            """
+                            UPDATE job_applications
+                            SET    status = 'working',
+                                   work_started_at  = checkin_at,
+                                   auto_confirmed_at = NOW()
+                            WHERE  id = $1
+                            """,
+                            row["id"],
+                        )
+                        # แจ้ง worker
+                        await db.execute(
+                            """
+                            INSERT INTO notifications (user_id, type, title, body)
+                            VALUES ($1, 'application_update', '▶️ ระบบเริ่มนับเวลางานแล้ว', $2)
+                            """,
+                            row["worker_user_id"],
+                            f"ระบบ Auto-Confirm งาน \"{row['job_title']}\" เพราะคุณรอ Employer เกิน 30 นาที — เวลานับตั้งแต่ที่คุณเช็คอิน",
+                        )
+                        # แจ้ง employer
+                        await db.execute(
+                            """
+                            INSERT INTO notifications (user_id, type, title, body)
+                            VALUES ($1, 'application_update', '⏱️ ระบบ Auto-Confirm แทนคุณแล้ว', $2)
+                            """,
+                            row["employer_user_id"],
+                            f"ระบบเริ่มนับเวลางาน \"{row['job_title']}\" อัตโนมัติ เพราะ Worker มาถึงเกิน 30 นาทีแล้ว — เวลานับตั้งแต่ Worker เช็คอิน",
+                        )
+                    auto_start_count += 1
+                    logger.info(f"[noshow] auto_start app={row['id']} checkin_at={row['checkin_at']}")
+                except Exception as row_err:
+                    logger.error(f"[noshow] auto_start error app={row['id']}: {row_err}")
+
+            if auto_start_count:
+                logger.info(f"[noshow] auto_start done count={auto_start_count}")
+
     except Exception as e:
         logger.error(f"[noshow] cron error: {e}")
 
@@ -1245,6 +1304,7 @@ async def get_my_applications(
             ja.id, ja.status, ja.match_score, ja.distance_km,
             ja.matched_skills, ja.employer_note, ja.applied_at,
             ja.checkin_at, ja.work_started_at, ja.work_ended_at, ja.employer_verified_at,
+            ja.auto_confirm_start,
             jp.id          AS job_id,
             jp.title       AS job_title,
             jp.daily_wage_rate,
@@ -1274,6 +1334,7 @@ async def get_my_applications(
             "work_started_at":       r["work_started_at"].isoformat() if r["work_started_at"] else None,
             "work_ended_at":         r["work_ended_at"].isoformat() if r["work_ended_at"] else None,
             "employer_verified_at":  r["employer_verified_at"].isoformat() if r["employer_verified_at"] else None,
+            "auto_confirm_start":    r["auto_confirm_start"],
             "maps_link":             (
                 f"https://www.google.com/maps/dir/?api=1&destination={r['job_lat']},{r['job_lng']}"
                 if r["status"] in MAPS_STATUSES else None
@@ -1780,6 +1841,7 @@ async def _get_app_for_worker(app_id: UUID, user: dict, db) -> dict:
     row = await db.fetchrow(
         """
         SELECT ja.id, ja.status, ja.job_id,
+               ja.auto_confirm_start, ja.checkin_at,
                jp.title AS job_title,
                jp.work_start,
                ST_Y(jp.location::geometry) AS job_lat,
@@ -1803,11 +1865,14 @@ async def _get_app_for_employer(app_id: UUID, user: dict, db) -> dict:
     row = await db.fetchrow(
         """
         SELECT ja.id, ja.status, ja.worker_id,
+               ja.auto_confirm_start,
                jp.id AS job_id, jp.title AS job_title, jp.work_start,
-               wp.user_id AS worker_user_id
+               wp.user_id AS worker_user_id,
+               ep.user_id AS employer_user_id
         FROM   job_applications ja
         JOIN   job_postings     jp ON jp.id = ja.job_id
         JOIN   worker_profiles  wp ON wp.id = ja.worker_id
+        JOIN   employer_profiles ep ON ep.id = jp.employer_id
         WHERE  ja.id = $1 AND jp.employer_id = $2
         """,
         app_id, emp_id,
@@ -1871,6 +1936,30 @@ async def worker_checkin(
         )
     except Exception:
         pass
+
+    # ── Auto-Confirm: employer กด toggle ล่วงหน้า → jump to working ทันที ──
+    if row["auto_confirm_start"]:
+        await db.execute(
+            """
+            UPDATE job_applications
+            SET    status = 'working', work_started_at = NOW(), auto_confirmed_at = NOW()
+            WHERE  id = $1
+            """,
+            app_id,
+        )
+        try:
+            await db.execute(
+                """
+                INSERT INTO notifications (user_id, type, title, body)
+                VALUES ($1, 'application_update', '▶️ เริ่มงานอัตโนมัติแล้ว', $2)
+                """,
+                row["employer_user_id"],
+                            f"ระบบ Auto-Confirm งาน \"{row['job_title']}\" เพราะคุณรอ Employer เกิน 30 นาที — เวลานับตั้งแต่ที่คุณเช็คอิน",
+            )
+        except Exception:
+            pass
+        return {"status": "working", "auto_confirmed": True, "distance_m": round(float(dist_m))}
+
     return {"status": "checked_in", "distance_m": round(float(dist_m))}
 
 
@@ -1917,6 +2006,53 @@ async def employer_start_work(
     except Exception:
         pass
     return {"status": "working"}
+
+
+@app.post("/applications/{app_id}/auto-confirm", tags=["Job Lifecycle"])
+async def toggle_auto_confirm(
+    app_id: UUID,
+    user:   dict = Depends(require_employer),
+    db:     asyncpg.Connection = Depends(get_db),
+):
+    """Employer toggle Auto-Confirm: ถ้าเปิด → worker check-in แล้วระบบ start ทันที (ไม่ต้องกด manual)"""
+    row = await _get_app_for_employer(app_id, user, db)
+    if row["status"] not in ("hired", "checked_in"):
+        raise HTTPException(status_code=409, detail=f"ไม่สามารถเปลี่ยนแปลงได้ (สถานะ: {row['status']})")
+
+    new_val = not row["auto_confirm_start"]
+    await db.execute(
+        "UPDATE job_applications SET auto_confirm_start = $1 WHERE id = $2",
+        new_val, app_id,
+    )
+
+    # ถ้าเปิด auto-confirm และ worker checked_in อยู่แล้ว → start ทันที
+    if new_val and row["status"] == "checked_in":
+        await db.execute(
+            """
+            UPDATE job_applications
+            SET    status = 'working', work_started_at = NOW(), auto_confirmed_at = NOW()
+            WHERE  id = $1
+            """,
+            app_id,
+        )
+        try:
+            await db.execute(
+                """
+                INSERT INTO notifications (user_id, type, title, body)
+                VALUES ($1, 'application_update', '▶️ เริ่มงานอัตโนมัติแล้ว', $2)
+                """,
+                row["worker_user_id"],
+                f"Employer เปิด Auto-Confirm — งาน {row['job_title']} เริ่มนับเวลาแล้ว",
+            )
+        except Exception:
+            pass
+        return {"auto_confirm_start": True, "status": "working", "message": "Auto-Confirm เปิดแล้ว และเริ่มงานทันทีเพราะ Worker เช็คอินแล้ว"}
+
+    return {
+        "auto_confirm_start": new_val,
+        "status": row["status"],
+        "message": "Auto-Confirm เปิดแล้ว — ระบบจะ start อัตโนมัติเมื่อ Worker เช็คอิน" if new_val else "Auto-Confirm ปิดแล้ว",
+    }
 
 
 @app.post("/applications/{app_id}/complete", tags=["Job Lifecycle"])
