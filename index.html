@@ -1253,8 +1253,8 @@ html, body { margin:0; padding:0; background:#0d0f12; }
     <!-- MY REVIEWS -->
     <div class="page" id="page-myreviews">
       <div style="padding:32px">
-        <div class="page-title">รีวิวของฉัน</div>
-        <div class="page-sub">รีวิวที่รอดำเนินการ และรีวิวที่ได้รับ</div>
+        <div class="page-title" data-i18n="reviews_title">รีวิวของฉัน</div>
+        <div class="page-sub" data-i18n="reviews_sub">รีวิวที่รอดำเนินการ และรีวิวที่ได้รับ</div>
         <div id="myReviewsContent"></div>
       </div>
     </div>
@@ -1363,6 +1363,11 @@ const LANG = {
     nav_sec_general:'GENERAL', nav_sec_worker:'WORKER', nav_sec_employer:'EMPLOYER',
     nav_home:'หน้าหลัก', nav_notifications:'การแจ้งเตือน',
     nav_find_jobs:'หางานใกล้บ้าน', nav_applications:'ประวัติสมัคร',
+    reviews_title:'รีวิวของฉัน', reviews_sub:'รีวิวที่รอดำเนินการ และรีวิวที่ได้รับ',
+    rev_pending_hdr:'รอรีวิว', rev_received_hdr:'รีวิวที่ได้รับ',
+    rev_score_lbl:'คะแนน', rev_tags_lbl:'เลือก tags (ได้หลายอัน)', rev_rehire_q:'จะรับอีกไหม?',
+    rev_rehire_yes:'👍 รับอีกแน่นอน', rev_rehire_no:'👎 ไม่รับอีก', rev_submit:'ส่งรีวิว ✓',
+    rev_from:'จาก', rev_would_rehire_y:'👍 จะรับอีก', rev_would_rehire_n:'👎 ไม่รับอีก',
     nav_my_reviews:'รีวิวของฉัน', nav_my_profile:'โปรไฟล์ของฉัน',
     nav_post_job:'โพสต์งานใหม่', nav_my_jobs:'งานของฉัน',
     nav_logout:'ออก',
@@ -1454,6 +1459,11 @@ const LANG = {
     // Sidebar nav
     nav_sec_general:'GENERAL', nav_sec_worker:'WORKER', nav_sec_employer:'EMPLOYER',
     nav_home:'Home', nav_notifications:'Notifications',
+    reviews_title:'My Reviews', reviews_sub:'Pending and received reviews',
+    rev_pending_hdr:'Pending Review', rev_received_hdr:'Received Reviews',
+    rev_score_lbl:'Rating', rev_tags_lbl:'Select tags (multiple)', rev_rehire_q:'Would hire again?',
+    rev_rehire_yes:'👍 Yes, hire again', rev_rehire_no:'👎 No', rev_submit:'Submit Review ✓',
+    rev_from:'From', rev_would_rehire_y:'👍 Would Hire Again', rev_would_rehire_n:'👎 Would Not Rehire',
     nav_find_jobs:'Find Jobs', nav_applications:'Applications',
     nav_my_reviews:'My Reviews', nav_my_profile:'My Profile',
     nav_post_job:'Post Job', nav_my_jobs:'My Jobs',
@@ -3797,7 +3807,7 @@ async function loadMyReviews() {
 
     // --- Pending reviews ---
     if (pending.length) {
-      html += `<div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.08em;font-family:'IBM Plex Mono',monospace;margin-bottom:12px;text-transform:uppercase">รอรีวิว (${pending.length})</div>`;
+      html += `<div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.08em;font-family:'IBM Plex Mono',monospace;margin-bottom:12px;text-transform:uppercase">${t('rev_pending_hdr')} (${pending.length})</div>`;
       html += pending.map(p => `
         <div class="card" id="reviewCard-${p.application_id}" style="border:1px solid rgba(0,229,160,.25);margin-bottom:12px">
           <div style="font-weight:600;font-size:15px;margin-bottom:4px">${esc(p.job_title)}</div>
@@ -3806,7 +3816,7 @@ async function loadMyReviews() {
           </div>
           <div id="reviewForm-${p.application_id}">
             <div style="margin-bottom:14px">
-              <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.05em">คะแนน</div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.05em">${t('rev_score_lbl')}</div>
               <div class="star-group" id="stars-${p.application_id}" style="display:flex;gap:4px">
                 ${[1,2,3,4,5].map(n => `
                   <span onclick="setStar('${p.application_id}',${n})"
@@ -3817,19 +3827,19 @@ async function loadMyReviews() {
               <input type="hidden" id="starVal-${p.application_id}" value="0">
             </div>
             <div id="tagArea-${p.application_id}" style="margin-bottom:14px">
-              <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.05em">เลือก tags (ได้หลายอัน)</div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.05em">${t('rev_tags_lbl')}</div>
               <div id="tags-${p.application_id}" class="tags" style="gap:8px">
                 <div class="loading"></div>
               </div>
             </div>
             ${p.review_target === 'worker' ? `
             <div style="margin-bottom:14px">
-              <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.05em">จะรับอีกไหม?</div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.05em">${t('rev_rehire_q')}</div>
               <div style="display:flex;gap:8px">
                 <button onclick="setRehire('${p.application_id}',true,this)" id="rehire-yes-${p.application_id}"
-                  class="btn btn-secondary btn-sm">👍 รับอีกแน่นอน</button>
+                  class="btn btn-secondary btn-sm">${t('rev_rehire_yes')}</button>
                 <button onclick="setRehire('${p.application_id}',false,this)" id="rehire-no-${p.application_id}"
-                  class="btn btn-secondary btn-sm">👎 ไม่รับอีก</button>
+                  class="btn btn-secondary btn-sm">${t('rev_rehire_no')}</button>
               </div>
               <input type="hidden" id="rehireVal-${p.application_id}" value="">
             </div>` : ''}
@@ -3847,12 +3857,12 @@ async function loadMyReviews() {
     // --- Received reviews ---
     if (received.length) {
       html += `<div class="divider"></div>
-        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;font-family:'IBM Plex Mono',monospace;margin-bottom:12px;text-transform:uppercase">รีวิวที่ได้รับ (${received.length})</div>`;
+        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;font-family:'IBM Plex Mono',monospace;margin-bottom:12px;text-transform:uppercase">${t('rev_received_hdr')} (${received.length})</div>`;
       html += received.map(r => {
         const stars = '⭐'.repeat(r.star_rating) + '☆'.repeat(5 - r.star_rating);
         const tagHtml = r.tags.map(tg => '<span class="tag tag-match">' + tg + '</span>').join('');
         const rehireHtml = (r.would_rehire !== null && r.would_rehire !== undefined)
-          ? '<div style="margin-top:10px">' + (r.would_rehire ? '<span class="badge badge-green">👍 จะรับอีก</span>' : '<span class="badge badge-danger">👎 ไม่รับอีก</span>') + '</div>'
+          ? '<div style="margin-top:10px">' + (r.would_rehire ? `<span class="badge badge-green">${t('rev_would_rehire_y')}</span>` : `<span class="badge badge-danger">${t('rev_would_rehire_n')}</span>`) + '</div>'
           : '';
         return '<div class="card" style="margin-bottom:12px">'
           + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:12px">'
