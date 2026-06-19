@@ -3495,6 +3495,38 @@ const _notifNavMap = {
   review_pending:     'myreviews',
 };
 
+
+function _notifTranslateTitle(title) {
+  if (_lang !== 'en') return esc(title);
+  const MAP = {
+    '⭐ ให้คะแนนงาน': '⭐ Rate Your Job',
+    '⭐ ให้คะแนน Worker': '⭐ Rate Your Worker',
+    '⚠️ งานอยู่ระหว่างตรวจสอบ': '⚠️ Job Under Review',
+    '⚠️ Worker ยังไม่เช็คอิน': '⚠️ Worker Not Checked In',
+    '🚨 Worker ไม่มาทำงาน': '🚨 Worker No-Show',
+    '❌ ถูกทำเครื่องหมาย No-Show': '❌ Marked No-Show',
+    '🔔 มีงานเร่งด่วนสำหรับคุณ!': '🔔 Urgent Job Available!',
+    '🔔 แจ้งเตือนงานพรุ่งนี้': "🔔 Tomorrow's Job Reminder",
+    '⏰ งานปิดอัตโนมัติ': '⏰ Job Auto-Closed',
+    'มีผู้สมัครงานใหม่': 'New Applicant',
+    'ผู้สมัครไม่พร้อมรับงาน': 'Applicant Unavailable',
+    'ยินดีด้วย! คุณได้รับการคัดเลือก': "🎉 You've Been Hired!",
+    'ผลการสมัครงาน': 'Application Result',
+    '👷 Worker มาถึงแล้ว': '👷 Worker Arrived',
+    '▶️ เริ่มงานแล้ว': '▶️ Work Started',
+    '✅ Worker แจ้งงานเสร็จ': '✅ Worker Completed',
+    '🆕 มีงานพิเศษสำหรับคุณ!': '🆕 Special Job Offer!',
+    '✅ คุณได้รับงานสำรอง!': '✅ Backup Job Accepted!',
+    '✅ Worker สำรองตอบรับแล้ว': '✅ Backup Worker Accepted',
+    '✅ KYC ผ่านการยืนยันแล้ว': '✅ KYC Verified',
+    '❌ KYC ไม่ผ่าน': '❌ KYC Rejected',
+    '⚖️ Admin ตัดสินแล้ว': '⚖️ Dispute Resolved',
+    '✅ ผ่านการตรวจสอบแล้ว': '✅ Background Check Passed',
+    '✅ บริษัทได้รับการยืนยันแล้ว': '✅ Company Verified',
+  };
+  return esc(MAP[title] || title);
+}
+
 function _notifDateLabel(dateStr) {
   const d = new Date(dateStr);
   const today = new Date(); today.setHours(0,0,0,0);
@@ -3582,19 +3614,19 @@ async function loadNotifications() {
               <div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;line-height:1;background:${['new_applicant'].includes(n.type)?'rgba(0,153,255,.18)':['hired','verified','job_verified'].includes(n.type)?'rgba(0,229,160,.18)':['dispute','disputed','job_disputed'].includes(n.type)?'rgba(255,71,87,.18)':['no_show','noshow'].includes(n.type)?'rgba(255,107,53,.18)':'rgba(107,122,148,.18)'}">${icon}</div>
               <div style="flex:1;min-width:0">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
-                  <div style="font-weight:600;font-size:14px;word-break:break-word">${esc(n.title)}</div>
+                  <div style="font-weight:600;font-size:14px;word-break:break-word">${_notifTranslateTitle(n.title)}</div>
                   <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">
                     <span class="badge ${lbl.color}" style="font-size:10px">${esc(lbl.text)}</span>
-                    ${unread ? '<span class="badge badge-blue" style="font-size:10px">ใหม่</span>' : ''}
+                    ${unread ? `<span class="badge badge-blue" style="font-size:10px">${t('notif_new_badge')}</span>` : ''}
                   </div>
                 </div>
                 ${n.body ? `<div style="font-size:13px;color:var(--muted);margin-bottom:8px;white-space:pre-wrap;word-break:break-word">${esc(n.body)}</div>` : ''}
                 <div style="display:flex;justify-content:space-between;align-items:center">
                   <div style="display:flex;align-items:center;gap:8px">
                     <div style="font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace">${time}</div>
-                    ${_notifNavMap[n.type] ? '<span style="font-size:11px;color:var(--accent)">ดูรายละเอียด →</span>' : ''}
+                    ${_notifNavMap[n.type] ? `<span style="font-size:11px;color:var(--accent)">${t('notif_see_detail')}</span>` : ''}
                   </div>
-                  ${unread ? `<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();markNotifRead('${n.id}',this)" style="font-size:11px">อ่านแล้ว</button>` : '<span style="font-size:11px;color:var(--muted)">อ่านแล้ว ✓</span>'}
+                  ${unread ? `<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();markNotifRead('${n.id}',this)" style="font-size:11px">${t('notif_read_btn')}</button>` : `<span style="font-size:11px;color:var(--muted)">${t('notif_read_done')}</span>`}
                 </div>
               </div>
             </div>
