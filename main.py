@@ -260,6 +260,35 @@ async def check_noshow_workers():
                         alerted_count += 1
                         logger.info(f"[noshow] alert app={row['id']} elapsed={elapsed}")
 
+                        # ── Standby alert: แจ้ง top backup worker ให้เตรียมตัว ──
+                        standby = await db.fetchrow(
+                            """
+                            SELECT ja2.id, wp2.user_id AS worker_user_id
+                            FROM   job_applications ja2
+                            JOIN   worker_profiles  wp2 ON wp2.id = ja2.worker_id
+                            WHERE  ja2.job_id           = $1
+                              AND  ja2.status           IN ('applied', 'shortlisted')
+                              AND  ja2.backup_offered_at IS NULL
+                            ORDER  BY ja2.match_score DESC
+                            LIMIT  1
+                            """,
+                            row["job_id"],
+                        )
+                        if standby:
+                            try:
+                                await db.execute(
+                                    """
+                                    INSERT INTO notifications (user_id, type, title, body)
+                                    VALUES ($1, 'application_update', '🟡 เตรียมตัวได้เลย', $2)
+                                    """,
+                                    standby["worker_user_id"],
+                                    f'งาน "{row["job_title"]}" อาจมีตำแหน่งว่างให้คุณ — '
+                                    f'Worker หลักยังไม่เช็คอิน หากไม่มาใน 20 นาที ระบบจะส่งงานนี้ให้คุณทันที เตรียมพร้อมไว้ได้เลย',
+                                )
+                                logger.info(f"[noshow] standby_notified backup_app={standby['id']} for job={row['job_id']}")
+                            except Exception:
+                                pass
+
                     # ── Auto no-show: +30 นาที ───────────────────────────────
                     if elapsed.total_seconds() >= 30 * 60:
                         async with db.transaction():
