@@ -1274,7 +1274,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
         <option value="fake">บัญชีปลอม</option>
         <option value="harassment">คุกคาม / ข่มขู่</option>
         <option value="payment_fraud">โกงค่าแรง</option>
-        <option value="other">อื่นๆ</option>
+        <option value="other">${t('biz_other')}</option>
       </select>
     </div>
     <div class="form-group">
@@ -1390,6 +1390,9 @@ const LANG = {
     rev_score_lbl:'คะแนน', rev_tags_lbl:'เลือก tags (ได้หลายอัน)', rev_rehire_q:'จะรับอีกไหม?',
     rev_rehire_yes:'👍 รับอีกแน่นอน', rev_rehire_no:'👎 ไม่รับอีก', rev_submit:'ส่งรีวิว ✓',
     rev_from:'จาก', rev_would_rehire_y:'👍 จะรับอีก', rev_would_rehire_n:'👎 ไม่รับอีก',
+    rev_empty:'ยังไม่มีรีวิว', rev_empty_note:'รีวิวจะปรากฏหลังจากงานเสร็จสิ้น',
+    cat_select:'— เลือกหมวดงาน —', zone_select:'— เลือกเขต/โซน —',
+    title_select:'— เลือกตำแหน่ง —', loading_text:'กำลังโหลด...', load_failed:'โหลดไม่ได้',
     nav_my_reviews:'รีวิวของฉัน', nav_my_profile:'โปรไฟล์ของฉัน',
     nav_post_job:'โพสต์งานใหม่', nav_my_jobs:'งานของฉัน',
     nav_logout:'ออก',
@@ -1411,6 +1414,11 @@ const LANG = {
     card_post_sub:'ระบบจับคู่อัตโนมัติทันที', card_manage_title:'จัดการงาน',
     emp_verify_pending:'รอ Admin Verify', emp_verify_note:'ทีมงานจะตรวจสอบภายใน 1-2 วันทำการ',
     emp_not_verified:'ยังไม่ verified', emp_verify_cta:'Verify บริษัทเพื่อเพิ่มความน่าเชื่อถือ', emp_verify_req_btn:'ขอ Verify →',
+    emp_verify_pending_badge:'<span class="badge badge-warn">⏳ รอการอนุมัติ</span>',
+    emp_no_profile_msg:'ยังไม่มี Employer Profile — กรุณาสร้างก่อน',
+    emp_create_title:'สร้าง Employer Profile', emp_create_btn:'✅ สร้าง Profile', emp_create_success:'✅ สร้าง Profile สำเร็จ!',
+    emp_company_lbl:'ชื่อบริษัท/ร้าน', emp_biz_type_lbl:'ประเภทธุรกิจ', emp_contact_lbl:'ชื่อผู้ติดต่อ',
+    biz_factory:'โรงงาน', biz_grocery:'ร้านขายของ', biz_warehouse:'คลังสินค้า', biz_other:'อื่นๆ',
     // Nearby
     err_no_location:'กรุณาระบุตำแหน่งก่อนค้นหา', searching_lbl:'กำลังค้นหา...',
     no_jobs_found:'ไม่พบงานในรัศมีที่กำหนด', no_jobs_tip:'ลองเพิ่มรัศมีหรือตรวจสอบ skills ใน profile',
@@ -1508,6 +1516,9 @@ const LANG = {
     rev_score_lbl:'Rating', rev_tags_lbl:'Select tags (multiple)', rev_rehire_q:'Would hire again?',
     rev_rehire_yes:'👍 Yes, hire again', rev_rehire_no:'👎 No', rev_submit:'Submit Review ✓',
     rev_from:'From', rev_would_rehire_y:'👍 Would Hire Again', rev_would_rehire_n:'👎 Would Not Rehire',
+    rev_empty:'No reviews yet', rev_empty_note:'Reviews will appear after a job is completed',
+    cat_select:'— Select Category —', zone_select:'— Select Zone —',
+    title_select:'— Select Position —', loading_text:'Loading...', load_failed:'Failed to load',
     nav_find_jobs:'Find Jobs', nav_applications:'Applications',
     nav_my_reviews:'My Reviews', nav_my_profile:'My Profile',
     nav_post_job:'Post Job', nav_my_jobs:'My Jobs',
@@ -1530,6 +1541,11 @@ const LANG = {
     card_post_sub:'Instant AI matching', card_manage_title:'Manage Jobs',
     emp_verify_pending:'Pending Verification', emp_verify_note:'Our team will verify within 1-2 business days',
     emp_not_verified:'Not Verified', emp_verify_cta:'Verify your company to build trust', emp_verify_req_btn:'Request Verify →',
+    emp_verify_pending_badge:'<span class="badge badge-warn">⏳ Pending Approval</span>',
+    emp_no_profile_msg:'No Employer Profile yet — please create one first',
+    emp_create_title:'Create Employer Profile', emp_create_btn:'✅ Create Profile', emp_create_success:'✅ Profile created!',
+    emp_company_lbl:'Company / Shop Name', emp_biz_type_lbl:'Business Type', emp_contact_lbl:'Contact Person',
+    biz_factory:'Factory', biz_grocery:'Grocery / Retail', biz_warehouse:'Warehouse', biz_other:'Other',
     // Nearby
     err_no_location:'Please set your location first', searching_lbl:'Searching...',
     no_jobs_found:'No jobs found in this area', no_jobs_tip:'Try increasing the radius or check your profile skills',
@@ -2869,8 +2885,8 @@ async function checkEmployerProfile() {
     const verifiedBadge = emp.verified_status === 'verified'
       ? '<span class="badge badge-green">✅ Verified</span>'
       : emp.verified_status === 'pending'
-        ? '<span class="badge badge-warn">⏳ รอการอนุมัติ</span>'
-        : `<button class="btn btn-secondary btn-sm" onclick="requestEmployerVerify(this)" style="font-size:11px">🏢 ขอ Verify บริษัท</button>`;
+        ? t('emp_verify_pending_badge')
+        : `<button class="btn btn-secondary btn-sm" onclick="requestEmployerVerify(this)" style="font-size:11px">${t('emp_verify_req_btn')}</button>`;
     el.innerHTML = `
       <div style="padding:12px 16px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);margin-bottom:16px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
@@ -2887,22 +2903,22 @@ async function checkEmployerProfile() {
   } catch(e) {
     form.style.display = 'none';
     el.innerHTML = `
-      <div class="alert alert-info" style="margin-bottom:16px">ยังไม่มี Employer Profile — กรุณาสร้างก่อน</div>
+      <div class="alert alert-info" style="margin-bottom:16px">${t('emp_no_profile_msg')}</div>
       <div class="card">
-        <div style="font-weight:600;margin-bottom:16px">สร้าง Employer Profile</div>
-        <div class="form-group"><label>ชื่อบริษัท/ร้าน</label><input type="text" id="empCompany" placeholder="บริษัท ABC จำกัด"></div>
-        <div class="form-group"><label>ประเภทธุรกิจ</label>
+        <div style="font-weight:600;margin-bottom:16px">${t('emp_create_title')}</div>
+        <div class="form-group"><label>${t('emp_company_lbl')}</label><input type="text" id="empCompany" placeholder="บริษัท ABC จำกัด"></div>
+        <div class="form-group"><label>${t('emp_biz_type_lbl')}</label>
           <select id="empBizType">
-            <option value="factory">โรงงาน</option>
-            <option value="grocery">ร้านขายของ</option>
+            <option value="factory">${t('biz_factory')}</option>
+            <option value="grocery">${t('biz_grocery')}</option>
             <option value="sme">SME</option>
-            <option value="warehouse">คลังสินค้า</option>
+            <option value="warehouse">${t('biz_warehouse')}</option>
             <option value="other">อื่นๆ</option>
           </select>
         </div>
-        <div class="form-group"><label>ชื่อผู้ติดต่อ</label><input type="text" id="empContact" placeholder="คุณสมชาย"></div>
+        <div class="form-group"><label>${t('emp_contact_lbl')}</label><input type="text" id="empContact" placeholder="คุณสมชาย"></div>
         <div id="alertCreateEmp"></div>
-        <button class="btn btn-primary" onclick="doCreateEmployerProfile()">✅ สร้าง Profile</button>
+        <button class="btn btn-primary" onclick="doCreateEmployerProfile()">${t('emp_create_btn')}</button>
       </div>`;
   }
 }
@@ -2914,7 +2930,7 @@ async function doCreateEmployerProfile() {
       business_type:  document.getElementById('empBizType').value,
       contact_person: document.getElementById('empContact').value.trim(),
     });
-    showAlert('alertCreateEmp','✅ สร้าง Profile สำเร็จ!','success');
+    showAlert('alertCreateEmp', t('emp_create_success'), 'success');
     setTimeout(() => checkEmployerProfile(), 1000);
   } catch(e) {
     showAlert('alertCreateEmp', e.message);
@@ -3459,7 +3475,7 @@ async function requestBackgroundCheck(btn) {
   btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>';
   try {
     await api('POST', '/workers/background-check/request');
-    btn.parentElement.innerHTML = '<span class="badge badge-warn">⏳ รอการอนุมัติ</span>';
+    btn.parentElement.innerHTML = t('emp_verify_pending_badge');
   } catch(e) {
     btn.disabled = false;
     btn.innerHTML = t('profile_verify_btn');
@@ -3472,7 +3488,7 @@ async function requestEmployerVerify(btn) {
   btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>';
   try {
     await api('POST', '/employers/verify/request');
-    btn.outerHTML = '<span class="badge badge-warn">⏳ รอการอนุมัติ</span>';
+    btn.outerHTML = t('emp_verify_pending_badge');
   } catch(e) {
     btn.disabled = false;
     btn.innerHTML = '🏢 ขอ Verify บริษัท';
@@ -3770,7 +3786,7 @@ async function loadReviewSummary(userIdForReview, role, containerId) {
     el.innerHTML = `
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px">
         ${stars ? `<span style="font-size:14px">${stars}</span>` : ''}
-        <span style="font-size:12px;color:var(--muted)">${s.total_reviews} รีวิว</span>
+        <span style="font-size:12px;color:var(--muted)">${s.total_reviews} ${t('unit_reviews')}</span>
         ${s.rehire_pct != null ? `<span style="font-size:12px;color:var(--accent)">👍 ${s.rehire_pct}% rehire</span>` : ''}
       </div>
       ${s.top_tags?.length ? `<div class="tags" style="margin-top:6px">${s.top_tags.map(t=>`<span class="tag tag-match" style="font-size:11px">${t}</span>`).join('')}</div>` : ''}`;
@@ -3798,8 +3814,8 @@ async function initCategoryDropdowns() {
     api('GET', '/zones').catch(() => []),
   ]);
 
-  const catOpts = `<option value="">— เลือกหมวดงาน —</option>` +
-    cats.map(c => `<option value="${c.code}">${c.icon} ${c.name_th}</option>`).join('');
+  const catOpts = `<option value="">${t('cat_select')}</option>` +
+    cats.map(c => `<option value="${c.code}">${c.icon} ${_lang==='en' && c.name_en ? c.name_en : c.name_th}</option>`).join('');
   ['jobCategory','createCategory','editCategory'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = catOpts;
@@ -3807,8 +3823,8 @@ async function initCategoryDropdowns() {
 
   const zoneEl = document.getElementById('jobZone');
   if (zoneEl && zones.length) {
-    zoneEl.innerHTML = `<option value="">— เลือกเขต/โซน —</option>` +
-      zones.map(z => `<option value="${z.code}">${z.name_th}</option>`).join('');
+    zoneEl.innerHTML = `<option value="">${t('zone_select')}</option>` +
+      zones.map(z => `<option value="${z.code}">${_lang==='en' && z.name_en ? z.name_en : z.name_th}</option>`).join('');
   }
 }
 
@@ -3817,16 +3833,16 @@ async function loadJobTitles(categorySelectId, titleSelectId) {
   const titleEl = document.getElementById(titleSelectId);
   if (!titleEl) return;
   if (!catCode) {
-    titleEl.innerHTML = '<option value="">— เลือกตำแหน่ง —</option>';
+    titleEl.innerHTML = `<option value="">${t('title_select')}</option>`;
     return;
   }
-  titleEl.innerHTML = '<option value="">กำลังโหลด...</option>';
+  titleEl.innerHTML = `<option value="">${t('loading_text')}</option>`;
   try {
     const titles = await api('GET', `/job-categories/${catCode}/titles`);
     titleEl.innerHTML = '<option value="">— เลือกตำแหน่ง —</option>' +
-      titles.map(t => `<option value="${t.code}">${t.name_th}</option>`).join('');
+      titles.map(ti => `<option value="${ti.code}">${_lang==='en' && ti.name_en ? ti.name_en : ti.name_th}</option>`).join('');
   } catch(e) {
-    titleEl.innerHTML = '<option value="">โหลดไม่ได้</option>';
+    titleEl.innerHTML = `<option value="">${t('load_failed')}</option>`;
   }
 }
 
@@ -3889,7 +3905,7 @@ async function loadMyReviews() {
             </div>` : ''}
             <div id="alertReview-${p.application_id}"></div>
             <button class="btn btn-primary btn-sm" onclick="submitReview('${p.application_id}','${p.review_target}')">
-              ส่งรีวิว ✓
+              ${t('rev_submit')}
             </button>
           </div>
         </div>`).join('');
@@ -3912,7 +3928,7 @@ async function loadMyReviews() {
           + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:12px">'
             + '<div>'
               + '<div style="font-weight:600;font-size:15px">' + esc(r.job_title) + '</div>'
-              + '<div style="font-size:12px;color:var(--muted);margin-top:2px">จาก ' + (r.reviewer_role === 'employer' ? '🏭 Employer' : '👷 Worker') + '</div>'
+              + `<div style="font-size:12px;color:var(--muted);margin-top:2px">${t('rev_from')} ` + (r.reviewer_role === 'employer' ? '🏭 Employer' : '👷 Worker') + '</div>'
             + '</div>'
             + '<div style="text-align:right;flex-shrink:0">'
               + '<div style="font-size:22px;line-height:1">' + stars + '</div>'
@@ -3926,7 +3942,7 @@ async function loadMyReviews() {
     }
 
     if (!pending.length && !received.length) {
-      html = '<div class="empty"><div class="empty-icon">⭐</div><div class="empty-text">ยังไม่มีรีวิว<br><small style="color:var(--muted)">รีวิวจะปรากฏหลังจากงานเสร็จสิ้น</small></div></div>';
+      html = `<div class="empty"><div class="empty-icon">⭐</div><div class="empty-text">${t('rev_empty')}<br><small style="color:var(--muted)">${t('rev_empty_note')}</small></div></div>`;
     }
 
     el.innerHTML = html;
