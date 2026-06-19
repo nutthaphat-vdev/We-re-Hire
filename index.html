@@ -1486,6 +1486,10 @@ const LANG = {
     auto_confirm_on:'⚡ Auto-Confirm เปิดอยู่', auto_confirm_off:'เปิด Auto-Confirm',
     auto_confirm_hint:'Worker เช็คอินแล้ว ระบบจะเริ่มนับเวลาอัตโนมัติ',
     call_employer:'📞 โทรแจ้ง Employer', call_employer_hint:'Employer ยังไม่กด เริ่มงาน — โทรแจ้งได้เลย',
+    // Backup offer
+    backup_offer_title:'🔔 งานด่วนสำหรับคุณ!', backup_offer_hint:'Worker หลักไม่มา — คุณถูกเลือกเป็น Worker สำรอง',
+    backup_accept_btn:'รับงานนี้เลย ✅', backup_accepting:'กำลังยืนยัน...',
+    backup_accepted:'✅ รับงานแล้ว! ไปเช็คอินได้เลย',
     del_sidebar_btn:'ลบบัญชี',
     del_modal_subtitle:'การกระทำนี้ไม่สามารถย้อนกลับได้',
     del_modal_list_title:'สิ่งที่จะหายไปถาวรภายใน 7 วัน:',
@@ -1662,6 +1666,10 @@ const LANG = {
     auto_confirm_on:'⚡ Auto-Confirm ON', auto_confirm_off:'Enable Auto-Confirm',
     auto_confirm_hint:'Worker checked in — system will start the clock automatically',
     call_employer:'📞 Call Employer', call_employer_hint:"Employer hasn't started yet — call them now",
+    // Backup offer
+    backup_offer_title:'🔔 Urgent Job for You!', backup_offer_hint:"Primary worker no-showed — you've been selected as backup",
+    backup_accept_btn:'Accept This Job ✅', backup_accepting:'Confirming...',
+    backup_accepted:'✅ Accepted! Go check in now',
     del_sidebar_btn:'Delete Account',
     del_modal_subtitle:'This action cannot be undone',
     del_modal_list_title:'What will be permanently deleted within 7 days:',
@@ -2983,6 +2991,11 @@ async function loadMyApps() {
             + '<div id="contact-' + a.id + '" style="display:none;margin-top:10px"></div>'
           ) : '')
         + (a.status === 'disputed' ? `<div style="margin-top:12px;padding:12px 14px;background:rgba(255,107,53,.06);border-radius:8px;border-left:3px solid var(--warn)"><div style="font-size:13px;font-weight:600;color:var(--warn)">⚠️ ${t('disputed_title')}</div><div style="font-size:12px;color:var(--muted);margin-top:4px">${t('disputed_note')}</div></div>` : '')
+        + (a.backup_offered_at && !a.backup_accepted_at && a.status !== 'hired' ? `<div style="margin-top:12px;padding:14px 16px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.35);border-radius:10px;border-left:3px solid var(--accent)">
+          <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:4px">${t('backup_offer_title')}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">${t('backup_offer_hint')}</div>
+          <button class="btn btn-primary btn-sm" onclick="doAcceptBackup('${a.id}',this)" style="font-size:12px;padding:6px 16px">${t('backup_accept_btn')}</button>
+        </div>` : '')
         + '</div>';
     };
     let html = '';
@@ -3517,6 +3530,23 @@ async function showContact(appId, btn) {
 }
 
 // ─── JOB LIFECYCLE ─────────────────────────────────────────
+
+async function doAcceptBackup(appId, btn) {
+  btn.disabled = true;
+  btn.textContent = t('backup_accepting');
+  try {
+    await api('POST', `/applications/${appId}/accept-backup`);
+    btn.textContent = t('backup_accepted');
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#000';
+    // รีโหลดหลัง 1.5 วิ
+    setTimeout(() => loadMyApps(), 1500);
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = t('backup_accept_btn');
+    alert(e.message);
+  }
+}
 
 async function doCheckin(appId, btn) {
   btn.disabled = true;
