@@ -972,7 +972,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
         onmouseover="this.style.background='rgba(239,68,68,.12)';this.style.color='#ef4444'"
         onmouseout="this.style.background='rgba(239,68,68,.06)';this.style.color='rgba(239,68,68,.7)'">
         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-        <span>ลบบัญชี</span>
+        <span data-i18n="del_sidebar_btn">ลบบัญชี</span>
       </button>
     </div>
   </div>
@@ -1481,6 +1481,20 @@ const LANG = {
     no_apps:'ยังไม่มีประวัติการสมัคร', applied_on:'สมัคร:',
     section_active:'กำลังดำเนินการ', section_history:'ประวัติ',
     disputed_title:'อยู่ระหว่างตรวจสอบ', disputed_note:'ทีมงานจะตรวจสอบและติดต่อกลับภายใน 1-2 วันทำการ',
+    // Delete Account
+    del_sidebar_btn:'ลบบัญชี',
+    del_modal_subtitle:'การกระทำนี้ไม่สามารถย้อนกลับได้',
+    del_modal_list_title:'สิ่งที่จะหายไปถาวรภายใน 7 วัน:',
+    del_modal_item1:'ข้อมูลโปรไฟล์และประวัติงานทั้งหมด',
+    del_modal_item2:'Behavioral Score ที่สะสมมา',
+    del_modal_item3:'รีวิวและ Rating ทั้งหมด',
+    del_modal_item4:'การเชื่อมต่อ Google Account',
+    del_modal_confirm_label:'พิมพ์',
+    del_modal_confirm_word:'DELETE',
+    del_modal_confirm_suffix:'เพื่อยืนยัน',
+    del_modal_cancel:'ยกเลิก',
+    del_modal_confirm_btn:'ลบบัญชีถาวร',
+    del_modal_deleting:'กำลังลบ...',
   },
   en: {
     login_tab:'Login', register_tab:'Register',
@@ -1639,6 +1653,20 @@ const LANG = {
     no_apps:'No applications yet', applied_on:'Applied:',
     section_active:'Active', section_history:'History',
     disputed_title:'Under Review', disputed_note:'Our team will review and contact you within 1-2 business days',
+    // Delete Account
+    del_sidebar_btn:'Delete Account',
+    del_modal_subtitle:'This action cannot be undone',
+    del_modal_list_title:'What will be permanently deleted within 7 days:',
+    del_modal_item1:'All profile data and job history',
+    del_modal_item2:'Accumulated Behavioral Score',
+    del_modal_item3:'All reviews and ratings',
+    del_modal_item4:'Google Account connection',
+    del_modal_confirm_label:'Type',
+    del_modal_confirm_word:'DELETE',
+    del_modal_confirm_suffix:'to confirm',
+    del_modal_cancel:'Cancel',
+    del_modal_confirm_btn:'Delete Account',
+    del_modal_deleting:'Deleting...',
   },
 };
 let _lang = localStorage.getItem('wh_lang') || 'th';
@@ -4203,24 +4231,24 @@ if (token && userRole) {
       </div>
       <div>
         <div style="color:#ef4444;font-weight:700;font-size:16px">⚠️ Danger Zone</div>
-        <div style="color:var(--muted);font-size:12px">การกระทำนี้ไม่สามารถย้อนกลับได้</div>
+        <div style="color:var(--muted);font-size:12px" data-i18n="del_modal_subtitle">การกระทำนี้ไม่สามารถย้อนกลับได้</div>
       </div>
     </div>
 
     <!-- Warning list -->
     <div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:16px;margin-bottom:20px">
-      <div style="color:#ef4444;font-size:13px;font-weight:600;margin-bottom:10px">สิ่งที่จะหายไปถาวรภายใน 7 วัน:</div>
+      <div style="color:#ef4444;font-size:13px;font-weight:600;margin-bottom:10px" data-i18n="del_modal_list_title">สิ่งที่จะหายไปถาวรภายใน 7 วัน:</div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <div style="color:var(--muted);font-size:12px">🗑️ &nbsp;ข้อมูลโปรไฟล์และประวัติงานทั้งหมด</div>
-        <div style="color:var(--muted);font-size:12px">⭐ &nbsp;Behavioral Score ที่สะสมมา</div>
-        <div style="color:var(--muted);font-size:12px">📋 &nbsp;รีวิวและ Rating ทั้งหมด</div>
-        <div style="color:var(--muted);font-size:12px">🔐 &nbsp;การเชื่อมต่อ Google Account</div>
+        <div style="color:var(--muted);font-size:12px" data-i18n="del_modal_item1">🗑️ &nbsp;ข้อมูลโปรไฟล์และประวัติงานทั้งหมด</div>
+        <div style="color:var(--muted);font-size:12px" data-i18n="del_modal_item2">⭐ &nbsp;Behavioral Score ที่สะสมมา</div>
+        <div style="color:var(--muted);font-size:12px" data-i18n="del_modal_item3">📋 &nbsp;รีวิวและ Rating ทั้งหมด</div>
+        <div style="color:var(--muted);font-size:12px" data-i18n="del_modal_item4">🔐 &nbsp;การเชื่อมต่อ Google Account</div>
       </div>
     </div>
 
     <!-- Confirm input -->
     <div style="margin-bottom:20px">
-      <div style="color:var(--text);font-size:13px;margin-bottom:8px">พิมพ์ <code style="background:rgba(239,68,68,.15);color:#ef4444;padding:2px 6px;border-radius:4px">DELETE</code> เพื่อยืนยัน</div>
+      <div style="color:var(--text);font-size:13px;margin-bottom:8px"><span data-i18n="del_modal_confirm_label">พิมพ์</span> <code style="background:rgba(239,68,68,.15);color:#ef4444;padding:2px 6px;border-radius:4px">DELETE</code> <span data-i18n="del_modal_confirm_suffix">เพื่อยืนยัน</span></div>
       <input id="deleteConfirmInput" type="text" placeholder="DELETE"
         oninput="document.getElementById('deleteConfirmBtn').disabled = this.value !== 'DELETE'"
         style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;font-family:'IBM Plex Mono',monospace;box-sizing:border-box;outline:none" />
@@ -4229,13 +4257,13 @@ if (token && userRole) {
     <!-- Buttons -->
     <div style="display:flex;gap:10px">
       <button onclick="closeDeleteAccountModal()"
-        style="flex:1;padding:10px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:13px">
+        style="flex:1;padding:10px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:13px" data-i18n="del_modal_cancel">
         ยกเลิก
       </button>
       <button id="deleteConfirmBtn" onclick="doDeleteAccount()" disabled
         style="flex:1;padding:10px;background:#ef4444;border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:13px;font-weight:600;opacity:.4;transition:opacity .2s"
         onmouseover="if(!this.disabled)this.style.background='#dc2626'"
-        onmouseout="this.style.background='#ef4444'">
+        onmouseout="this.style.background='#ef4444'" data-i18n="del_modal_confirm_btn">
         ลบบัญชีถาวร
       </button>
     </div>
@@ -4259,7 +4287,7 @@ document.getElementById('deleteConfirmInput').addEventListener('input', function
 });
 async function doDeleteAccount() {
   const btn = document.getElementById('deleteConfirmBtn');
-  btn.textContent = 'กำลังลบ...';
+  btn.textContent = t('del_modal_deleting');
   btn.disabled = true;
   try {
     const res = await fetch(API + '/users/me', {
@@ -4273,7 +4301,7 @@ async function doDeleteAccount() {
     doLogout();
   } catch(e) {
     alert('❌ ' + e.message);
-    btn.textContent = 'ลบบัญชีถาวร';
+    btn.textContent = t('del_modal_confirm_btn');
     btn.disabled = false;
     btn.style.opacity = '1';
   }
