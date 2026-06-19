@@ -3199,3 +3199,65 @@ async def get_pending_reviews(
                  "worker_name": r["worker_name"], "review_target": "worker",
                  "decided_at": r["decided_at"].isoformat() if r["decided_at"] else None}
                 for r in rows]
+
+# ─────────────────────────────────────────────
+#  DELETE ACCOUNT
+# ─────────────────────────────────────────────
+@app.delete("/users/me", tags=["Auth"])
+async def delete_my_account(
+    user: dict = Depends(get_current_user),
+    db:   asyncpg.Connection = Depends(get_db),
+):
+    """
+    Soft-delete: sets is_active=False + deletion_requested_at=NOW()
+    Blocks if user has active hired/working jobs.
+    Hard delete happens 7 days later via cron (not yet implemented).
+    """
+    user_id = UUID(user["sub"])
+    role    = user["role"]
+
+    # ❌ บล็อกถ้ามีงานที่ยังค้างอยู่
+    if role == "worker":
+        active_job = await db.fetchval(
+            """
+            SELECT ja.id FROM job_applications ja
+            JOIN   worker_profiles wp ON wp.id = ja.worker_id
+            WHERE  wp.user_id = $1
+              AND  ja.status IN ('hired','checked_in','working')
+            LIMIT 1
+            """,
+            user_id,
+        )
+    else:
+        active_job = await db.fetchval(
+            """
+            SELECT jp.id FROM job_postings jp
+            JOIN   employer_profiles ep ON ep.id = jp.employer_id
+            WHERE  ep.user_id = $1
+              AND  jp.status = 'open'
+              AND  jp.slots_filled > 0
+            LIMIT 1
+            """,
+            user_id,
+        )
+
+    if active_job:
+        raise HTTPException(
+            status_code=400,
+            detail="ไม่สามารถลบบัญชีได้ขณะมีงานที่ยังดำเนินอยู่ กรุณาสิ้นสุดงานทั้งหมดก่อน"
+        )
+
+    # ✅ Soft delete
+    await db.execute(
+        """
+        UPDATE users
+        SET    is_active = FALSE,
+               deletion_requested_at = NOW()
+        WHERE  id = $1
+        """,
+        user_id,
+    )
+
+    return {
+        "message": "บัญชีของคุณถูกระงับแล้ว ข้อมูลทั้งหมดจะถูกลบถาวรภายใน 7 วัน"
+    }

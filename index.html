@@ -968,6 +968,17 @@ html, body { margin:0; padding:0; background:#0d0f12; }
 
   </div>
 
+  <!-- Danger Zone: Delete Account button ใน sidebar -->
+  <div style="padding:12px 16px;border-top:1px solid rgba(239,68,68,.2);margin-top:auto">
+    <button onclick="openDeleteAccountModal()"
+      style="width:100%;display:flex;align-items:center;gap:8px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:8px 12px;cursor:pointer;color:rgba(239,68,68,.7);font-size:12px;transition:all .2s"
+      onmouseover="this.style.background='rgba(239,68,68,.12)';this.style.color='#ef4444'"
+      onmouseout="this.style.background='rgba(239,68,68,.06)';this.style.color='rgba(239,68,68,.7)'">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      <span>ลบบัญชี</span>
+    </button>
+  </div>
+
   <div class="main" style="padding:0">
     <!-- TOPBAR -->
     <div id="topbar" style="position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:10px 24px;background:rgba(13,15,18,.88);backdrop-filter:blur(10px);border-bottom:1px solid rgba(42,48,64,.55)">
@@ -4183,5 +4194,93 @@ if (token && userRole) {
   });
 }
 </script>
+
+<!-- ════════════ DELETE ACCOUNT MODAL (Danger Zone) ════════════ -->
+<div id="deleteAccountModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#0e1118;border:1px solid rgba(239,68,68,.4);border-radius:16px;padding:32px;max-width:460px;width:90%;box-shadow:0 0 40px rgba(239,68,68,.15)">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <div style="width:40px;height:40px;border-radius:10px;background:rgba(239,68,68,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="20" height="20" fill="none" stroke="#ef4444" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      </div>
+      <div>
+        <div style="color:#ef4444;font-weight:700;font-size:16px">⚠️ Danger Zone</div>
+        <div style="color:var(--muted);font-size:12px">การกระทำนี้ไม่สามารถย้อนกลับได้</div>
+      </div>
+    </div>
+
+    <!-- Warning list -->
+    <div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:16px;margin-bottom:20px">
+      <div style="color:#ef4444;font-size:13px;font-weight:600;margin-bottom:10px">สิ่งที่จะหายไปถาวรภายใน 7 วัน:</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="color:var(--muted);font-size:12px">🗑️ &nbsp;ข้อมูลโปรไฟล์และประวัติงานทั้งหมด</div>
+        <div style="color:var(--muted);font-size:12px">⭐ &nbsp;Behavioral Score ที่สะสมมา</div>
+        <div style="color:var(--muted);font-size:12px">📋 &nbsp;รีวิวและ Rating ทั้งหมด</div>
+        <div style="color:var(--muted);font-size:12px">🔐 &nbsp;การเชื่อมต่อ Google Account</div>
+      </div>
+    </div>
+
+    <!-- Confirm input -->
+    <div style="margin-bottom:20px">
+      <div style="color:var(--text);font-size:13px;margin-bottom:8px">พิมพ์ <code style="background:rgba(239,68,68,.15);color:#ef4444;padding:2px 6px;border-radius:4px">DELETE</code> เพื่อยืนยัน</div>
+      <input id="deleteConfirmInput" type="text" placeholder="DELETE"
+        oninput="document.getElementById('deleteConfirmBtn').disabled = this.value !== 'DELETE'"
+        style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;font-family:'IBM Plex Mono',monospace;box-sizing:border-box;outline:none" />
+    </div>
+
+    <!-- Buttons -->
+    <div style="display:flex;gap:10px">
+      <button onclick="closeDeleteAccountModal()"
+        style="flex:1;padding:10px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:13px">
+        ยกเลิก
+      </button>
+      <button id="deleteConfirmBtn" onclick="doDeleteAccount()" disabled
+        style="flex:1;padding:10px;background:#ef4444;border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:13px;font-weight:600;opacity:.4;transition:opacity .2s"
+        onmouseover="if(!this.disabled)this.style.background='#dc2626'"
+        onmouseout="this.style.background='#ef4444'">
+        ลบบัญชีถาวร
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openDeleteAccountModal() {
+  document.getElementById('deleteAccountModal').style.display = 'flex';
+  document.getElementById('deleteConfirmInput').value = '';
+  document.getElementById('deleteConfirmBtn').disabled = true;
+  document.getElementById('deleteConfirmBtn').style.opacity = '0.4';
+}
+function closeDeleteAccountModal() {
+  document.getElementById('deleteAccountModal').style.display = 'none';
+}
+// sync opacity with disabled state
+document.getElementById('deleteConfirmInput').addEventListener('input', function() {
+  const btn = document.getElementById('deleteConfirmBtn');
+  btn.style.opacity = this.value === 'DELETE' ? '1' : '0.4';
+});
+async function doDeleteAccount() {
+  const btn = document.getElementById('deleteConfirmBtn');
+  btn.textContent = 'กำลังลบ...';
+  btn.disabled = true;
+  try {
+    const res = await fetch(API + '/users/me', {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('wh_token') }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'เกิดข้อผิดพลาด');
+    closeDeleteAccountModal();
+    alert('✅ ' + data.message);
+    doLogout();
+  } catch(e) {
+    alert('❌ ' + e.message);
+    btn.textContent = 'ลบบัญชีถาวร';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  }
+}
+</script>
+
 </body>
 </html>
