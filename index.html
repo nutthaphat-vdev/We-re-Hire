@@ -1062,47 +1062,47 @@ html, body { margin:0; padding:0; background:#0d0f12; }
     <!-- POST JOB -->
     <div class="page" id="page-postjob">
       <div style="padding:32px">
-        <div class="page-title">โพสต์งานใหม่</div>
-        <div class="page-sub">ระบุรายละเอียดงานที่ต้องการ</div>
+        <div class="page-title" data-i18n="postjob_title">โพสต์งานใหม่</div>
+        <div class="page-sub" data-i18n="postjob_sub">ระบุรายละเอียดงานที่ต้องการ</div>
         <div id="alertPostJob"></div>
         <div id="employerProfileCheck"></div>
         <div class="card" id="postJobForm">
           <div class="form-group">
-            <label>ชื่อตำแหน่ง</label>
+            <label data-i18n="postjob_position">ชื่อตำแหน่ง</label>
             <input type="text" id="jobTitle" placeholder="เช่น พนักงานแพ็คสินค้า">
           </div>
           <div class="form-group">
-            <label>รายละเอียด</label>
+            <label data-i18n="postjob_desc">รายละเอียด</label>
             <textarea id="jobDesc" placeholder="รายละเอียดงาน..."></textarea>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>ค่าแรง (฿/วัน)</label>
+              <label data-i18n="postjob_wage">ค่าแรง (฿/วัน)</label>
               <input type="number" id="jobWage" placeholder="500">
             </div>
             <div class="form-group">
-              <label>จำนวนวัน</label>
+              <label data-i18n="postjob_days">จำนวนวัน</label>
               <input type="number" id="jobDays" placeholder="5">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>จำนวนคน</label>
+              <label data-i18n="postjob_slots">จำนวนคน</label>
               <input type="number" id="jobSlots" value="1">
             </div>
             <div class="form-group">
-              <label>วันเริ่มงาน</label>
+              <label data-i18n="postjob_start_date">วันเริ่มงาน</label>
               <input type="date" id="jobStartDate" oninput="document.getElementById('jobAutoCloseHint').style.display=this.value?'block':'none'">
               <div id="jobAutoCloseHint" style="display:none;font-size:11px;color:var(--warn);margin-top:4px">⏰ งานจะปิดอัตโนมัติถ้าไม่มีผู้ถูกเลือกภายใน 48 ชม. ก่อนวันเริ่มงาน</div>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>เริ่มงานกี่โมง</label>
+              <label data-i18n="postjob_start_time">เริ่มงานกี่โมง</label>
               <input type="time" id="jobStartTime" oninput="updateHoursSummary()">
             </div>
             <div class="form-group">
-              <label>เลิกงานกี่โมง</label>
+              <label data-i18n="postjob_end_time">เลิกงานกี่โมง</label>
               <input type="time" id="jobEndTime" oninput="updateHoursSummary()">
             </div>
           </div>
@@ -1110,24 +1110,24 @@ html, body { margin:0; padding:0; background:#0d0f12; }
           <div class="form-row" style="align-items:center">
             <div class="form-group" style="display:flex;align-items:center;gap:8px;margin-bottom:0">
               <input type="checkbox" id="jobOTCheck" onchange="toggleJobOT()" style="width:auto;accent-color:var(--accent)">
-              <label style="margin:0;font-size:13px;color:var(--text);cursor:pointer" for="jobOTCheck">มีงาน OT (คิดรายชั่วโมง)</label>
+              <label style="margin:0;font-size:13px;color:var(--text);cursor:pointer" for="jobOTCheck" data-i18n="postjob_ot_check">มีงาน OT (คิดรายชั่วโมง)</label>
             </div>
             <div class="form-group" id="jobOTGroup" style="display:none;margin-bottom:0">
-              <label>ค่า OT (฿/ชม.)</label>
+              <label data-i18n="postjob_ot_rate">ค่า OT (฿/ชม.)</label>
               <input type="number" id="jobOTRate" placeholder="เช่น 75" min="0">
             </div>
           </div>
           <div class="form-group">
-            <label>ทักษะที่ต้องการ (คั่นด้วยจุลภาค)</label>
+            <label data-i18n="postjob_skills">ทักษะที่ต้องการ (คั่นด้วยจุลภาค)</label>
             <div class="form-row">
               <div class="form-group">
-                <label>หมวดงาน</label>
+                <label data-i18n="profile_cat_lbl">หมวดงาน</label>
                 <select id="jobCategory" onchange="loadJobTitles('jobCategory','jobSkillSelect')">
                   <option value="">— เลือกหมวดงาน —</option>
                 </select>
               </div>
               <div class="form-group">
-                <label>ตำแหน่งงาน</label>
+                <label data-i18n="profile_jobtitle_lbl">ตำแหน่งงาน</label>
                 <select id="jobSkillSelect" onchange="syncSkillCode('jobSkillSelect','jobSkills')">
                   <option value="">— เลือกตำแหน่ง —</option>
                 </select>
@@ -1137,7 +1137,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>ชื่อสถานที่</label>
+              <label data-i18n="profile_loc_lbl">ชื่อสถานที่</label>
               <input type="text" id="jobLocation" placeholder="เช่น โรงงาน A อ่อนนุช">
             </div>
             <div class="form-group">
@@ -1148,7 +1148,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
             </div>
           </div>
           <div class="form-group">
-            <label>ที่ตั้งงาน</label>
+            <label data-i18n="postjob_map_lbl">ที่ตั้งงาน</label>
             <div id="lastLocationHint" style="display:none;margin-bottom:8px;padding:10px 12px;background:rgba(0,229,160,.07);border:1px solid rgba(0,229,160,.2);border-radius:8px;display:flex;align-items:center;gap:10px">
               <input type="checkbox" id="useLastLocation" onchange="toggleLastLocation(this)" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
               <label for="useLastLocation" style="font-size:12px;color:var(--accent);cursor:pointer;margin:0">ใช้สถานที่เดิม: <span id="lastLocationName" style="font-weight:600"></span></label>
@@ -1162,7 +1162,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
           </div>
           <input type="hidden" id="jobLat" value="13.7018">
           <input type="hidden" id="jobLng" value="100.6011">
-          <button class="btn btn-primary" onclick="doPostJob()">📋 โพสต์งาน</button>
+          <button class="btn btn-primary" onclick="doPostJob()"><span data-i18n="postjob_btn">📋 โพสต์งาน</span></button>
         </div>
       </div>
     </div>
@@ -1341,6 +1341,12 @@ const LANG = {
     notif_today:'วันนี้', notif_yesterday:'เมื่อวาน',
     notif_page_sub:'การอัปเดตล่าสุด', notif_filter_all:'ทั้งหมด', notif_filter_unread:'ยังไม่อ่าน', notif_mark_all:'อ่านทั้งหมด',
     // My Jobs (Employer)
+    postjob_title:'โพสต์งานใหม่', postjob_sub:'ระบุรายละเอียดงานที่ต้องการ',
+    postjob_position:'ชื่อตำแหน่ง', postjob_desc:'รายละเอียด',
+    postjob_wage:'ค่าแรง (฿/วัน)', postjob_days:'จำนวนวัน', postjob_slots:'จำนวนคน',
+    postjob_start_date:'วันเริ่มงาน', postjob_start_time:'เริ่มงานกี่โมง', postjob_end_time:'เลิกงานกี่โมง',
+    postjob_ot_check:'มีงาน OT (คิดรายชั่วโมง)', postjob_ot_rate:'ค่า OT (฿/ชม.)',
+    postjob_skills:'ทักษะที่ต้องการ', postjob_map_lbl:'ที่ตั้งงาน', postjob_btn:'📋 โพสต์งาน',
     jobs_empty:'ยังไม่มีงานที่โพสต์', jobs_post_first:'โพสต์งานแรก',
     jobs_slots:'ที่ว่าง:', jobs_posted:'โพสต์:',
     jobs_view_cands:'👥 ดูผู้สมัคร', jobs_close:'ปิดงาน', jobs_reopen:'เปิดงานใหม่',
@@ -1448,6 +1454,12 @@ const LANG = {
     notif_today:'Today', notif_yesterday:'Yesterday',
     notif_page_sub:'Latest Updates', notif_filter_all:'All', notif_filter_unread:'Unread', notif_mark_all:'Mark all read',
     // My Jobs
+    postjob_title:'Post a Job', postjob_sub:'Specify the job details',
+    postjob_position:'Position', postjob_desc:'Description',
+    postjob_wage:'Daily Wage (฿)', postjob_days:'Duration (days)', postjob_slots:'No. of Workers',
+    postjob_start_date:'Start Date', postjob_start_time:'Start Time', postjob_end_time:'End Time',
+    postjob_ot_check:'Has OT (per hour)', postjob_ot_rate:'OT Rate (฿/hr)',
+    postjob_skills:'Required Skills', postjob_map_lbl:'Job Location', postjob_btn:'📋 Post Job',
     jobs_empty:'No jobs posted yet', jobs_post_first:'Post first job',
     jobs_slots:'Slots:', jobs_posted:'Posted:',
     jobs_view_cands:'👥 View applicants', jobs_close:'Close job', jobs_reopen:'Reopen job',
