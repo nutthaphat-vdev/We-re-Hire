@@ -116,7 +116,6 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   .radius-slider::-moz-range-track{height:5px;background:rgba(42,48,64,.9);border-radius:3px;}
 
   /* Debug panel */
-  /* DEBUG PANEL CSS — uncomment to re-enable
   #debugPanel{position:fixed;bottom:0;right:0;width:420px;max-height:280px;background:#0a0c0f;border-top:1px solid var(--border);border-left:1px solid var(--border);border-radius:8px 0 0 0;z-index:9999;display:flex;flex-direction:column;}
   #debugHeader{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;}
   #debugTitle{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--muted);}
@@ -127,7 +126,6 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   #debugLogs .log.err{color:#ff4757;}
   #debugLogs .log.info{color:#6b7a94;}
   #debugLogs .log.warn{color:#ff6b35;}
-  */
 
   /* ── Mobile responsive ──────────────────────────────────── */
   #hamburger {
@@ -1289,8 +1287,8 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   </div>
 </div>
 
-<!-- DEBUG PANEL — uncomment to re-enable
-<div id="debugPanel">
+<!-- DEBUG PANEL -->
+<div id="debugPanel" style="display:none">
   <div id="debugHeader" onclick="toggleDebug()">
     <span id="debugTitle">🐛 DEBUG CONSOLE</span>
     <div style="display:flex;gap:8px;align-items:center;">
@@ -1300,7 +1298,6 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   </div>
   <div id="debugLogs" style="display:none"></div>
 </div>
--->
 <script>
 // ─── MULTILANG ─────────────────────────────────────────────
 const LANG = {
