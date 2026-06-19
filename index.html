@@ -984,22 +984,22 @@ html, body { margin:0; padding:0; background:#0d0f12; }
     <!-- NEARBY JOBS -->
     <div class="page" id="page-nearby">
       <div style="padding:24px 28px">
-        <div class="page-title" style="margin-bottom:2px">หางานใกล้บ้าน</div>
-        <div class="page-sub" style="margin-bottom:24px">ค้นหางานในรัศมีที่กำหนด</div>
+        <div class="page-title" style="margin-bottom:2px" data-i18n="nearby_title">หางานใกล้บ้าน</div>
+        <div class="page-sub" style="margin-bottom:24px" data-i18n="nearby_sub">ค้นหางานในรัศมีที่กำหนด</div>
 
         <!-- Map card -->
         <div style="background:rgba(18,22,30,.8);border:1px solid rgba(42,48,64,.6);border-radius:16px;overflow:hidden;margin-bottom:16px;backdrop-filter:blur(12px)">
           <div id="searchMapPreview" style="height:260px;width:100%;background:linear-gradient(135deg,#0e1320 0%,#111827 100%);position:relative">
             <div id="nearbyMapPlaceholder" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted)">
               <div style="font-size:32px;opacity:.3">🗺</div>
-              <div style="font-size:12px;font-family:'IBM Plex Mono',monospace;opacity:.4">กำลังโหลดแผนที่...</div>
+              <div style="font-size:12px;font-family:'IBM Plex Mono',monospace;opacity:.4" data-i18n="nearby_map_loading">กำลังโหลดแผนที่...</div>
             </div>
           </div>
           <!-- Location bar -->
           <div style="padding:14px 20px;border-top:1px solid rgba(42,48,64,.6);display:flex;align-items:center;gap:12px">
             <div style="width:34px;height:34px;border-radius:50%;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px">📍</div>
             <div style="flex:1;min-width:0">
-              <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.06em;margin-bottom:2px">ตำแหน่งของคุณ</div>
+              <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.06em;margin-bottom:2px" data-i18n="nearby_your_loc">ตำแหน่งของคุณ</div>
               <div id="searchLocationDisplay" style="font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">กำลังระบุตำแหน่ง...</div>
             </div>
             <button class="btn btn-secondary btn-sm" onclick="useMyLocation()" style="white-space:nowrap;gap:6px;flex-shrink:0">
@@ -1014,12 +1014,12 @@ html, body { margin:0; padding:0; background:#0d0f12; }
         <div style="background:rgba(18,22,30,.8);border:1px solid rgba(42,48,64,.6);border-radius:14px;padding:20px 24px;margin-bottom:20px;backdrop-filter:blur(12px)">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
             <div>
-              <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">รัศมีการค้นหา</div>
-              <div style="font-size:11px;color:var(--muted)">ยิ่งรัศมีกว้าง ยิ่งเจองานมาก</div>
+              <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px" data-i18n="nearby_radius_lbl">รัศมีการค้นหา</div>
+              <div style="font-size:11px;color:var(--muted)" data-i18n="nearby_radius_hint">ยิ่งรัศมีกว้าง ยิ่งเจองานมาก</div>
             </div>
             <div style="text-align:right">
               <div style="font-size:32px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--accent);line-height:1"><span id="radiusVal">10</span></div>
-              <div style="font-size:11px;color:var(--muted);margin-top:2px">กิโลเมตร</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px" data-i18n="nearby_km_full">กิโลเมตร</div>
             </div>
           </div>
           <div style="position:relative;padding:8px 0">
@@ -1027,14 +1027,14 @@ html, body { margin:0; padding:0; background:#0d0f12; }
               oninput="document.getElementById('radiusVal').textContent=this.value;var pct=(this.value-1)/29*100;this.style.setProperty('--fill',pct+'%')">
           </div>
           <div style="display:flex;justify-content:space-between;margin-top:6px">
-            <span style="font-size:11px;color:rgba(107,122,148,.5);font-family:'IBM Plex Mono',monospace">1 กม.</span>
-            <span style="font-size:11px;color:rgba(107,122,148,.5);font-family:'IBM Plex Mono',monospace">30 กม.</span>
+            <span style="font-size:11px;color:rgba(107,122,148,.5);font-family:'IBM Plex Mono',monospace">1 <span data-i18n="km_unit">กม.</span></span>
+            <span style="font-size:11px;color:rgba(107,122,148,.5);font-family:'IBM Plex Mono',monospace">30 <span data-i18n="km_unit">กม.</span></span>
           </div>
         </div>
 
         <input type="hidden" id="searchLat" value="13.7018">
         <input type="hidden" id="searchLng" value="100.6011">
-        <button class="btn btn-primary btn-block" onclick="searchNearby()" style="padding:14px;font-size:15px;border-radius:12px;box-shadow:0 0 24px rgba(0,229,160,.2)">🔍 ค้นหางานใกล้ฉัน</button>
+        <button class="btn btn-primary btn-block" onclick="searchNearby()" style="padding:14px;font-size:15px;border-radius:12px;box-shadow:0 0 24px rgba(0,229,160,.2)"><span data-i18n="nearby_search_btn">🔍 ค้นหางานใกล้ฉัน</span></button>
 
         <div id="nearbyResults" style="margin-top:24px"></div>
       </div>
@@ -1311,6 +1311,7 @@ const LANG = {
     google_login:'เข้าสู่ระบบด้วย Google', google_register:'สมัครด้วย Google',
     or_divider:'หรือ',
     nearby_title:'หางานใกล้บ้าน', nearby_sub:'ค้นหางานในรัศมีที่กำหนด',
+    nearby_your_loc:'ตำแหน่งของคุณ', nearby_radius_lbl:'รัศมีการค้นหา', nearby_radius_hint:'ยิ่งรัศมีกว้าง ยิ่งเจองานมาก', nearby_km_full:'กิโลเมตร', nearby_search_btn:'🔍 ค้นหางานใกล้ฉัน', nearby_map_loading:'กำลังโหลดแผนที่...',
     search_place_lbl:'ค้นหาสถานที่', radius_lbl:'รัศมี (กม.)',
     search_btn:'🔍 ค้นหา', apply_btn:'สมัครงานนี้', applied_ok:'✅ สมัครแล้ว',
     checkin_btn:'มาถึงแล้ว 📍', complete_btn:'งานเสร็จแล้ว ✅',
@@ -1401,6 +1402,7 @@ const LANG = {
     google_login:'Login with Google', google_register:'Register with Google',
     or_divider:'or',
     nearby_title:'Find Nearby Jobs', nearby_sub:'Search within a set radius',
+    nearby_your_loc:'Your Location', nearby_radius_lbl:'Search Radius', nearby_radius_hint:'Wider radius = more jobs', nearby_km_full:'km', nearby_search_btn:'🔍 Find Jobs Near Me', nearby_map_loading:'Loading map...',
     search_place_lbl:'Search location', radius_lbl:'Radius (km)',
     search_btn:'🔍 Search', apply_btn:'Apply Now', applied_ok:'✅ Applied',
     checkin_btn:'Arrived 📍', complete_btn:'Job Done ✅',
