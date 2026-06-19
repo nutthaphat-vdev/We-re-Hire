@@ -3511,15 +3511,15 @@ async function doCheckin(appId, btn) {
         lat: pos.coords.latitude,
         lng: pos.coords.longitude,
       });
-      btn.outerHTML = `<span style="font-size:12px;color:var(--muted)">⏳ รอ Employer ยืนยันเริ่มงาน</span>`;
+      btn.outerHTML = `<span style="font-size:12px;color:var(--muted)">${t('wait_start')}</span>`;
     } catch(e) {
       btn.disabled = false;
-      btn.innerHTML = 'มาถึงแล้ว 📍';
+      btn.innerHTML = t('checkin_btn');
       alert(e.message);
     }
   }, err => {
     btn.disabled = false;
-    btn.innerHTML = 'มาถึงแล้ว 📍';
+    btn.innerHTML = t('checkin_btn');
     alert('ไม่สามารถเข้าถึง GPS: ' + err.message);
   }, { enableHighAccuracy: true, timeout: 10000 });
 }
@@ -3529,10 +3529,10 @@ async function doComplete(appId, btn) {
   btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>';
   try {
     await api('POST', `/applications/${appId}/complete`);
-    btn.outerHTML = `<span style="font-size:12px;color:var(--muted)">⏳ รอ Employer ยืนยันจบงาน</span>`;
+    btn.outerHTML = `<span style="font-size:12px;color:var(--muted)">${t('wait_verify')}</span>`;
   } catch(e) {
     btn.disabled = false;
-    btn.innerHTML = '✅ งานเสร็จแล้ว';
+    btn.innerHTML = t('complete_btn');
     alert(e.message);
   }
 }
@@ -3542,10 +3542,10 @@ async function doStart(appId, btn) {
   btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>';
   try {
     await api('POST', `/applications/${appId}/start`);
-    btn.outerHTML = `<span class="badge badge-warn" style="font-size:10px">▶️ กำลังทำงาน</span>`;
+    btn.outerHTML = `<span class="badge badge-warn" style="font-size:10px">${t('cand_working')}</span>`;
   } catch(e) {
     btn.disabled = false;
-    btn.innerHTML = '▶️ เริ่มงาน';
+    btn.innerHTML = t('cand_start_work');
     alert(e.message);
   }
 }
@@ -3555,10 +3555,10 @@ async function doVerify(appId, btn) {
   btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>';
   try {
     await api('POST', `/applications/${appId}/verify`);
-    btn.outerHTML = `<span class="badge badge-green" style="font-size:10px">✅ สำเร็จแล้ว</span>`;
+    btn.outerHTML = `<span class="badge badge-green" style="font-size:10px">${t('cand_success')}</span>`;
   } catch(e) {
     btn.disabled = false;
-    btn.innerHTML = '✅ ยืนยันจบงาน';
+    btn.innerHTML = t('cand_verify_btn');
     alert(e.message);
   }
 }
