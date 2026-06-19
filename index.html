@@ -576,6 +576,15 @@ html, body { margin:0; padding:0; background:#0d0f12; }
 
 <div id="landingPage">
   <div id="landingBg"></div>
+  <!-- Lang toggle — fixed top-right on landing page -->
+  <div style="position:fixed;top:16px;right:16px;z-index:1000;display:flex;gap:2px;background:rgba(15,18,26,.7);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:3px 4px">
+    <button class="lang-btn" data-lang="th" onclick="setLang('th')"
+      style="background:none;border:none;cursor:pointer;font-size:20px;padding:2px 6px;border-radius:14px;opacity:.4;transition:opacity .2s,background .2s"
+      onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background='none'">🇹🇭</button>
+    <button class="lang-btn" data-lang="en" onclick="setLang('en')"
+      style="background:none;border:none;cursor:pointer;font-size:20px;padding:2px 6px;border-radius:14px;opacity:.4;transition:opacity .2s,background .2s"
+      onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background='none'">🇬🇧</button>
+  </div>
 
   <!-- ── HERO ─────────────────────────────────────────────── -->
   <div class="lp-hero">
@@ -1633,7 +1642,8 @@ function setLang(lang) {
   document.querySelectorAll('.lang-btn').forEach(b => {
     const active = b.dataset.lang === lang;
     b.classList.toggle('active', active);
-    b.style.color = active ? 'var(--accent)' : 'var(--muted)';
+    b.style.color  = active ? 'var(--accent)' : 'var(--muted)';
+    b.style.opacity = active ? '1' : '0.4';
   });
   // Re-render dynamic page content
   const activePage = document.querySelector('.page.active');
