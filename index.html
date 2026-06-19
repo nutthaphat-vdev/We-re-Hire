@@ -1190,7 +1190,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
       <div style="padding:32px">
         <div class="page-title">👥 จัดการผู้ใช้</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-          <button class="btn btn-secondary btn-sm" onclick="loadAdminUsers(null,null,1)">ทั้งหมด</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadAdminUsers(null,null,1)"><span data-i18n="notif_filter_all">ทั้งหมด</span></button>
           <button class="btn btn-secondary btn-sm" onclick="loadAdminUsers('worker',null,1)">Worker</button>
           <button class="btn btn-secondary btn-sm" onclick="loadAdminUsers('employer',null,1)">Employer</button>
           <button class="btn btn-secondary btn-sm" onclick="loadAdminUsers(null,'suspended',1)">Suspended</button>
@@ -1222,7 +1222,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
       <div style="padding:32px">
         <div class="page-title">💼 จัดการงาน</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-          <button class="btn btn-secondary btn-sm" onclick="loadAdminJobs(null,1)">ทั้งหมด</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadAdminJobs(null,1)"><span data-i18n="notif_filter_all">ทั้งหมด</span></button>
           <button class="btn btn-secondary btn-sm" onclick="loadAdminJobs('open',1)">Open</button>
           <button class="btn btn-secondary btn-sm" onclick="loadAdminJobs('closed',1)">Closed</button>
           <button class="btn btn-secondary btn-sm" onclick="loadAdminJobs('filled',1)">Filled</button>
@@ -1235,16 +1235,16 @@ html, body { margin:0; padding:0; background:#0d0f12; }
     <div class="page" id="page-notifications">
       <div style="padding:32px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <div class="page-title">การแจ้งเตือน</div>
+          <div class="page-title" data-i18n="nav_notifications">การแจ้งเตือน</div>
           <div style="display:flex;gap:8px;align-items:center">
             <button class="btn btn-secondary btn-sm" onclick="loadNotifications()" title="รีเฟรช" style="padding:6px 10px;font-size:16px;line-height:1">↻</button>
-            <button class="btn btn-secondary btn-sm" id="markAllBtn" onclick="markAllRead()">อ่านทั้งหมด</button>
+            <button class="btn btn-secondary btn-sm" id="markAllBtn" onclick="markAllRead()" data-i18n="notif_mark_all">อ่านทั้งหมด</button>
           </div>
         </div>
-        <div class="page-sub">การอัปเดตล่าสุด</div>
+        <div class="page-sub" data-i18n="notif_page_sub">การอัปเดตล่าสุด</div>
         <div style="display:flex;gap:0;background:var(--surface2);border-radius:8px;padding:3px;margin-bottom:20px;width:fit-content;border:1px solid var(--border)">
-          <button id="notifFilterAll" class="btn btn-sm" onclick="setNotifFilter('all')" style="border-radius:5px;background:var(--accent);color:#0d0f12;border:none;font-weight:600">ทั้งหมด</button>
-          <button id="notifFilterUnread" class="btn btn-sm" onclick="setNotifFilter('unread')" style="border-radius:5px;background:transparent;color:var(--muted);border:none">ยังไม่อ่าน <span id="notifUnreadCount" style="display:none;margin-left:4px;background:var(--danger);color:#fff;font-size:10px;padding:1px 5px;border-radius:8px"></span></button>
+          <button id="notifFilterAll" class="btn btn-sm" onclick="setNotifFilter('all')" style="border-radius:5px;background:var(--accent);color:#0d0f12;border:none;font-weight:600"><span data-i18n="notif_filter_all">ทั้งหมด</span></button>
+          <button id="notifFilterUnread" class="btn btn-sm" onclick="setNotifFilter('unread')" style="border-radius:5px;background:transparent;color:var(--muted);border:none"><span data-i18n="notif_filter_unread">ยังไม่อ่าน</span> <span id="notifUnreadCount" style="display:none;margin-left:4px;background:var(--danger);color:#fff;font-size:10px;padding:1px 5px;border-radius:8px"></span></button>
         </div>
         <div id="notificationsContent"></div>
       </div>
@@ -1338,6 +1338,7 @@ const LANG = {
     notif_see_detail:'ดูรายละเอียด →',
     notif_empty_all:'ยังไม่มีการแจ้งเตือน', notif_empty_unread:'ไม่มีการแจ้งเตือนที่ยังไม่อ่าน',
     notif_today:'วันนี้', notif_yesterday:'เมื่อวาน',
+    notif_page_sub:'การอัปเดตล่าสุด', notif_filter_all:'ทั้งหมด', notif_filter_unread:'ยังไม่อ่าน', notif_mark_all:'อ่านทั้งหมด',
     // My Jobs (Employer)
     jobs_empty:'ยังไม่มีงานที่โพสต์', jobs_post_first:'โพสต์งานแรก',
     jobs_slots:'ที่ว่าง:', jobs_posted:'โพสต์:',
@@ -1427,6 +1428,7 @@ const LANG = {
     notif_see_detail:'View details →',
     notif_empty_all:'No notifications yet', notif_empty_unread:'No unread notifications',
     notif_today:'Today', notif_yesterday:'Yesterday',
+    notif_page_sub:'Latest Updates', notif_filter_all:'All', notif_filter_unread:'Unread', notif_mark_all:'Mark all read',
     // My Jobs
     jobs_empty:'No jobs posted yet', jobs_post_first:'Post first job',
     jobs_slots:'Slots:', jobs_posted:'Posted:',
