@@ -952,10 +952,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
         <span>จัดการงาน</span>
       </div>
     </nav>
-    <div style="padding:8px 20px;display:flex;gap:8px;">
-      <button class="lang-btn" data-lang="th" onclick="setLang('th')" style="background:none;border:none;cursor:pointer;font-size:13px;font-weight:600;padding:4px 0;color:var(--accent)">TH</button>
-      <button class="lang-btn" data-lang="en" onclick="setLang('en')" style="background:none;border:none;cursor:pointer;font-size:13px;font-weight:600;padding:4px 0;color:var(--muted)">EN</button>
-    </div>
+
 
   </div>
 
@@ -963,6 +960,11 @@ html, body { margin:0; padding:0; background:#0d0f12; }
     <!-- TOPBAR -->
     <div id="topbar" style="position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:10px 24px;background:rgba(13,15,18,.88);backdrop-filter:blur(10px);border-bottom:1px solid rgba(42,48,64,.55)">
       <div id="sidebarRole"></div>
+      <div style="display:flex;gap:2px;padding:3px 4px;background:rgba(255,255,255,.04);border:1px solid rgba(42,48,64,.7);border-radius:8px;">
+        <button class="lang-btn" data-lang="th" onclick="setLang('th')" style="background:none;border:none;cursor:pointer;font-size:12px;font-weight:700;padding:3px 10px;border-radius:5px;color:var(--accent);transition:all .15s">TH</button>
+        <button class="lang-btn" data-lang="en" onclick="setLang('en')" style="background:none;border:none;cursor:pointer;font-size:12px;font-weight:700;padding:3px 10px;border-radius:5px;color:var(--muted);transition:all .15s">EN</button>
+      </div>
+      <div style="width:20px"></div>
       <button class="btn btn-secondary btn-sm" onclick="doLogout()" style="font-size:12px;padding:5px 14px;gap:6px;color:var(--danger);border-color:rgba(239,68,68,.3)">
         <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
         <span data-i18n="nav_logout">ออก</span>
