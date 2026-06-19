@@ -1093,7 +1093,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
             <div class="form-group">
               <label data-i18n="postjob_start_date">วันเริ่มงาน</label>
               <input type="date" id="jobStartDate" oninput="document.getElementById('jobAutoCloseHint').style.display=this.value?'block':'none'">
-              <div id="jobAutoCloseHint" style="display:none;font-size:11px;color:var(--warn);margin-top:4px">⏰ งานจะปิดอัตโนมัติถ้าไม่มีผู้ถูกเลือกภายใน 48 ชม. ก่อนวันเริ่มงาน</div>
+              <div id="jobAutoCloseHint" style="display:none;font-size:11px;color:var(--warn);margin-top:4px" data-i18n="postjob_autoclose_hint">⏰ งานจะปิดอัตโนมัติถ้าไม่มีผู้ถูกเลือกภายใน 48 ชม. ก่อนวันเริ่มงาน</div>
             </div>
           </div>
           <div class="form-row">
@@ -1170,8 +1170,8 @@ html, body { margin:0; padding:0; background:#0d0f12; }
     <!-- MY JOBS -->
     <div class="page" id="page-myjobs">
       <div style="padding:32px">
-        <div class="page-title">งานของฉัน</div>
-        <div class="page-sub">จัดการงานที่โพสต์ไว้</div>
+        <div class="page-title" data-i18n="myjobs_title">งานของฉัน</div>
+        <div class="page-sub" data-i18n="myjobs_sub">จัดการงานที่โพสต์ไว้</div>
         <div id="myJobsContent"></div>
       </div>
     </div>
@@ -1347,6 +1347,12 @@ const LANG = {
     postjob_start_date:'วันเริ่มงาน', postjob_start_time:'เริ่มงานกี่โมง', postjob_end_time:'เลิกงานกี่โมง',
     postjob_ot_check:'มีงาน OT (คิดรายชั่วโมง)', postjob_ot_rate:'ค่า OT (฿/ชม.)',
     postjob_skills:'ทักษะที่ต้องการ', postjob_map_lbl:'ที่ตั้งงาน', postjob_btn:'📋 โพสต์งาน',
+    myjobs_title:'งานของฉัน', myjobs_sub:'จัดการงานที่โพสต์ไว้',
+    postjob_autoclose_hint:'⏰ งานจะปิดอัตโนมัติถ้าไม่มีผู้ถูกเลือกภายใน 48 ชม. ก่อนวันเริ่มงาน',
+    jobs_auto_closed_lbl:'ปิดอัตโนมัติ', jobs_close_confirm:'ปิดงานนี้?',
+    jobs_today:'jobs วันนี้', jobs_filled_lbl:'filled', jobs_closed_lbl:'closed',
+    job_status_open:'open', job_status_closed:'closed', job_status_filled:'filled', job_status_expired:'expired', job_status_draft:'draft',
+    acr_no_applicants:'ไม่มีผู้สมัคร', acr_no_hire:'ไม่ได้เลือกผู้สมัคร', acr_manual:'ปิดเอง',
     jobs_empty:'ยังไม่มีงานที่โพสต์', jobs_post_first:'โพสต์งานแรก',
     jobs_slots:'ที่ว่าง:', jobs_posted:'โพสต์:',
     jobs_view_cands:'👥 ดูผู้สมัคร', jobs_close:'ปิดงาน', jobs_reopen:'เปิดงานใหม่',
@@ -1460,6 +1466,12 @@ const LANG = {
     postjob_start_date:'Start Date', postjob_start_time:'Start Time', postjob_end_time:'End Time',
     postjob_ot_check:'Has OT (per hour)', postjob_ot_rate:'OT Rate (฿/hr)',
     postjob_skills:'Required Skills', postjob_map_lbl:'Job Location', postjob_btn:'📋 Post Job',
+    myjobs_title:'My Jobs', myjobs_sub:'Manage your posted jobs',
+    postjob_autoclose_hint:'⏰ Job auto-closes if no one is hired 48hrs before start date',
+    jobs_auto_closed_lbl:'Auto-closed', jobs_close_confirm:'Close this job?',
+    jobs_today:'jobs today', jobs_filled_lbl:'filled', jobs_closed_lbl:'closed',
+    job_status_open:'Open', job_status_closed:'Closed', job_status_filled:'Filled', job_status_expired:'Expired', job_status_draft:'Draft',
+    acr_no_applicants:'No applicants', acr_no_hire:'No one hired', acr_manual:'Manually closed',
     jobs_empty:'No jobs posted yet', jobs_post_first:'Post first job',
     jobs_slots:'Slots:', jobs_posted:'Posted:',
     jobs_view_cands:'👥 View applicants', jobs_close:'Close job', jobs_reopen:'Reopen job',
@@ -1902,7 +1914,7 @@ async function loadAdminStats() {
         <div class="stat" style="border-left:3px solid var(--accent2)">
           <div class="stat-num">${d.total_employers}</div>
           <div class="stat-label">Employers</div>
-          <div style="font-size:11px;color:var(--accent2);margin-top:4px">${d.jobs_posted_today||0} jobs วันนี้</div>
+          <div style="font-size:11px;color:var(--accent2);margin-top:4px">${d.jobs_posted_today||0} ${t('jobs_today')}</div>
         </div>
         <div class="stat" style="border-left:3px solid var(--accent)">
           <div class="stat-num">${d.total_hired_alltime||0}</div>
@@ -1930,7 +1942,7 @@ async function loadAdminStats() {
         <div class="card" style="padding:16px;text-align:center">
           <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:8px;letter-spacing:.08em">JOBS IN MARKET</div>
           <div style="font-size:38px;font-weight:800;color:var(--accent);line-height:1">${d.jobs_open}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:6px">${d.jobs_filled} filled · ${d.jobs_closed} closed</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">${d.jobs_filled} ${t('jobs_filled_lbl')} · ${d.jobs_closed} ${t('jobs_closed_lbl')}</div>
         </div>
       </div>
 
@@ -3000,7 +3012,7 @@ function autoCloseCountdown(autoCloseAt) {
   const hours = Math.floor(diff / 3600000);
   return `<span class="badge badge-warn" style="margin-left:6px">⏳ ปิดใน ${hours} ชม.</span>`;
 }
-const _autoCloseReasonLabel = { no_applicants: 'ไม่มีผู้สมัคร', no_hire: 'ไม่ได้เลือกผู้สมัคร', manual: 'ปิดเอง' };
+const _autoCloseReasonLabel = () => ({ no_applicants: t('acr_no_applicants'), no_hire: t('acr_no_hire'), manual: t('acr_manual') });
 
 async function loadMyJobs() {
   const el = document.getElementById('myJobsContent');
@@ -3021,8 +3033,8 @@ async function loadMyJobs() {
             <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(j.location_name||'-')} • ฿${j.daily_wage_rate}${t('per_day')} • ${j.duration_days} ${t('days_unit')}</div>
           </div>
           <div style="display:flex;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;gap:4px">
-            <span class="badge ${sColor[j.status]||'badge-gray'}">${esc(j.status)}</span>
-            ${j.auto_closed_reason ? `<span class="badge badge-gray">ปิดอัตโนมัติ: ${_autoCloseReasonLabel[j.auto_closed_reason]||j.auto_closed_reason}</span>` : ''}
+            <span class="badge ${sColor[j.status]||'badge-gray'}">${t('job_status_'+j.status)||esc(j.status)}</span>
+            ${j.auto_closed_reason ? `<span class="badge badge-gray">${t('jobs_auto_closed_lbl')}: ${_autoCloseReasonLabel()[j.auto_closed_reason]||j.auto_closed_reason}</span>` : ''}
             ${j.status==='open' && j.auto_close_at ? autoCloseCountdown(j.auto_close_at) : ''}
           </div>
         </div>
@@ -3042,7 +3054,7 @@ async function loadMyJobs() {
 }
 
 async function closeJob(jobId) {
-  if (!confirm('ปิดงานนี้?')) return;
+  if (!confirm(t('jobs_close_confirm'))) return;
   try {
     await api('PATCH', `/jobs/${jobId}/status`, { status:'closed' });
     loadMyJobs();
