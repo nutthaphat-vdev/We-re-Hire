@@ -1052,8 +1052,8 @@ html, body { margin:0; padding:0; background:#0d0f12; }
     <!-- WORKER PROFILE -->
     <div class="page" id="page-workerprofile">
       <div style="padding:32px">
-        <div class="page-title">โปรไฟล์ของฉัน</div>
-        <div class="page-sub">ข้อมูลส่วนตัวและทักษะ</div>
+        <div class="page-title" data-i18n="profile_title">โปรไฟล์ของฉัน</div>
+        <div class="page-sub" data-i18n="profile_sub">ข้อมูลส่วนตัวและทักษะ</div>
         <div id="alertWorkerProfile"></div>
         <div id="workerProfileContent"></div>
       </div>
@@ -1356,6 +1356,16 @@ const LANG = {
     // Worker Profile
     profile_exp:'ประสบการณ์', profile_exp_unit:'ปี',
     profile_rate:'ค่าแรงที่คาด', profile_skills_lbl:'ทักษะ', profile_no_skills:'ยังไม่มีทักษะ',
+    profile_title:'โปรไฟล์ของฉัน', profile_sub:'ข้อมูลส่วนตัวและทักษะ',
+    profile_status_lbl:'สถานะ', profile_rate_day:'ค่าแรง/วัน',
+    profile_avail:'🟢 ว่างงาน', profile_unavail:'🔴 ไม่ว่าง', profile_no_loc:'ไม่ระบุสถานที่',
+    profile_verify_btn:'🔍 ขอ Verify ตัวตน',
+    profile_edit_header:'แก้ไขโปรไฟล์',
+    profile_cat_lbl:'หมวดงาน', profile_jobtitle_lbl:'ตำแหน่งงาน',
+    profile_exp_lbl:'ประสบการณ์ (ปี)', profile_rate_lbl:'ค่าแรงที่คาด (฿/วัน)',
+    profile_loc_lbl:'ชื่อสถานที่', profile_nat_th:'🇹🇭 ไทย', profile_nat_foreign:'🌏 ต่างด้าว',
+    kyc_title:'🪪 ส่งเอกสาร KYC', kyc_face_lbl:'รูปถ่ายหน้าตรง (JPG/PNG สูงสุด 5MB)',
+    kyc_id_lbl:'รูปบัตรประชาชน (JPG/PNG สูงสุด 5MB)', kyc_submit_btn:'📤 ส่งเอกสาร KYC',
     profile_edit_btn:'✏️ แก้ไขโปรไฟล์', profile_save:'บันทึก', profile_cancel:'ยกเลิก',
     profile_create_btn:'✅ สร้างโปรไฟล์', profile_nationality:'สัญชาติ',
     profile_nat_thai:'🇹🇭 ไทย', profile_nat_foreign:'🌏 ต่างด้าว',
@@ -1453,6 +1463,16 @@ const LANG = {
     // Worker Profile
     profile_exp:'Experience', profile_exp_unit:'yr',
     profile_rate:'Expected rate', profile_skills_lbl:'Skills', profile_no_skills:'No skills added',
+    profile_title:'My Profile', profile_sub:'Personal info and skills',
+    profile_status_lbl:'Status', profile_rate_day:'Daily Rate',
+    profile_avail:'🟢 Available', profile_unavail:'🔴 Unavailable', profile_no_loc:'No location set',
+    profile_verify_btn:'🔍 Verify Identity',
+    profile_edit_header:'Edit Profile',
+    profile_cat_lbl:'Job Category', profile_jobtitle_lbl:'Job Title',
+    profile_exp_lbl:'Experience (years)', profile_rate_lbl:'Expected Rate (฿/day)',
+    profile_loc_lbl:'Location Name', profile_nat_th:'🇹🇭 Thai', profile_nat_foreign:'🌏 Foreign',
+    kyc_title:'🪪 Submit KYC Documents', kyc_face_lbl:'Profile photo (JPG/PNG max 5MB)',
+    kyc_id_lbl:'ID card photo (JPG/PNG max 5MB)', kyc_submit_btn:'📤 Submit KYC',
     profile_edit_btn:'✏️ Edit profile', profile_save:'Save', profile_cancel:'Cancel',
     profile_create_btn:'✅ Create profile', profile_nationality:'Nationality',
     profile_nat_thai:'🇹🇭 Thai', profile_nat_foreign:'🌏 Foreign',
@@ -2350,8 +2370,8 @@ async function loadWorkerProfile() {
           ? '<div style="margin-top:6px;font-size:12px;color:var(--danger)">❌ Work permit หมดอายุแล้ว กรุณาอัปเดตเอกสาร</div>' : ''}
       </div>` : '';
     const kycBadge = p.background_check_status === 'approved' ? '<span class="badge badge-green" style="font-size:10px">✓ KYC Verified</span>' : '';
-    const availStr = p.is_available !== false ? '🟢 ว่างงาน' : '🔴 ไม่ว่าง';
-    const skillsHtml = p.skills.length ? p.skills.map(s=>'<span class="tag tag-match">' + esc(s) + '</span>').join('') : '<span style="font-size:13px;color:var(--muted)">ยังไม่มีทักษะ</span>';
+    const availStr = p.is_available !== false ? t('profile_avail') : t('profile_unavail');
+    const skillsHtml = p.skills.length ? p.skills.map(s=>'<span class="tag tag-match">' + esc(s) + '</span>').join('') : `<span style="font-size:13px;color:var(--muted)">${t('profile_no_skills')}</span>`;
     const avatarInner = p.profile_photo_url
       ? '<img src="' + esc(p.profile_photo_url) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display=\'none\'">'
       : p.full_name.charAt(0).toUpperCase();
@@ -2365,62 +2385,62 @@ async function loadWorkerProfile() {
               <div style="font-size:18px;font-weight:700">${esc(p.full_name)}</div>
               ${kycBadge}
             </div>
-            <div style="font-size:13px;color:var(--muted);margin-bottom:8px">📍 ${esc(p.location_name||'ไม่ระบุสถานที่')}</div>
+            <div style="font-size:13px;color:var(--muted);margin-bottom:8px">📍 ${esc(p.location_name||t('profile_no_loc'))}</div>
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
               <span class="badge ${bgColor[p.background_check_status]||'badge-gray'}">${p.background_check_status}</span>
               ${p.background_check_status !== 'verified' ? `
-              <button class="btn btn-secondary btn-sm" onclick="requestBackgroundCheck(this)" style="font-size:11px">🔍 ขอ Verify ตัวตน</button>` : ''}
+              <button class="btn btn-secondary btn-sm" onclick="requestBackgroundCheck(this)" style="font-size:11px">${t('profile_verify_btn')}</button>` : ''}
             </div>
             <div id="workerReviewSummary" style="margin-top:8px"></div>
           </div>
-          <button class="btn btn-secondary btn-sm" onclick="showEditProfile()" style="flex-shrink:0">✏️ แก้ไข</button>
+          <button class="btn btn-secondary btn-sm" onclick="showEditProfile()" style="flex-shrink:0">${t('profile_edit_btn')}</button>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center">
-            <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:4px;text-transform:uppercase">ประสบการณ์</div>
-            <div style="font-weight:700;font-size:16px">${p.experience_years} ปี</div>
+            <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:4px;text-transform:uppercase">${t('profile_exp')}</div>
+            <div style="font-weight:700;font-size:16px">${p.experience_years} ${t('profile_exp_unit')}</div>
           </div>
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center">
-            <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:4px;text-transform:uppercase">ค่าแรง/วัน</div>
+            <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:4px;text-transform:uppercase">${t('profile_rate_day')}</div>
             <div style="font-weight:700;font-size:16px;color:var(--accent)">฿${p.daily_rate_expected||'-'}</div>
           </div>
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center">
-            <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:4px;text-transform:uppercase">สถานะ</div>
+            <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:4px;text-transform:uppercase">${t('profile_status_lbl')}</div>
             <div style="font-weight:700;font-size:13px">${availStr}</div>
           </div>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.05em">ทักษะ</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.05em">${t('profile_skills_lbl')}</div>
         <div class="tags" style="flex-wrap:wrap;gap:6px">${skillsHtml}</div>
         ${wpSection}
         ${p.background_check_status === 'pending' ? `
         <div class="divider"></div>
         <div style="background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.25);border-radius:10px;padding:16px">
-          <div style="font-weight:600;margin-bottom:12px;color:var(--warn)">🪪 ส่งเอกสาร KYC</div>
+          <div style="font-weight:600;margin-bottom:12px;color:var(--warn)">${t('kyc_title')}</div>
           <div class="form-group">
-            <label>รูปถ่ายหน้าตรง (JPG/PNG สูงสุด 5MB)</label>
+            <label>${t('kyc_face_lbl')}</label>
             <input type="file" id="kycFacePhoto" accept="image/jpeg,image/png,image/webp" onchange="previewKYCImg(this,'kycFacePreview')" style="font-size:13px">
             <img id="kycFacePreview" style="display:none;max-width:120px;margin-top:8px;border-radius:6px;border:1px solid var(--border)">
           </div>
           <div class="form-group">
-            <label>รูปบัตรประชาชน (JPG/PNG สูงสุด 5MB)</label>
+            <label>${t('kyc_id_lbl')}</label>
             <input type="file" id="kycIDPhoto" accept="image/jpeg,image/png,image/webp" onchange="previewKYCImg(this,'kycIDPreview')" style="font-size:13px">
             <img id="kycIDPreview" style="display:none;max-width:120px;margin-top:8px;border-radius:6px;border:1px solid var(--border)">
           </div>
-          <button class="btn btn-primary btn-sm" onclick="submitKYC()" id="kycSubmitBtn">📤 ส่งเอกสาร KYC</button>
+          <button class="btn btn-primary btn-sm" onclick="submitKYC()" id="kycSubmitBtn">${t('kyc_submit_btn')}</button>
         </div>` : ''}
       </div>
       <div id="editProfileForm" style="display:none">
         <div class="card">
-          <div style="font-weight:600;margin-bottom:16px">แก้ไขโปรไฟล์</div>
+          <div style="font-weight:600;margin-bottom:16px">${t('profile_edit_header')}</div>
           <div class="form-row">
             <div class="form-group">
-              <label>หมวดงาน</label>
+              <label>${t('profile_cat_lbl')}</label>
               <select id="editCategory" onchange="loadJobTitles('editCategory','editSkillSelect')">
                 <option value="">— เลือกหมวดงาน —</option>
               </select>
             </div>
             <div class="form-group">
-              <label>ตำแหน่งงาน</label>
+              <label>${t('profile_jobtitle_lbl')}</label>
               <select id="editSkillSelect" onchange="syncSkillCode('editSkillSelect','editSkills')">
                 <option value="${p.skills[0]||''}">${p.skills[0]||'— เลือกตำแหน่ง —'}</option>
               </select>
@@ -2428,20 +2448,20 @@ async function loadWorkerProfile() {
           </div>
           <input type="hidden" id="editSkills" value="${p.skills.join(',')}">
           <div class="form-row">
-            <div class="form-group"><label>ประสบการณ์ (ปี)</label><input type="number" id="editExp" value="${p.experience_years}"></div>
-            <div class="form-group"><label>ค่าแรงที่คาด (฿/วัน)</label><input type="number" id="editRate" value="${p.daily_rate_expected||''}"></div>
+            <div class="form-group"><label>${t('profile_exp_lbl')}</label><input type="number" id="editExp" value="${p.experience_years}"></div>
+            <div class="form-group"><label>${t('profile_rate_lbl')}</label><input type="number" id="editRate" value="${p.daily_rate_expected||''}"></div>
           </div>
-          <div class="form-group"><label>ชื่อสถานที่</label><input type="text" id="editLocation" value="${p.location_name||''}"></div>
+          <div class="form-group"><label>${t('profile_loc_lbl')}</label><input type="text" id="editLocation" value="${p.location_name||''}"></div>
           <div class="form-group">
-            <label>สัญชาติ</label>
+            <label>${t('profile_nationality')}</label>
             <select id="editNationality">
-              <option value="thai" ${p.nationality_type !== 'foreign' ? 'selected' : ''}>🇹🇭 ไทย</option>
-              <option value="foreign" ${p.nationality_type === 'foreign' ? 'selected' : ''}>🌏 ต่างด้าว</option>
+              <option value="thai" ${p.nationality_type !== 'foreign' ? 'selected' : ''}>${t('profile_nat_th')}</option>
+              <option value="foreign" ${p.nationality_type === 'foreign' ? 'selected' : ''}>${t('profile_nat_foreign')}</option>
             </select>
           </div>
           <div id="alertEditProfile"></div>
-          <button class="btn btn-primary" onclick="doUpdateProfile()">บันทึก</button>
-          <button class="btn btn-secondary" onclick="document.getElementById('editProfileForm').style.display='none'" style="margin-left:8px">ยกเลิก</button>
+          <button class="btn btn-primary" onclick="doUpdateProfile()">${t('profile_save')}</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('editProfileForm').style.display='none'" style="margin-left:8px">${t('profile_cancel')}</button>
         </div>
       </div>`;
     // โหลด review summary async
@@ -3418,7 +3438,7 @@ async function requestBackgroundCheck(btn) {
     btn.parentElement.innerHTML = '<span class="badge badge-warn">⏳ รอการอนุมัติ</span>';
   } catch(e) {
     btn.disabled = false;
-    btn.innerHTML = '🔍 ขอ Verify ตัวตน';
+    btn.innerHTML = t('profile_verify_btn');
     alert(e.message);
   }
 }
