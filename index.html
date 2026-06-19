@@ -1364,6 +1364,33 @@ const LANG = {
     nav_my_reviews:'รีวิวของฉัน', nav_my_profile:'โปรไฟล์ของฉัน',
     nav_post_job:'โพสต์งานใหม่', nav_my_jobs:'งานของฉัน',
     nav_logout:'ออก',
+    // Units
+    per_day:'/วัน', km_unit:'กม.', days_unit:'วัน', people_unit:'คน', unit_total:'รายการทั้งหมด', unit_reviews:'รีวิว', unit_jobs_total:'งานทั้งหมด',
+    // Dashboard worker
+    hello_prefix:'สวัสดี,',
+    kyc_badge_pending:'⏳ KYC รอตรวจ', kyc_badge_unverified:'ยังไม่ยืนยัน',
+    stat_pending_lbl:'รอผล', stat_hired_lbl:'งานที่ได้รับ', stat_done_lbl:'งานสำเร็จ',
+    step_hired:'ได้งาน', step_checkin:'เช็คอิน', step_working:'กำลังทำงาน', step_done:'เสร็จงาน',
+    active_jobs_lbl:'งานที่กำลังดำเนินการ', see_all:'ดูทั้งหมด →',
+    kyc_nudge_title:'ยังไม่ยืนยันตัวตน',
+    kyc_nudge_body:'Upload บัตรประชาชน เพื่อรับ KYC Verified badge และเพิ่มโอกาสได้รับการจ้าง',
+    card_search_title:'ค้นหางาน', card_search_sub:'จับคู่งานใกล้บ้านด้วย AI',
+    card_apps_title:'ประวัติสมัคร',
+    // Dashboard employer
+    stat_open_jobs:'งานเปิดรับอยู่', stat_total_hired:'จ้างสำเร็จทั้งหมด', stat_filled_jobs:'งานที่รับครบแล้ว',
+    open_jobs_section:'งานที่เปิดรับอยู่', manage_all_jobs:'จัดการงานทั้งหมด →',
+    card_post_sub:'ระบบจับคู่อัตโนมัติทันที', card_manage_title:'จัดการงาน',
+    emp_verify_pending:'รอ Admin Verify', emp_verify_note:'ทีมงานจะตรวจสอบภายใน 1-2 วันทำการ',
+    emp_not_verified:'ยังไม่ verified', emp_verify_cta:'Verify บริษัทเพื่อเพิ่มความน่าเชื่อถือ', emp_verify_req_btn:'ขอ Verify →',
+    // Nearby
+    err_no_location:'กรุณาระบุตำแหน่งก่อนค้นหา', searching_lbl:'กำลังค้นหา...',
+    no_jobs_found:'ไม่พบงานในรัศมีที่กำหนด', no_jobs_tip:'ลองเพิ่มรัศมีหรือตรวจสอบ skills ใน profile',
+    found_prefix:'พบ', found_suffix:'งาน',
+    slots_pre:'เหลือ ', slots_suf:' ที่',
+    // My Apps
+    no_apps:'ยังไม่มีประวัติการสมัคร', applied_on:'สมัคร:',
+    section_active:'กำลังดำเนินการ', section_history:'ประวัติ',
+    disputed_title:'อยู่ระหว่างตรวจสอบ', disputed_note:'ทีมงานจะตรวจสอบและติดต่อกลับภายใน 1-2 วันทำการ',
   },
   en: {
     login_tab:'Login', register_tab:'Register',
@@ -1426,6 +1453,33 @@ const LANG = {
     nav_my_reviews:'My Reviews', nav_my_profile:'My Profile',
     nav_post_job:'Post Job', nav_my_jobs:'My Jobs',
     nav_logout:'Logout',
+    // Units
+    per_day:'/day', km_unit:'km', days_unit:'days', people_unit:'workers', unit_total:'total', unit_reviews:'reviews', unit_jobs_total:'jobs total',
+    // Dashboard worker
+    hello_prefix:'Hello,',
+    kyc_badge_pending:'⏳ KYC Pending', kyc_badge_unverified:'Unverified',
+    stat_pending_lbl:'Pending', stat_hired_lbl:'Active Jobs', stat_done_lbl:'Completed',
+    step_hired:'Hired', step_checkin:'Check-in', step_working:'Working', step_done:'Done',
+    active_jobs_lbl:'Active Jobs', see_all:'See all →',
+    kyc_nudge_title:'Identity not verified',
+    kyc_nudge_body:'Upload your ID card to get KYC Verified badge and increase hiring chances',
+    card_search_title:'Find Jobs', card_search_sub:'AI-powered nearby matching',
+    card_apps_title:'Applications',
+    // Dashboard employer
+    stat_open_jobs:'Open Jobs', stat_total_hired:'Total Hired', stat_filled_jobs:'Filled Jobs',
+    open_jobs_section:'Open Jobs', manage_all_jobs:'Manage all jobs →',
+    card_post_sub:'Instant AI matching', card_manage_title:'Manage Jobs',
+    emp_verify_pending:'Pending Verification', emp_verify_note:'Our team will verify within 1-2 business days',
+    emp_not_verified:'Not Verified', emp_verify_cta:'Verify your company to build trust', emp_verify_req_btn:'Request Verify →',
+    // Nearby
+    err_no_location:'Please set your location first', searching_lbl:'Searching...',
+    no_jobs_found:'No jobs found in this area', no_jobs_tip:'Try increasing the radius or check your profile skills',
+    found_prefix:'Found', found_suffix:'jobs',
+    slots_pre:'', slots_suf:' left',
+    // My Apps
+    no_apps:'No applications yet', applied_on:'Applied:',
+    section_active:'Active', section_history:'History',
+    disputed_title:'Under Review', disputed_note:'Our team will review and contact you within 1-2 business days',
   },
 };
 let _lang = localStorage.getItem('wh_lang') || 'th';
@@ -1809,7 +1863,7 @@ async function loadAdminStats() {
         </div>
         <div class="stat" style="border-left:3px solid var(--accent)">
           <div class="stat-num">${d.total_completed||0}</div>
-          <div class="stat-label">งานสำเร็จ</div>
+          <div class="stat-label">${t('stat_done_lbl')}</div>
           <div style="font-size:11px;color:var(--accent);margin-top:4px">completion ${compRate}</div>
         </div>
       </div>
@@ -2039,8 +2093,8 @@ async function loadDashboard() {
     const kycBadge = kycStatus === 'verified'
       ? '<span class="badge badge-green" style="font-size:10px">✓ KYC Verified</span>'
       : kycStatus === 'pending'
-        ? '<span class="badge badge-warn" style="font-size:10px">⏳ KYC รอตรวจ</span>'
-        : '<span class="badge badge-gray" style="font-size:10px">ยังไม่ยืนยัน</span>';
+        ? `<span class="badge badge-warn" style="font-size:10px">${t('kyc_badge_pending')}</span>`
+        : `<span class="badge badge-gray" style="font-size:10px">${t('kyc_badge_unverified')}</span>`;
     const stars = profile?.review_summary?.avg_score
       ? '⭐'.repeat(Math.round(profile.review_summary.avg_score)) + ` ${profile.review_summary.avg_score.toFixed(1)}`
       : null;
@@ -2059,7 +2113,7 @@ async function loadDashboard() {
       <div style="display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px">
         <div class="avatar" style="width:52px;height:52px;font-size:18px">${esc(dashInitials(name))}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:17px;font-weight:700">สวัสดี, ${esc(name)} 👋</div>
+          <div style="font-size:17px;font-weight:700">${t('hello_prefix')} ${esc(name)} 👋</div>
           <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
             ${kycBadge}
             ${stars ? `<span class="badge badge-blue" style="font-size:10px">${stars}</span>` : ''}
@@ -2078,26 +2132,26 @@ async function loadDashboard() {
           <div class="stat-num">${pending}</div>
           <span style="font-size:18px">⏳</span>
         </div>
-        <div class="stat-label">รอผล</div>
+        <div class="stat-label">${t('stat_pending_lbl')}</div>
       </div>
       <div class="stat" style="border-left:3px solid var(--accent2)">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div class="stat-num">${hired + working}</div>
           <span style="font-size:18px">💼</span>
         </div>
-        <div class="stat-label">งานที่ได้รับ</div>
+        <div class="stat-label">${t('stat_hired_lbl')}</div>
       </div>
       <div class="stat" style="border-left:3px solid var(--accent)">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div class="stat-num">${done}</div>
           <span style="font-size:18px">✅</span>
         </div>
-        <div class="stat-label">งานสำเร็จ</div>
+        <div class="stat-label">${t('stat_done_lbl')}</div>
       </div>`;
 
     // active hired jobs — progress stepper สำหรับงานล่าสุด
     const activeJobs = (apps||[]).filter(a => ['hired','checked_in','working','completed'].includes(a.status));
-    const STEP_LABELS = ['ได้งาน','เช็คอิน','กำลังทำงาน','เสร็จงาน'];
+    const STEP_LABELS = [t('step_hired'),t('step_checkin'),t('step_working'),t('step_done')];
     const STEP_INDEX  = { hired:0, checked_in:1, working:2, completed:3 };
     const stepperHtml = (a) => {
       const cur = STEP_INDEX[a.status] ?? 0;
@@ -2110,20 +2164,20 @@ async function loadDashboard() {
     };
     const activeHtml = activeJobs.length ? `
       <div class="card" style="border-color:rgba(0,229,160,.3)">
-        <div style="font-size:11px;color:var(--accent);font-family:'IBM Plex Mono',monospace;margin-bottom:12px;letter-spacing:.06em">🟢 งานที่กำลังดำเนินการ (${activeJobs.length})</div>
+        <div style="font-size:11px;color:var(--accent);font-family:'IBM Plex Mono',monospace;margin-bottom:12px;letter-spacing:.06em">🟢 ${t('active_jobs_lbl')} (${activeJobs.length})</div>
         ${activeJobs.slice(0,2).map(a => `
           <div style="${activeJobs.length>1?'border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:14px':''}">
             <div style="font-weight:700;font-size:14px">${esc(a.job.title)}</div>
-            <div style="font-size:12px;color:var(--muted);margin:2px 0 12px">${esc(a.job.location_name||'')} · ฿${a.job.daily_wage_rate}/วัน</div>
+            <div style="font-size:12px;color:var(--muted);margin:2px 0 12px">${esc(a.job.location_name||'')} · ฿${a.job.daily_wage_rate}${t('per_day')}</div>
             <div style="display:flex;align-items:flex-start">${stepperHtml(a)}</div>
           </div>`).join('')}
-        <button class="btn btn-secondary btn-sm" onclick="showPage('myapps')" style="margin-top:4px">ดูทั้งหมด →</button>
+        <button class="btn btn-secondary btn-sm" onclick="showPage('myapps')" style="margin-top:4px">${t('see_all')}</button>
       </div>` : '';
 
     // KYC nudge
     const kycNudge = kycStatus === 'none' ? `
       <div class="alert alert-info" style="cursor:pointer" onclick="showPage('workerprofile')">
-        🪪 <strong>ยังไม่ยืนยันตัวตน</strong> — Upload บัตรประชาชน เพื่อรับ KYC Verified badge และเพิ่มโอกาสได้รับการจ้าง
+        🪪 <strong>${t('kyc_nudge_title')}</strong> — ${t('kyc_nudge_body')}
       </div>` : '';
 
     contentEl.innerHTML = `
@@ -2132,13 +2186,13 @@ async function loadDashboard() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="card" style="cursor:pointer;border-color:rgba(0,229,160,.25);padding:20px" onclick="showPage('nearby')">
           <div style="font-size:28px;margin-bottom:8px">🔍</div>
-          <div style="font-weight:700;font-size:15px">ค้นหางาน</div>
-          <div style="color:var(--muted);font-size:12px;margin-top:4px">จับคู่งานใกล้บ้านด้วย AI</div>
+          <div style="font-weight:700;font-size:15px">${t('card_search_title')}</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:4px">${t('card_search_sub')}</div>
         </div>
         <div class="card" style="cursor:pointer;padding:20px" onclick="showPage('myapps')">
           <div style="font-size:28px;margin-bottom:8px">📋</div>
-          <div style="font-weight:700;font-size:15px">ประวัติสมัคร</div>
-          <div style="color:var(--muted);font-size:12px;margin-top:4px">${apps.length} รายการทั้งหมด</div>
+          <div style="font-weight:700;font-size:15px">${t('card_apps_title')}</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:4px">${apps.length} ${t('unit_total')}</div>
         </div>
         <div class="card" style="cursor:pointer;padding:20px" onclick="showPage('workerprofile')">
           <div style="font-size:28px;margin-bottom:8px">👤</div>
@@ -2148,7 +2202,7 @@ async function loadDashboard() {
         <div class="card" style="cursor:pointer;padding:20px" onclick="showPage('myreviews')">
           <div style="font-size:28px;margin-bottom:8px">⭐</div>
           <div style="font-weight:700;font-size:15px">รีวิวของฉัน</div>
-          <div style="color:var(--muted);font-size:12px;margin-top:4px">${profile?.review_summary?.total_reviews || 0} รีวิว</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:4px">${profile?.review_summary?.total_reviews || 0} ${t('unit_reviews')}</div>
         </div>
       </div>`;
 
@@ -2160,14 +2214,14 @@ async function loadDashboard() {
     ]);
 
     const companyName = empProfile?.company_name || 'Employer';
-    greetEl.innerHTML = `สวัสดี, <strong>${esc(companyName)}</strong> 👋`;
+    greetEl.innerHTML = `${t('hello_prefix')} <strong>${esc(companyName)}</strong> 👋`;
 
     const empVerified = empProfile?.verified_status === 'verified';
     headerEl.innerHTML = `
       <div style="display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px">
         <div class="avatar" style="width:52px;height:52px;font-size:18px">${esc(dashInitials(companyName))}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:17px;font-weight:700">สวัสดี, ${esc(companyName)} 👋</div>
+          <div style="font-size:17px;font-weight:700">${t('hello_prefix')} ${esc(companyName)} 👋</div>
           ${empVerified ? `<div style="margin-top:6px"><span class="badge badge-green" style="font-size:10px">✅ Verified Employer</span></div>` : ''}
         </div>
       </div>`;
@@ -2182,21 +2236,21 @@ async function loadDashboard() {
           <div class="stat-num">${openJobs}</div>
           <span style="font-size:18px">📋</span>
         </div>
-        <div class="stat-label">งานเปิดรับอยู่</div>
+        <div class="stat-label">${t('stat_open_jobs')}</div>
       </div>
       <div class="stat" style="border-left:3px solid var(--accent)">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div class="stat-num">${totalSlotsFilled}</div>
           <span style="font-size:18px">🤝</span>
         </div>
-        <div class="stat-label">จ้างสำเร็จทั้งหมด</div>
+        <div class="stat-label">${t('stat_total_hired')}</div>
       </div>
       <div class="stat" style="border-left:3px solid var(--accent)">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div class="stat-num">${filledJobs}</div>
           <span style="font-size:18px">📁</span>
         </div>
-        <div class="stat-label">งานที่รับครบแล้ว</div>
+        <div class="stat-label">${t('stat_filled_jobs')}</div>
       </div>`;
 
     // jobs with pending applicants
@@ -2206,7 +2260,7 @@ async function loadDashboard() {
 
     const jobsHtml = activeJobsWithApps.length ? `
       <div class="card" style="border-color:rgba(0,153,255,.25)">
-        <div style="font-size:11px;color:var(--accent2);font-family:'IBM Plex Mono',monospace;margin-bottom:10px;letter-spacing:.06em">🔵 งานที่เปิดรับอยู่ (${openJobs})</div>
+        <div style="font-size:11px;color:var(--accent2);font-family:'IBM Plex Mono',monospace;margin-bottom:10px;letter-spacing:.06em">🔵 ${t('open_jobs_section')} (${openJobs})</div>
         ${activeJobsWithApps.map(j => {
           const pct = j.slots_available > 0 ? Math.round((j.slots_filled / j.slots_available) * 100) : 0;
           return `
@@ -2217,16 +2271,16 @@ async function loadDashboard() {
               <div style="font-size:12px;color:var(--muted);margin-top:2px">฿${j.daily_wage_rate}/วัน · ${esc(j.location_name||'')}</div>
             </div>
             <div style="text-align:right;min-width:80px;flex-shrink:0">
-              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${j.slots_filled}/${j.slots_available} คน</div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${j.slots_filled}/${j.slots_available} ${t('people_unit')}</div>
               <div style="height:5px;background:var(--surface2);border-radius:3px;overflow:hidden">
                 <div style="height:100%;width:${pct}%;background:var(--accent2)"></div>
               </div>
             </div>
           </div>`;}).join('')}
-        <button class="btn btn-secondary btn-sm" onclick="showPage('myjobs')" style="margin-top:12px">จัดการงานทั้งหมด →</button>
+        <button class="btn btn-secondary btn-sm" onclick="showPage('myjobs')" style="margin-top:12px">${t('manage_all_jobs')}</button>
       </div>` : `
       <div class="alert alert-info">
-        💡 ยังไม่มีงานที่เปิดรับอยู่ — <span style="cursor:pointer;text-decoration:underline" onclick="showPage('postjob')">โพสต์งานแรก</span>
+        💡 ${t('jobs_empty')} — <span style="cursor:pointer;text-decoration:underline" onclick="showPage('postjob')">${t('jobs_post_first')}</span>
       </div>`;
 
     // employer verification status bar (verified แสดงไว้ใน header bar แล้ว ไม่ต้องซ้ำ)
@@ -2234,8 +2288,8 @@ async function loadDashboard() {
       empProfile.verified_status === 'verified'
         ? ''
         : empProfile.verified_status === 'pending'
-          ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.2);border-radius:8px"><span class="badge badge-warn">⏳ รอ Admin Verify</span><span style="font-size:12px;color:var(--muted)">ทีมงานจะตรวจสอบภายใน 1-2 วันทำการ</span></div>`
-          : `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.2);border-radius:8px"><div style="display:flex;align-items:center;gap:8px"><span class="badge badge-danger">⚠️ ยังไม่ verified</span><span style="font-size:12px;color:var(--muted)">Verify บริษัทเพื่อเพิ่มความน่าเชื่อถือ</span></div><button class="btn btn-secondary btn-sm" onclick="requestEmployerVerify(this)" style="font-size:11px">ขอ Verify →</button></div>`
+          ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.2);border-radius:8px"><span class="badge badge-warn">⏳ ${t('emp_verify_pending')}</span><span style="font-size:12px;color:var(--muted)">${t('emp_verify_note')}</span></div>`
+          : `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.2);border-radius:8px"><div style="display:flex;align-items:center;gap:8px"><span class="badge badge-danger">⚠️ ${t('emp_not_verified')}</span><span style="font-size:12px;color:var(--muted)">${t('emp_verify_cta')}</span></div><button class="btn btn-secondary btn-sm" onclick="requestEmployerVerify(this)" style="font-size:11px">${t('emp_verify_req_btn')}</button></div>`
     ) : '';
     const verifyNudge = verifyStatus;
 
@@ -2245,13 +2299,13 @@ async function loadDashboard() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="card" style="cursor:pointer;border-color:rgba(0,153,255,.3);padding:20px" onclick="showPage('postjob')">
           <div style="font-size:28px;margin-bottom:8px">➕</div>
-          <div style="font-weight:700;font-size:15px">โพสต์งานใหม่</div>
-          <div style="color:var(--muted);font-size:12px;margin-top:4px">ระบบจับคู่อัตโนมัติทันที</div>
+          <div style="font-weight:700;font-size:15px">${t('dash_post_job')}</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:4px">${t('card_post_sub')}</div>
         </div>
         <div class="card" style="cursor:pointer;padding:20px" onclick="showPage('myjobs')">
           <div style="font-size:28px;margin-bottom:8px">📁</div>
-          <div style="font-weight:700;font-size:15px">จัดการงาน</div>
-          <div style="color:var(--muted);font-size:12px;margin-top:4px">${(jobs||[]).length} งานทั้งหมด</div>
+          <div style="font-weight:700;font-size:15px">${t('card_manage_title')}</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:4px">${(jobs||[]).length} ${t('unit_jobs_total')}</div>
         </div>
       </div>`;
   }
@@ -2558,11 +2612,11 @@ async function searchNearby() {
   const r   = parseFloat(document.getElementById('searchRadius').value);
   if (isNaN(lat) || isNaN(lng) || isNaN(r)) {
     document.getElementById('nearbyResults').innerHTML =
-      '<div class="alert alert-error">กรุณาระบุตำแหน่งก่อนค้นหา</div>';
+      `<div class="alert alert-error">${t('err_no_location')}</div>`;
     return;
   }
   const el  = document.getElementById('nearbyResults');
-  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div><div class="empty-text" style="margin-top:12px">กำลังค้นหา...</div></div>';
+  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div><div class="empty-text" style="margin-top:12px">${t('searching_lbl')}</div></div>';
   try {
     const data = await api('GET', `/jobs/nearby?lat=${lat}&lng=${lng}&radius_km=${r}`);
     // Clear previous job markers
@@ -2570,7 +2624,7 @@ async function searchNearby() {
     _jobMarkers = [];
 
     if (!data.jobs.length) {
-      el.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">ไม่พบงานในรัศมีที่กำหนด<br><small style="color:var(--muted)">ลองเพิ่มรัศมีหรือตรวจสอบ skills ใน profile</small></div></div>';
+      el.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">${t('no_jobs_found')}<br><small style="color:var(--muted)">${t('no_jobs_tip')}</small></div></div>';
       return;
     }
 
@@ -2599,7 +2653,7 @@ async function searchNearby() {
           infoWindow.setContent(
             `<div style="font-size:12px;line-height:1.5;color:#111">
               <strong>${j.title}</strong><br>
-              ฿${Number(j.daily_wage_rate).toLocaleString()}/วัน · ${j.distance_km} กม.<br>
+              ฿${Number(j.daily_wage_rate).toLocaleString()}${t('per_day')} · ${j.distance_km} ${t('km_unit')}<br>
               Match: <strong style="color:${sc}">${j.match_score}/100</strong>
             </div>`
           );
@@ -2611,7 +2665,7 @@ async function searchNearby() {
         _jobMarkers.push(marker);
       });
     }
-    el.innerHTML = `<div style="font-size:13px;color:var(--muted);margin-bottom:12px">พบ ${data.count} งาน</div>` +
+    el.innerHTML = `<div style="font-size:13px;color:var(--muted);margin-bottom:12px">${t('found_prefix')} ${data.count} ${t('found_suffix')}</div>` +
       data.jobs.map((j, i) => {
         const sc = j.match_score >= 70 ? 'var(--accent)' : j.match_score >= 50 ? 'var(--warn)' : 'var(--danger)';
         return `
@@ -2621,9 +2675,9 @@ async function searchNearby() {
               <div style="font-weight:700;font-size:16px;margin-bottom:6px">${esc(j.title)}</div>
               <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
                 <span style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted)">📍 ${esc(j.location_name||j.zone_name||'-')}</span>
-                <span style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted)">📏 ${j.distance_km} กม.</span>
-                <span style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted)">📅 ${j.duration_days} วัน</span>
-                <span style="font-size:11px;padding:3px 8px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:20px;color:var(--accent)">👥 เหลือ ${j.slots_remaining} ที่</span>
+                <span style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted)">📏 ${j.distance_km} ${t('km_unit')}</span>
+                <span style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted)">📅 ${j.duration_days} ${t('days_unit')}</span>
+                <span style="font-size:11px;padding:3px 8px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:20px;color:var(--accent)">👥 ${t('slots_pre')}${j.slots_remaining}${t('slots_suf')}</span>
                 ${j.work_start && j.work_end ? '<span style="font-size:11px;padding:3px 8px;background:rgba(0,153,255,.08);border:1px solid rgba(0,153,255,.2);border-radius:20px;color:var(--accent2)">⏰ ' + esc(j.work_start) + '–' + esc(j.work_end) + '</span>' : ''}
                 ${j.ot_rate ? '<span style="font-size:11px;padding:3px 8px;background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.2);border-radius:20px;color:var(--warn)">💰 OT ' + j.ot_rate + '฿/ชม.</span>' : ''}
                 ${j.start_date ? '<span style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted)">🗓 ' + esc(j.start_date) + '</span>' : ''}
@@ -2672,7 +2726,7 @@ async function loadMyApps() {
   try {
     const data = await api('GET', '/workers/applications');
     if (!data.length) {
-      el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">ยังไม่มีประวัติการสมัคร</div></div>';
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">${t('no_apps')}</div></div>';
       return;
     }
     const sColor = {
@@ -2698,7 +2752,7 @@ async function loadMyApps() {
       const bc = borderColor(a.status);
       const scoreCircle = '<span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:rgba(0,229,160,.12);font-size:12px;font-weight:700;color:var(--accent)">' + a.match_score + '</span>';
       const statusBadge = '<span class="badge ' + (sColor[a.status]||'badge-gray') + '">' + (t(stKey[a.status])||a.status) + '</span>';
-      const jobMeta = esc(a.job.location_name||'-') + ' • ฿' + a.job.daily_wage_rate + '/วัน • ' + a.job.duration_days + ' วัน'
+      const jobMeta = esc(a.job.location_name||'-') + ' • ฿' + a.job.daily_wage_rate + t('per_day') + ' • ' + a.job.duration_days + ' ' + t('days_unit')
         + (a.job.work_start ? ' • ⏰ ' + esc(a.job.work_start) + '–' + esc(a.job.work_end) : '')
         + (a.job.ot_rate ? ' • 💰 OT ' + a.job.ot_rate + '฿/ชม.' : '');
       return '<div class="card" id="appcard-' + a.id + '" style="border-left:3px solid ' + bc + ';margin-bottom:12px">'
@@ -2712,8 +2766,8 @@ async function loadMyApps() {
           + '</div>'
         + '</div>'
         + '<div style="display:flex;gap:16px;font-size:12px;color:var(--muted);margin-bottom:6px">'
-          + '<span>📏 ' + a.distance_km + ' กม.</span>'
-          + '<span>สมัคร: ' + new Date(a.applied_at).toLocaleDateString('th-TH') + '</span>'
+          + '<span>📏 ' + a.distance_km + ' ' + t('km_unit') + '</span>'
+          + '<span>' + t('applied_on') + ' ' + new Date(a.applied_at).toLocaleDateString(_lang==='en'?'en-GB':'th-TH') + '</span>'
         + '</div>'
         + (a.employer_note ? '<div style="margin-top:8px;font-size:13px;color:var(--muted);font-style:italic;padding:8px 10px;background:var(--surface2);border-radius:6px">"' + esc(a.employer_note) + '"</div>' : '')
         + (ACTIVE.includes(a.status) && a.maps_link ? (
@@ -2728,16 +2782,16 @@ async function loadMyApps() {
             + '</div>'
             + '<div id="contact-' + a.id + '" style="display:none;margin-top:10px"></div>'
           ) : '')
-        + (a.status === 'disputed' ? '<div style="margin-top:12px;padding:12px 14px;background:rgba(255,107,53,.06);border-radius:8px;border-left:3px solid var(--warn)"><div style="font-size:13px;font-weight:600;color:var(--warn)">⚠️ อยู่ระหว่างตรวจสอบ</div><div style="font-size:12px;color:var(--muted);margin-top:4px">ทีมงานจะตรวจสอบและติดต่อกลับภายใน 1-2 วันทำการ</div></div>' : '')
+        + (a.status === 'disputed' ? `<div style="margin-top:12px;padding:12px 14px;background:rgba(255,107,53,.06);border-radius:8px;border-left:3px solid var(--warn)"><div style="font-size:13px;font-weight:600;color:var(--warn)">⚠️ ${t('disputed_title')}</div><div style="font-size:12px;color:var(--muted);margin-top:4px">${t('disputed_note')}</div></div>` : '')
         + '</div>';
     };
     let html = '';
     if (activeApps.length) {
-      html += '<div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.08em;font-family:\'IBM Plex Mono\',monospace;margin-bottom:10px;text-transform:uppercase">กำลังดำเนินการ (' + activeApps.length + ')</div>';
+      html += `<div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.08em;font-family:'IBM Plex Mono',monospace;margin-bottom:10px;text-transform:uppercase">${t('section_active')} (${activeApps.length})</div>`;
       html += activeApps.map(renderCard).join('');
     }
     if (historyApps.length) {
-      html += '<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;font-family:\'IBM Plex Mono\',monospace;margin:16px 0 10px;text-transform:uppercase">ประวัติ (' + historyApps.length + ')</div>';
+      html += `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;font-family:'IBM Plex Mono',monospace;margin:16px 0 10px;text-transform:uppercase">${t('section_history')} (${historyApps.length})</div>`;
       html += historyApps.map(renderCard).join('');
     }
     el.innerHTML = html;
@@ -2916,7 +2970,7 @@ async function loadMyJobs() {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
           <div style="flex:1;min-width:0">
             <div style="font-weight:600;font-size:16px">${esc(j.title)}</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(j.location_name||'-')} • ฿${j.daily_wage_rate}/วัน • ${j.duration_days} วัน</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(j.location_name||'-')} • ฿${j.daily_wage_rate}${t('per_day')} • ${j.duration_days} ${t('days_unit')}</div>
           </div>
           <div style="display:flex;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;gap:4px">
             <span class="badge ${sColor[j.status]||'badge-gray'}">${esc(j.status)}</span>
@@ -2981,14 +3035,14 @@ async function loadCandidates(jobId, jobTitle) {
             </div>
             <div class="candidate-meta">
               Match: <strong style="color:var(--accent)">${c.match_score}/100</strong> •
-              ${c.distance_km} กม.
+              ${c.distance_km} ${t('km_unit')}
               ${c.background_check_status !== 'verified' ? `• <span class="badge ${bgColor[c.background_check_status]||'badge-gray'}" style="font-size:10px">${esc(c.background_check_status)}</span>` : ''}
             </div>
             ${c.review_summary ? `
             <div style="display:flex;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap">
               <span style="font-size:13px">${'⭐'.repeat(Math.round(c.review_summary.avg_score))}${'☆'.repeat(5-Math.round(c.review_summary.avg_score))}</span>
-              <span style="font-size:11px;color:var(--muted)">${c.review_summary.avg_score.toFixed(1)} (${c.review_summary.total_reviews} รีวิว)</span>
-              ${c.review_summary.would_rehire_pct != null ? `<span style="font-size:11px;color:var(--accent)">👍 ${Math.round(c.review_summary.would_rehire_pct)}% รับอีก</span>` : ''}
+              <span style="font-size:11px;color:var(--muted)">${c.review_summary.avg_score.toFixed(1)} (${c.review_summary.total_reviews} ${t('unit_reviews')})</span>
+              ${c.review_summary.would_rehire_pct != null ? `<span style="font-size:11px;color:var(--accent)">👍 ${Math.round(c.review_summary.would_rehire_pct)}% rehire</span>` : ''}
             </div>` : ''}
             <div class="tags" style="margin-top:6px">
               ${c.matched_skills.map(s=>`<span class="tag tag-match" style="font-size:10px">✓ ${esc(s)}</span>`).join('')}
@@ -3625,7 +3679,7 @@ async function loadReviewSummary(userIdForReview, role, containerId) {
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px">
         ${stars ? `<span style="font-size:14px">${stars}</span>` : ''}
         <span style="font-size:12px;color:var(--muted)">${s.total_reviews} รีวิว</span>
-        ${s.rehire_pct != null ? `<span style="font-size:12px;color:var(--accent)">👍 ${s.rehire_pct}% รับอีก</span>` : ''}
+        ${s.rehire_pct != null ? `<span style="font-size:12px;color:var(--accent)">👍 ${s.rehire_pct}% rehire</span>` : ''}
       </div>
       ${s.top_tags?.length ? `<div class="tags" style="margin-top:6px">${s.top_tags.map(t=>`<span class="tag tag-match" style="font-size:11px">${t}</span>`).join('')}</div>` : ''}`;
   } catch(e) {}
