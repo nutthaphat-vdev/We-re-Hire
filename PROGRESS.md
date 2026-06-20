@@ -767,3 +767,28 @@ Employer โพสต์ตำแหน่งระดับสูง (ผ่า
 - [ ] Review validation + success message
 - [ ] GPS / map status text
 - [ ] Admin UI (low priority)
+
+---
+
+## Session 2026-06-20 — Anti-Ghosting Complete + Behavioral Score
+
+### ✅ Anti-Ghosting Loop (ครบ 100%)
+- [x] **Backup wage lock** — คำนวณ pro-rata เมื่อ no-show → employer confirm ก่อน cascade
+- [x] **Distance-based cascade** — หา backup worker ที่ใกล้สุด ณ ขณะนั้น (ST_Distance)
+- [x] **Auto-confirm 5 min** — employer ไม่กดใน 5 นาที → cascade อัตโนมัติ
+- [x] **Backup worker เห็นค่าจ้าง** — `backup_confirmed_wage` lock ก่อนกด รับงาน
+- [x] **Accept backup UI** — frontend banner + `doAcceptBackup()` function
+
+### ✅ Behavioral Score System (017_behavioral_score.sql)
+- [x] `jobs_hired + 1` เมื่อ **checkin** (ไม่ใช่ตอน employer กด hired — fair กับ worker)
+- [x] `jobs_noshow + 1` เมื่อ cron auto no-show
+- [x] `jobs_completed + 1` เมื่อ verified (backup worker ได้ด้วยแม้ทำแค่ 7 ชม.)
+- [x] `reliability_score` recompute อัตโนมัติทุก trigger (0.00–10.00)
+
+### ✅ Earnings Page
+- [x] Sidebar worker: เมนู 💰 รายได้
+- [x] Summary card: รายได้รวม + จำนวนงาน
+- [x] Transaction list: ชื่องาน, บริษัท, วันที่, ฿ amount, backup badge
+
+### ⚠️ Known Debt (Vibe Code)
+- Earnings ตัวเลขคือ "ประมาณการณ์" ไม่ใช่ "รับจริง" — ดู CLAUDE.md Vibe Code Debt section

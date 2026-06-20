@@ -446,6 +446,12 @@ NIXPACKS_INSTALL_CMD= pip install -r requirements.txt
 - [ ] Worker withdrawal
 - [ ] React Native Mobile App (Expo) — พัฒนาคู่กัน
 
+### ⚠️ Vibe Code Debt — ต้องแก้ก่อน Phase 3 launch
+- [ ] **Earnings page** (`GET /workers/earnings`) — ตัวเลขที่แสดงคือ "ค่าจ้างโดยประมาณ" ไม่ใช่ "รับจริง"
+  - `work_ended_at IS NULL` → fallback เป็น `daily_wage_rate` เต็ม (อาจสูงกว่าจริง)
+  - Fix: เปลี่ยน source เป็น `wallet_transactions` เมื่อมี escrow
+  - Fix MVP ระยะสั้น: เพิ่ม label "ประมาณการณ์ *" ตอน `work_ended_at IS NULL`
+
 ### Phase 5 — Growth
 - [ ] ขยายนอก BKK
 
