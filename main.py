@@ -216,12 +216,15 @@ async def check_noshow_workers():
                     ja.job_id,
                     ja.noshow_alerted_at,
                     ja.noshow_marked_at,
-                    jp.title          AS job_title,
+                    jp.title            AS job_title,
                     jp.start_date,
                     jp.work_start,
-                    wp.full_name      AS worker_name,
-                    wp.user_id        AS worker_user_id,
-                    ep.user_id        AS employer_user_id
+                    jp.work_end,
+                    jp.daily_wage_rate,
+                    jp.location,
+                    wp.full_name        AS worker_name,
+                    wp.user_id          AS worker_user_id,
+                    ep.user_id          AS employer_user_id
                 FROM   job_applications ja
                 JOIN   job_postings      jp ON jp.id  = ja.job_id
                 JOIN   worker_profiles   wp ON wp.id  = ja.worker_id
@@ -321,39 +324,56 @@ async def check_noshow_workers():
                                 f"ใบสมัครถูกยกเลิกอัตโนมัติ",
                             )
 
-                            # ── Auto backup offer → top candidate ──────────
-                            backup = await db.fetchrow(
+                            # ── คำนวณ pro-rata wage แล้วให้ employer confirm ก่อน ──
+                            wage_amount  = None
+                            wage_hours   = None
+                            try:
+                                ws = row["work_start"]
+                                we = row["work_end"]
+                                rate = float(row["daily_wage_rate"]) if row["daily_wage_rate"] else None
+                                if ws and we and rate:
+                                    total_sec = (we.hour*3600+we.minute*60) - (ws.hour*3600+ws.minute*60)
+                                    if total_sec <= 0:
+                                        total_sec += 86400  # ข้ามคืน
+                                    # เวลาที่เหลือนับจากตอนนี้
+                                    now_time_sec = now_th.hour*3600 + now_th.minute*60 + now_th.second
+                                    end_sec      = we.hour*3600 + we.minute*60
+                                    remaining_sec = end_sec - now_time_sec
+                                    if remaining_sec < 0:
+                                        remaining_sec += 86400
+                                    wage_hours  = round(remaining_sec / 3600, 2)
+                                    wage_amount = round(rate * remaining_sec / total_sec, 2)
+                                    wage_amount = max(0.0, wage_amount)
+                            except Exception as we_err:
+                                logger.warning(f"[noshow] wage calc error: {we_err}")
+
+                            # บันทึก pending wage บน job_postings
+                            await db.execute(
                                 """
-                                SELECT ja2.id, wp2.user_id AS worker_user_id
-                                FROM   job_applications ja2
-                                JOIN   worker_profiles  wp2 ON wp2.id = ja2.worker_id
-                                WHERE  ja2.job_id          = $1
-                                  AND  ja2.status          IN ('applied', 'shortlisted')
-                                  AND  ja2.backup_offered_at IS NULL
-                                ORDER  BY ja2.match_score DESC
-                                LIMIT  1
+                                UPDATE job_postings
+                                SET backup_wage_pending = TRUE,
+                                    backup_wage_amount  = $1,
+                                    backup_wage_hours   = $2
+                                WHERE id = $3
+                                  AND backup_wage_confirmed_at IS NULL
                                 """,
-                                row["job_id"],
+                                wage_amount, wage_hours, row["job_id"],
                             )
-                            if backup:
-                                next_priority = await db.fetchval(
-                                    "SELECT COALESCE(MAX(backup_priority), 0) + 1 FROM job_applications WHERE job_id=$1",
-                                    row["job_id"],
-                                )
-                                await db.execute(
-                                    "UPDATE job_applications SET backup_priority=$1, backup_offered_at=NOW() WHERE id=$2",
-                                    next_priority, backup["id"],
-                                )
-                                await db.execute(
-                                    """
-                                    INSERT INTO notifications (user_id, type, title, body)
-                                    VALUES ($1, 'application_update', '🔔 มีงานเร่งด่วนสำหรับคุณ!', $2)
-                                    """,
-                                    backup["worker_user_id"],
-                                    f"งาน \"{row['job_title']}\" มีตำแหน่งว่างกะทันหัน "
-                                    f"คุณได้รับเลือกเป็น Worker สำรอง — ตอบรับภายใน 30 นาที",
-                                )
-                                logger.info(f"[noshow] backup_offered app={backup['id']} for job={row['job_id']}")
+
+                            # แจ้ง employer ยืนยัน wage
+                            wage_str = f"{wage_amount:,.0f}" if wage_amount else "?"
+                            hours_str = f"{wage_hours:.1f}" if wage_hours else "?"
+                            await db.execute(
+                                """
+                                INSERT INTO notifications (user_id, type, title, body)
+                                VALUES ($1, 'application_update', '🚨 Worker ไม่มา — ยืนยันค่าจ้าง Worker สำรอง', $2)
+                                """,
+                                row["employer_user_id"],
+                                f"Worker {row['worker_name']} ถูก No-Show อัตโนมัติ\n"
+                                f"เวลาที่เหลือ: {hours_str} ชม. | ค่าจ้าง Worker สำรอง: {wage_str}฿\n"
+                                f"กรุณายืนยันใน My Jobs ภายใน 5 นาที (ไม่กด = ยืนยันอัตโนมัติ)",
+                            )
+                            logger.info(f"[noshow] wage_pending job={row['job_id']} amount={wage_amount} hours={wage_hours}")
 
                         noshow_count += 1
                         logger.info(f"[noshow] auto no_show app={row['id']} elapsed={elapsed}")
@@ -423,6 +443,35 @@ async def check_noshow_workers():
 
             if auto_start_count:
                 logger.info(f"[noshow] auto_start done count={auto_start_count}")
+
+            # ── Auto-confirm backup wage: 5 นาที employer ไม่กด → cascade อัตโนมัติ ──
+            pending_wages = await db.fetch(
+                """
+                SELECT jp.id          AS job_id,
+                       jp.backup_wage_amount,
+                       jp.backup_wage_hours,
+                       jp.title       AS job_title
+                FROM   job_postings jp
+                WHERE  jp.backup_wage_pending        = TRUE
+                  AND  jp.backup_wage_confirmed_at  IS NULL
+                  AND  EXISTS (
+                      SELECT 1 FROM job_applications
+                      WHERE  job_id           = jp.id
+                        AND  status           = 'no_show'
+                        AND  noshow_marked_at <= NOW() - INTERVAL '5 minutes'
+                  )
+                """
+            )
+            for pw in pending_wages:
+                try:
+                    await _cascade_backup_offer(
+                        db, pw["job_id"],
+                        pw["backup_wage_amount"], pw["backup_wage_hours"],
+                        pw["job_title"], auto_confirmed=True,
+                    )
+                    logger.info(f"[noshow] auto_wage_confirmed job={pw['job_id']}")
+                except Exception as pw_err:
+                    logger.error(f"[noshow] auto_wage_confirm error job={pw['job_id']}: {pw_err}")
 
     except Exception as e:
         logger.error(f"[noshow] cron error: {e}")
@@ -1280,7 +1329,8 @@ async def get_my_jobs(
         """
         SELECT id, title, status, daily_wage_rate, duration_days,
                slots_available, slots_filled, location_name, zone_name,
-               start_date, created_at, auto_close_at, auto_closed_reason
+               start_date, created_at, auto_close_at, auto_closed_reason,
+               backup_wage_pending, backup_wage_amount, backup_wage_hours
         FROM   job_postings
         WHERE  employer_id = $1
         ORDER  BY created_at DESC
@@ -1288,7 +1338,14 @@ async def get_my_jobs(
         """,
         emp_id,
     )
-    return [dict(r) for r in rows]
+    result = []
+    for r in rows:
+        d = dict(r)
+        d["daily_wage_rate"]    = float(d["daily_wage_rate"]) if d["daily_wage_rate"] else None
+        d["backup_wage_amount"] = float(d["backup_wage_amount"]) if d["backup_wage_amount"] else None
+        d["backup_wage_hours"]  = float(d["backup_wage_hours"]) if d["backup_wage_hours"] else None
+        result.append(d)
+    return result
 
 @app.patch("/jobs/{job_id}/status", tags=["Jobs"])
 async def update_job_status(
@@ -1334,6 +1391,9 @@ async def get_my_applications(
             ja.matched_skills, ja.employer_note, ja.applied_at,
             ja.checkin_at, ja.work_started_at, ja.work_ended_at, ja.employer_verified_at,
             ja.auto_confirm_start,
+            ja.backup_offered_at,
+            ja.backup_accepted_at,
+            ja.backup_confirmed_wage,
             jp.id          AS job_id,
             jp.title       AS job_title,
             jp.daily_wage_rate,
@@ -1364,6 +1424,9 @@ async def get_my_applications(
             "work_ended_at":         r["work_ended_at"].isoformat() if r["work_ended_at"] else None,
             "employer_verified_at":  r["employer_verified_at"].isoformat() if r["employer_verified_at"] else None,
             "auto_confirm_start":    r["auto_confirm_start"],
+            "backup_offered_at":     r["backup_offered_at"].isoformat() if r["backup_offered_at"] else None,
+            "backup_accepted_at":    r["backup_accepted_at"].isoformat() if r["backup_accepted_at"] else None,
+            "backup_confirmed_wage": float(r["backup_confirmed_wage"]) if r["backup_confirmed_wage"] else None,
             "maps_link":             (
                 f"https://www.google.com/maps/dir/?api=1&destination={r['job_lat']},{r['job_lng']}"
                 if r["status"] in MAPS_STATUSES else None
@@ -2216,6 +2279,108 @@ async def get_backup_workers(
         }
         for r in rows
     ]
+
+
+# ── Helper: cascade backup offer ไปยัง worker ที่ใกล้สุด ────────────────────
+async def _cascade_backup_offer(
+    db, job_id, wage_amount, wage_hours, job_title, auto_confirmed: bool = False
+):
+    """ส่ง backup offer ไปยัง worker ที่ available และใกล้งานสุด"""
+    # mark job ว่า wage confirmed แล้ว
+    await db.execute(
+        """
+        UPDATE job_postings
+        SET backup_wage_pending      = FALSE,
+            backup_wage_confirmed_at = NOW()
+        WHERE id = $1
+        """,
+        job_id,
+    )
+    # หา backup worker ที่ใกล้สุดและยังไม่ได้รับ offer
+    backup = await db.fetchrow(
+        """
+        SELECT ja.id          AS app_id,
+               wp.user_id     AS worker_user_id
+        FROM   job_applications ja
+        JOIN   worker_profiles  wp ON wp.id = ja.worker_id
+        JOIN   job_postings     jp ON jp.id = ja.job_id
+        WHERE  ja.job_id            = $1
+          AND  ja.status           IN ('applied', 'shortlisted')
+          AND  ja.backup_offered_at IS NULL
+          AND  wp.location         IS NOT NULL
+        ORDER  BY ST_Distance(wp.location, jp.location) ASC
+        LIMIT  1
+        """,
+        job_id,
+    )
+    if not backup:
+        return  # ไม่มี backup available
+    next_priority = await db.fetchval(
+        "SELECT COALESCE(MAX(backup_priority), 0) + 1 FROM job_applications WHERE job_id=$1",
+        job_id,
+    )
+    await db.execute(
+        """
+        UPDATE job_applications
+        SET backup_priority        = $1,
+            backup_offered_at      = NOW(),
+            backup_confirmed_wage  = $2
+        WHERE id = $3
+        """,
+        next_priority, wage_amount, backup["app_id"],
+    )
+    wage_str  = f"{wage_amount:,.0f}" if wage_amount else "?"
+    hours_str = f"{wage_hours:.1f}"  if wage_hours  else "?"
+    label     = "อัตโนมัติ" if auto_confirmed else "ยืนยันโดย Employer"
+    await db.execute(
+        """
+        INSERT INTO notifications (user_id, type, title, body)
+        VALUES ($1, 'application_update', '🔴 งานด่วน! มีตำแหน่งว่างตอนนี้', $2)
+        """,
+        backup["worker_user_id"],
+        f"งาน \"{job_title}\" มีตำแหน่งว่างกะทันหัน\n"
+        f"เวลาที่เหลือ: {hours_str} ชม. | ค่าจ้าง: {wage_str}฿ ({label})\n"
+        f"ตอบรับภายใน 5 นาที ไม่งั้นระบบจะเสนองานให้คนถัดไป",
+    )
+
+
+@app.post("/jobs/{job_id}/confirm-backup-wage", tags=["Anti-Ghosting"])
+async def confirm_backup_wage(
+    job_id: UUID,
+    user:   dict = Depends(require_employer),
+    db:     asyncpg.Connection = Depends(get_db),
+):
+    """Employer ยืนยันค่าจ้าง pro-rata ก่อนส่ง backup offer"""
+    employer_id = await db.fetchval(
+        "SELECT id FROM employer_profiles WHERE user_id=$1", UUID(user["sub"])
+    )
+    row = await db.fetchrow(
+        """
+        SELECT id, title, backup_wage_pending, backup_wage_amount,
+               backup_wage_hours, backup_wage_confirmed_at
+        FROM   job_postings
+        WHERE  id = $1 AND employer_id = $2
+        """,
+        job_id, employer_id,
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="ไม่พบงาน")
+    if not row["backup_wage_pending"]:
+        raise HTTPException(status_code=400, detail="ไม่มี backup wage รอยืนยัน")
+    if row["backup_wage_confirmed_at"] is not None:
+        raise HTTPException(status_code=409, detail="ยืนยันไปแล้ว")
+    async with db.transaction():
+        await _cascade_backup_offer(
+            db, job_id,
+            row["backup_wage_amount"], row["backup_wage_hours"],
+            row["title"], auto_confirmed=False,
+        )
+    return {
+        "status": "backup_cascaded",
+        "wage_amount": float(row["backup_wage_amount"]) if row["backup_wage_amount"] else None,
+        "wage_hours":  float(row["backup_wage_hours"])  if row["backup_wage_hours"]  else None,
+        "message":     "ส่ง offer ไปยัง Worker สำรองที่ใกล้ที่สุดแล้ว",
+    }
 
 
 @app.post("/applications/{app_id}/send-backup", tags=["Anti-Ghosting"])

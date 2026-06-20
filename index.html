@@ -1487,7 +1487,7 @@ const LANG = {
     auto_confirm_hint:'Worker เช็คอินแล้ว ระบบจะเริ่มนับเวลาอัตโนมัติ',
     call_employer:'📞 โทรแจ้ง Employer', call_employer_hint:'Employer ยังไม่กด เริ่มงาน — โทรแจ้งได้เลย',
     // Backup offer
-    backup_offer_title:'🔔 งานด่วนสำหรับคุณ!', backup_offer_hint:'Worker หลักไม่มา — คุณถูกเลือกเป็น Worker สำรอง',
+    backup_offer_title:'🔔 งานด่วนสำหรับคุณ!', backup_wage_confirm_title:'🚨 Worker ไม่มา — ยืนยันค่าจ้าง Worker สำรอง', backup_wage_confirm_btn:'ยืนยันจ่าย {amount}฿', backup_wage_confirming:'กำลังยืนยัน...', backup_wage_confirmed:'✅ ยืนยันแล้ว — กำลังหา Worker สำรอง', backup_offer_hint:'Worker หลักไม่มา — คุณถูกเลือกเป็น Worker สำรอง',
     backup_accept_btn:'รับงานนี้เลย ✅', backup_accepting:'กำลังยืนยัน...',
     backup_accepted:'✅ รับงานแล้ว! ไปเช็คอินได้เลย',
     del_sidebar_btn:'ลบบัญชี',
@@ -2993,7 +2993,8 @@ async function loadMyApps() {
         + (a.status === 'disputed' ? `<div style="margin-top:12px;padding:12px 14px;background:rgba(255,107,53,.06);border-radius:8px;border-left:3px solid var(--warn)"><div style="font-size:13px;font-weight:600;color:var(--warn)">⚠️ ${t('disputed_title')}</div><div style="font-size:12px;color:var(--muted);margin-top:4px">${t('disputed_note')}</div></div>` : '')
         + (a.backup_offered_at && !a.backup_accepted_at && a.status !== 'hired' ? `<div style="margin-top:12px;padding:14px 16px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.35);border-radius:10px;border-left:3px solid var(--accent)">
           <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:4px">${t('backup_offer_title')}</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">${t('backup_offer_hint')}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${t('backup_offer_hint')}</div>
+          ${a.backup_confirmed_wage ? `<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">💰 ค่าจ้างที่จะได้: <span style="color:var(--accent)">${a.backup_confirmed_wage.toLocaleString()}฿</span></div>` : ''}
           <button class="btn btn-primary btn-sm" onclick="doAcceptBackup('${a.id}',this)" style="font-size:12px;padding:6px 16px">${t('backup_accept_btn')}</button>
         </div>` : '')
         + '</div>';
@@ -3195,6 +3196,17 @@ async function loadMyJobs() {
           <span>${t('jobs_slots')} ${j.slots_available - j.slots_filled}/${j.slots_available}</span>
           <span>${t('jobs_posted')} ${new Date(j.created_at).toLocaleDateString(locale)}</span>
         </div>
+        ${j.backup_wage_pending ? `<div style="margin-bottom:12px;padding:12px 14px;background:rgba(255,71,87,.08);border:1px solid rgba(255,71,87,.35);border-radius:10px;border-left:3px solid var(--danger)">
+          <div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:4px">${t('backup_wage_confirm_title')}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+            ⏰ เหลือ ${j.backup_wage_hours ? j.backup_wage_hours.toFixed(1) : '?'} ชม. &nbsp;|&nbsp;
+            💰 ค่าจ้าง Worker สำรอง: <strong style="color:var(--text)">${j.backup_wage_amount ? j.backup_wage_amount.toLocaleString() : '?'}฿</strong>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">ไม่กดภายใน 5 นาที = ยืนยันอัตโนมัติ</div>
+          <button class="btn btn-primary btn-sm" onclick="doConfirmBackupWage('${j.id}',${j.backup_wage_amount||0},this)" style="font-size:12px;padding:6px 16px">
+            ✅ ${t('backup_wage_confirm_btn').replace('{amount}', j.backup_wage_amount ? j.backup_wage_amount.toLocaleString() : '?')}
+          </button>
+        </div>` : ''}
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-secondary btn-sm" data-jid="${esc(j.id)}" data-jtitle="${esc(j.title)}" onclick="loadCandidates(this.dataset.jid,this.dataset.jtitle)">${t('jobs_view_cands')}</button>
           ${j.status==='open' ? `<button class="btn btn-danger btn-sm" onclick="closeJob('${j.id}')">${t('jobs_close')}</button>` : ''}
@@ -3530,6 +3542,22 @@ async function showContact(appId, btn) {
 }
 
 // ─── JOB LIFECYCLE ─────────────────────────────────────────
+
+async function doConfirmBackupWage(jobId, amount, btn) {
+  btn.disabled = true;
+  btn.textContent = t('backup_wage_confirming');
+  try {
+    await api('POST', `/jobs/${jobId}/confirm-backup-wage`);
+    btn.textContent = t('backup_wage_confirmed');
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#000';
+    setTimeout(() => loadMyJobs(), 1500);
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = t('backup_wage_confirm_btn').replace('{amount}', amount.toLocaleString());
+    alert(e.message);
+  }
+}
 
 async function doAcceptBackup(appId, btn) {
   btn.disabled = true;
