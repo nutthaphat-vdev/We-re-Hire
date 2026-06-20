@@ -1386,8 +1386,92 @@ async def update_job_status(
 
 
 # ============================================================
+# WORKER EARNINGS
+# ============================================================
+
+@app.get("/workers/earnings", tags=["Worker"])
+async def get_my_earnings(
+    user: dict = Depends(require_worker),
+    db:   asyncpg.Connection = Depends(get_db),
+):
+    """รายได้ทั้งหมดของ worker จากงานที่ verified แล้ว"""
+    worker_id = await db.fetchval(
+        "SELECT id FROM worker_profiles WHERE user_id=$1", UUID(user["sub"])
+    )
+    if not worker_id:
+        return {"total": 0, "transactions": []}
+
+    rows = await db.fetch(
+        """
+        SELECT
+            ja.id,
+            ja.work_started_at,
+            ja.work_ended_at,
+            ja.employer_verified_at,
+            ja.backup_confirmed_wage,
+            jp.title          AS job_title,
+            jp.daily_wage_rate,
+            jp.work_start,
+            jp.work_end,
+            jp.start_date,
+            ep.company_name
+        FROM   job_applications ja
+        JOIN   job_postings     jp ON jp.id = ja.job_id
+        JOIN   employer_profiles ep ON ep.id = jp.employer_id
+        WHERE  ja.worker_id = $1
+          AND  ja.status    = 'verified'
+        ORDER  BY ja.employer_verified_at DESC
+        """,
+        worker_id,
+    )
+
+    transactions = []
+    total = 0.0
+
+    for r in rows:
+        # ถ้าเป็น backup worker ใช้ backup_confirmed_wage
+        if r["backup_confirmed_wage"]:
+            amount = float(r["backup_confirmed_wage"])
+        else:
+            # คำนวณจาก actual hours worked
+            if r["work_started_at"] and r["work_ended_at"]:
+                actual_sec = (r["work_ended_at"] - r["work_started_at"]).total_seconds()
+                # เทียบกับ expected hours
+                ws = r["work_start"]
+                we = r["work_end"]
+                if ws and we:
+                    total_sec = (we.hour*3600+we.minute*60) - (ws.hour*3600+ws.minute*60)
+                    if total_sec <= 0:
+                        total_sec += 86400
+                    ratio = min(actual_sec / total_sec, 1.0)
+                    amount = round(float(r["daily_wage_rate"]) * ratio, 2)
+                else:
+                    amount = float(r["daily_wage_rate"])
+            else:
+                amount = float(r["daily_wage_rate"])
+
+        total += amount
+        transactions.append({
+            "id":           str(r["id"]),
+            "job_title":    r["job_title"],
+            "company_name": r["company_name"],
+            "date":         r["start_date"].isoformat() if r["start_date"] else None,
+            "verified_at":  r["employer_verified_at"].isoformat() if r["employer_verified_at"] else None,
+            "amount":       amount,
+            "is_backup":    r["backup_confirmed_wage"] is not None,
+        })
+
+    return {
+        "total":        round(total, 2),
+        "count":        len(transactions),
+        "transactions": transactions,
+    }
+
+
+# ============================================================
 # WORKER APPLICATIONS
 # ============================================================
+
 
 @app.get("/workers/applications", tags=["Worker"])
 async def get_my_applications(
