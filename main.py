@@ -1837,18 +1837,6 @@ async def decide_application(
                 """,
                 row["job_id"],
             )
-            # behavioral score: jobs_hired + 1
-            worker_uid = await db.fetchval(
-                "SELECT u.id FROM worker_profiles wp JOIN users u ON u.id = wp.user_id WHERE wp.id = $1",
-                row["worker_id"],
-            )
-            if worker_uid:
-                await db.execute(
-                    "UPDATE worker_profiles SET jobs_hired = jobs_hired + 1 WHERE user_id = $1",
-                    worker_uid,
-                )
-                await _recompute_reliability(db, worker_uid)
-
             # Auto-withdraw overlapping applications for the same worker (batch)
             if row["start_date"]:
                 hired_start = row["start_date"]
@@ -2043,6 +2031,15 @@ async def worker_checkin(
         """,
         app_id, body.lat, body.lng,
     )
+    # behavioral score: jobs_hired + 1 เมื่อ worker มาจริง (ไม่ใช่แค่ employer กด hired)
+    try:
+        await db.execute(
+            "UPDATE worker_profiles SET jobs_hired = jobs_hired + 1 WHERE user_id = $1",
+            UUID(user["sub"]),
+        )
+        await _recompute_reliability(db, UUID(user["sub"]))
+    except Exception:
+        pass
     try:
         await db.execute(
             """
