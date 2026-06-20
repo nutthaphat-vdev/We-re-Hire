@@ -101,6 +101,12 @@ async def auto_verify_completed_jobs():
                     "UPDATE job_applications SET status='verified', employer_verified_at=NOW() WHERE id=$1",
                     row["id"],
                 )
+                # behavioral score: jobs_completed + 1
+                await db.execute(
+                    "UPDATE worker_profiles SET jobs_completed = jobs_completed + 1 WHERE user_id = $1",
+                    row["worker_user_id"],
+                )
+                await _recompute_reliability(db, row["worker_user_id"])
                 # ถ้า slots เต็มแล้ว → mark job เป็น filled
                 await db.execute(
                     """
@@ -303,6 +309,16 @@ async def check_noshow_workers():
                                 "UPDATE job_postings SET slots_filled = GREATEST(0, slots_filled - 1) WHERE id=$1",
                                 row["job_id"],
                             )
+                            # behavioral score: noshow + 1
+                            await db.execute(
+                                """
+                                UPDATE worker_profiles
+                                SET jobs_noshow = jobs_noshow + 1
+                                WHERE user_id = $1
+                                """,
+                                row["worker_user_id"],
+                            )
+                            await _recompute_reliability(db, row["worker_user_id"])
                             # แจ้ง employer
                             await db.execute(
                                 """
@@ -1821,6 +1837,17 @@ async def decide_application(
                 """,
                 row["job_id"],
             )
+            # behavioral score: jobs_hired + 1
+            worker_uid = await db.fetchval(
+                "SELECT u.id FROM worker_profiles wp JOIN users u ON u.id = wp.user_id WHERE wp.id = $1",
+                row["worker_id"],
+            )
+            if worker_uid:
+                await db.execute(
+                    "UPDATE worker_profiles SET jobs_hired = jobs_hired + 1 WHERE user_id = $1",
+                    worker_uid,
+                )
+                await _recompute_reliability(db, worker_uid)
 
             # Auto-withdraw overlapping applications for the same worker (batch)
             if row["start_date"]:
@@ -2280,6 +2307,35 @@ async def get_backup_workers(
         for r in rows
     ]
 
+
+
+async def _recompute_reliability(db, worker_user_id):
+    """Recompute reliability_score จาก jobs_completed, jobs_noshow, jobs_hired, review avg"""
+    row = await db.fetchrow(
+        """
+        SELECT wp.jobs_completed, wp.jobs_noshow, wp.jobs_hired,
+               COALESCE(wrs.avg_rating, 5.0) AS review_avg
+        FROM   worker_profiles wp
+        LEFT JOIN worker_review_summary wrs ON wrs.worker_id = wp.id
+        WHERE  wp.user_id = $1
+        """,
+        worker_user_id,
+    )
+    if not row:
+        return
+    total    = max(row["jobs_hired"], 1)
+    cr       = min(row["jobs_completed"] / total, 1.0)
+    nr       = min(row["jobs_noshow"]    / total, 1.0)
+    rv       = float(row["review_avg"] or 5.0) / 5.0
+    score    = round((cr * 5.0) + ((1.0 - nr) * 3.0) + (rv * 2.0), 2)
+    await db.execute(
+        """
+        UPDATE worker_profiles
+        SET reliability_score = $1, score_updated_at = NOW()
+        WHERE user_id = $2
+        """,
+        score, worker_user_id,
+    )
 
 # ── Helper: cascade backup offer ไปยัง worker ที่ใกล้สุด ────────────────────
 async def _cascade_backup_offer(
