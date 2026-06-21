@@ -1,0 +1,9 @@
+# Runtime artifacts — keep the folders, ignore generated task/report files
+inbox/*
+outbox/*
+archive/*
+!inbox/.gitkeep
+!outbox/.gitkeep
+!archive/.gitkeep
+!TASK_PACKET_TEMPLATE.md
+!README.md
