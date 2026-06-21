@@ -1459,6 +1459,7 @@ async def get_my_earnings(
             "verified_at":  r["employer_verified_at"].isoformat() if r["employer_verified_at"] else None,
             "amount":       amount,
             "is_backup":    r["backup_confirmed_wage"] is not None,
+            "is_estimate":  r["backup_confirmed_wage"] is None and r["work_ended_at"] is None,
         })
 
     return {

@@ -1505,6 +1505,7 @@ const LANG = {
     earnings_title:'รายได้ของฉัน', earnings_sub:'สรุปรายได้จากงานที่เสร็จสิ้นแล้ว',
     earnings_total:'รายได้รวม', earnings_count:'งานที่เสร็จแล้ว', earnings_empty:'ยังไม่มีรายได้',
     earnings_backup:'(งานสำรอง)', earnings_nav:'รายได้',
+    earnings_estimate:'ประมาณการณ์ *', earnings_estimate_note:'* ตัวเลขนี้เป็นประมาณการณ์ ยังไม่มีการบันทึกเวลาสิ้นสุดงาน ยอดจริงอาจแตกต่างได้',
     del_sidebar_btn:'ลบบัญชี',
     del_modal_subtitle:'การกระทำนี้ไม่สามารถย้อนกลับได้',
     del_modal_list_title:'สิ่งที่จะหายไปถาวรภายใน 7 วัน:',
@@ -1688,6 +1689,7 @@ const LANG = {
     earnings_title:'My Earnings', earnings_sub:'Summary of completed job income',
     earnings_total:'Total Earnings', earnings_count:'Completed Jobs', earnings_empty:'No earnings yet',
     earnings_backup:'(backup)', earnings_nav:'Earnings',
+    earnings_estimate:'Estimated *', earnings_estimate_note:'* This amount is an estimate — no work end time recorded yet. Final amount may differ.',
     del_sidebar_btn:'Delete Account',
     del_modal_subtitle:'This action cannot be undone',
     del_modal_list_title:'What will be permanently deleted within 7 days:',
@@ -3269,11 +3271,18 @@ async function loadEarnings() {
         <div style="flex:1;min-width:0">
           <div style="font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(tx.job_title)}</div>
           <div style="font-size:12px;color:var(--muted)">${esc(tx.company_name||'')} ${tx.is_backup ? '<span style="color:var(--accent);font-size:10px">'+t('earnings_backup')+'</span>' : ''}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">${tx.date ? new Date(tx.date).toLocaleDateString(locale) : ''}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${tx.date ? new Date(tx.date).toLocaleDateString(locale) : ''}${tx.is_estimate ? ' <span style="color:#f59e0b;font-size:10px;font-weight:600">'+t('earnings_estimate')+'</span>' : ''}</div>
         </div>
-        <div style="font-size:16px;font-weight:700;color:var(--accent);flex-shrink:0">฿${tx.amount.toLocaleString()}</div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:16px;font-weight:700;color:var(--accent)">฿${tx.amount.toLocaleString()}</div>
+          ${tx.is_estimate ? '<div style="font-size:10px;color:#f59e0b">*</div>' : ''}
+        </div>
       </div>
     `).join('');
+
+    if (d.transactions.some(tx => tx.is_estimate)) {
+      html += `<div style="font-size:11px;color:var(--muted);padding:8px 4px;line-height:1.5">${t('earnings_estimate_note')}</div>`;
+    }
 
     el.innerHTML = html;
   } catch(e) {
