@@ -3481,7 +3481,7 @@ async def health(db: asyncpg.Connection = Depends(get_db)):
         "db":           "connected",
         "pg":           version.split(" ")[1] if version else "unknown",
         "frontend_url": settings.frontend_url,
-        "build":        "2026-05-27-v2",
+        "build":        "2026-06-26-v3",
     }
 
 
