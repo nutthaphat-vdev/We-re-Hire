@@ -873,6 +873,12 @@ html, body { margin:0; padding:0; background:#0d0f12; }
         <label data-i18n="password_lbl">รหัสผ่าน</label>
         <input type="password" id="regPassword" placeholder="อย่างน้อย 6 ตัวอักษร">
       </div>
+      <div style="margin:10px 0 12px">
+        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;line-height:1.6;color:var(--text)">
+          <input type="checkbox" id="regTermsConsent" style="margin-top:3px;flex-shrink:0;accent-color:var(--accent)">
+          <span>ข้าพเจ้ายอมรับ <a href="#" onclick="openPolicyModal('terms');return false" style="color:var(--accent)">ข้อกำหนดการใช้งาน</a> และ <a href="#" onclick="openPolicyModal('privacy');return false" style="color:var(--accent)">นโยบายความเป็นส่วนตัว</a> ของ WeHire <span style="color:var(--danger)">*</span></span>
+        </label>
+      </div>
       <button class="btn btn-primary btn-block" onclick="doRegister()" style="margin-bottom:12px" data-i18n="register_btn">สมัครสมาชิก</button>
       <div style="padding:10px 12px;background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.25);border-radius:8px;font-size:11px;color:var(--warn);margin-bottom:12px;line-height:1.5" data-i18n="wp_disclaimer">
         Employer มีหน้าที่ตรวจสอบความถูกต้องของ Work Permit ด้วยตนเองก่อนจ้างงาน
@@ -1913,12 +1919,17 @@ async function doLogin() {
 }
 
 async function doRegister() {
+  if (!document.getElementById('regTermsConsent')?.checked) {
+    showAlert('alertAuth', 'กรุณายอมรับข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัวก่อนสมัคร');
+    return;
+  }
   try {
     const phone = document.getElementById('regPhone').value.trim();
     const body = {
-      email:    document.getElementById('regEmail').value.trim(),
-      password: document.getElementById('regPassword').value,
-      role:     document.getElementById('regRole').value
+      email:          document.getElementById('regEmail').value.trim(),
+      password:       document.getElementById('regPassword').value,
+      role:           document.getElementById('regRole').value,
+      terms_accepted: true,
     };
     if (phone) body.phone = phone;
     const data = await api('POST', '/auth/register', body);
@@ -2025,6 +2036,10 @@ function previewKYCImg(input, previewId) {
 }
 
 async function submitKYC() {
+  if (!document.getElementById('kycConsentCheck')?.checked) {
+    showAlert('alertWorkerProfile', 'กรุณายินยอมให้เก็บข้อมูลตาม PDPA ก่อน Upload เอกสาร', 'error');
+    return;
+  }
   const faceFile = document.getElementById('kycFacePhoto')?.files[0];
   const idFile   = document.getElementById('kycIDPhoto')?.files[0];
   if (!faceFile || !idFile) { alert('กรุณาเลือกรูปทั้งสองรูป'); return; }
@@ -2614,6 +2629,12 @@ async function loadWorkerProfile() {
             <label>${t('kyc_id_lbl')}</label>
             <input type="file" id="kycIDPhoto" accept="image/jpeg,image/png,image/webp" onchange="previewKYCImg(this,'kycIDPreview')" style="font-size:13px">
             <img id="kycIDPreview" style="display:none;max-width:120px;margin-top:8px;border-radius:6px;border:1px solid var(--border)">
+          </div>
+          <div style="margin:10px 0 8px">
+            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:11px;line-height:1.5;color:var(--muted)">
+              <input type="checkbox" id="kycConsentCheck" style="margin-top:2px;flex-shrink:0;accent-color:var(--accent)">
+              <span>ข้าพเจ้ายินยอมให้ WeHire เก็บ ใช้ และประมวลผลข้อมูลส่วนบุคคล รวมถึงรูปบัตรประชาชน/Passport/Work Permit, Selfie และตำแหน่งที่ตั้ง เพื่อวัตถุประสงค์การยืนยันตัวตนและการให้บริการจับคู่งาน ตาม<a href="#" onclick="openPolicyModal('privacy');return false" style="color:var(--accent)">นโยบายความเป็นส่วนตัว</a> (PDPA) <span style="color:var(--danger)">*</span></span>
+            </label>
           </div>
           <button class="btn btn-primary btn-sm" onclick="submitKYC()" id="kycSubmitBtn">${t('kyc_submit_btn')}</button>
         </div>` : ''}
@@ -4403,6 +4424,60 @@ if (token && userRole) {
       log('info', 'Ready — waiting for login');
     }
   });
+}
+</script>
+
+<!-- ════════════ POLICY MODAL (ToS / Privacy) ════════════ -->
+<div id="policyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9100;align-items:flex-start;justify-content:center;padding:24px 12px;overflow-y:auto">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 24px;max-width:600px;width:100%;position:relative;margin:auto">
+    <button onclick="closePolicyModal()" style="position:absolute;top:14px;right:14px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1">✕</button>
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <button id="policyTabTerms" onclick="switchPolicyTab('terms')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;font-size:13px;font-weight:600;background:var(--accent);color:#fff">ข้อกำหนดการใช้งาน</button>
+      <button id="policyTabPrivacy" onclick="switchPolicyTab('privacy')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;font-size:13px;font-weight:600;background:var(--surface);color:var(--text)">นโยบายความเป็นส่วนตัว</button>
+    </div>
+    <div id="policyContent" style="font-size:13px;line-height:1.7;color:var(--text);max-height:60vh;overflow-y:auto"></div>
+    <button onclick="closePolicyModal()" class="btn btn-primary" style="width:100%;margin-top:16px">ปิด</button>
+  </div>
+</div>
+
+<script>
+const POLICY_TERMS = `<h3 style="margin:0 0 12px;font-size:15px">ข้อกำหนดการใช้งาน (Terms of Service) — WeHire</h3>
+<p style="color:var(--muted);font-size:11px;margin-bottom:14px">ดราฟต์ · เวอร์ชัน 1.0 (2026-06-26)</p>
+<p><strong>1. คำนิยาม</strong><br>"WeHire / แพลตฟอร์ม" — บริการแอป/เว็บจับคู่งานรายวัน<br>"Employer (ผู้ว่าจ้าง)" — ผู้โพสต์งานและจ้างแรงงาน<br>"Worker (ผู้รับงาน)" — ผู้สมัครและรับทำงาน</p>
+<p><strong>2. ลักษณะของบริการ (สำคัญ)</strong><br>WeHire เป็นเพียง "ตัวกลาง (matching platform)" เท่านั้น WeHire ไม่ใช่นายจ้าง ไม่ใช่บริษัทจัดหางาน และไม่เป็นคู่สัญญาจ้างงาน สัญญาจ้าง/การจ้างงานเกิดขึ้นโดยตรงระหว่าง Employer กับ Worker</p>
+<p><strong>3. การจ่ายค่าจ้าง</strong><br>ช่วงปัจจุบัน (ยังไม่มีระบบเงินในแอป): การจ่ายค่าจ้างเกิดขึ้นโดยตรงระหว่าง Employer กับ Worker นอกแพลตฟอร์ม WeHire ไม่ถือเงิน ไม่เป็นตัวกลางการจ่าย และไม่รับประกันการจ่ายเงิน</p>
+<p><strong>4. หน้าที่ของผู้ใช้</strong><br>ให้ข้อมูลที่เป็นจริงและเป็นปัจจุบัน (รวมถึงเอกสารยืนยันตัวตน) · ปฏิบัติตามกฎหมายที่เกี่ยวข้อง · ไม่ใช้แพลตฟอร์มเพื่อการผิดกฎหมาย หลอกลวง หรือคุกคามผู้อื่น</p>
+<p><strong>5. ค่าบริการ</strong><br>WeHire อาจเก็บค่าบริการจับคู่งาน (matching fee) ตามอัตราที่ประกาศในแอป การใช้บริการต่อถือว่ายอมรับอัตราที่ประกาศ</p>
+<p><strong>6. ข้อจำกัดความรับผิด</strong><br>เท่าที่กฎหมายอนุญาต WeHire ไม่รับผิดต่อความเสียหายใดๆ ที่เกิดจากการจ้างงาน การจ่าย/ไม่จ่ายค่าจ้าง หรือพฤติกรรมของผู้ใช้รายอื่น</p>
+<p><strong>7. การระงับ/ยกเลิกบัญชี</strong><br>WeHire สงวนสิทธิ์ระงับหรือยกเลิกบัญชีที่ละเมิดข้อกำหนดโดยไม่ต้องแจ้งล่วงหน้าในกรณีร้ายแรง</p>
+<p><strong>8. การแก้ไขข้อกำหนด</strong><br>WeHire อาจแก้ไขข้อกำหนดและจะแจ้งในแอป การใช้งานต่อถือว่ายอมรับฉบับใหม่</p>
+<p><strong>9. กฎหมายที่ใช้บังคับ</strong><br>ข้อกำหนดนี้อยู่ภายใต้กฎหมายแห่งราชอาณาจักรไทย</p>`;
+
+const POLICY_PRIVACY = `<h3 style="margin:0 0 12px;font-size:15px">นโยบายความเป็นส่วนตัว (Privacy Policy) — WeHire</h3>
+<p style="color:var(--muted);font-size:11px;margin-bottom:14px">ดราฟต์ · เวอร์ชัน 1.0 (2026-06-26) · ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)</p>
+<p><strong>1. ผู้ควบคุมข้อมูลส่วนบุคคล</strong><br>WeHire (ผู้ให้บริการแพลตฟอร์มจับคู่งานรายวัน)</p>
+<p><strong>2. ข้อมูลที่เราเก็บ</strong><br>• ข้อมูลบัญชี: ชื่อ-นามสกุล, เบอร์โทร, อีเมล<br>• ข้อมูลยืนยันตัวตน (KYC): รูปบัตรประชาชน (หน้า-หลัง) หรือ Passport + Work Permit, รูป Selfie, รูปโปรไฟล์<br>• ข้อมูลตำแหน่ง (GPS): ใช้ตอนเช็คอินงานและจับคู่งานใกล้เคียง<br>• ข้อมูลการใช้งาน: ทักษะ, ประวัติการสมัคร/ทำงาน, รีวิว</p>
+<p style="color:var(--warn);font-size:12px">⚠️ ข้อมูลบัตรประชาชน/Passport/Selfie ถือเป็นข้อมูลที่ต้องระวังเป็นพิเศษ ต้องขอความยินยอมโดยชัดแจ้งก่อนเก็บ</p>
+<p><strong>3. วัตถุประสงค์การใช้</strong><br>ยืนยันตัวตนและตรวจสอบคุณสมบัติ (KYC) · จับคู่งานตามทักษะ/ตำแหน่ง · ติดต่อสื่อสารและแจ้งเตือนเกี่ยวกับงาน · ป้องกันการฉ้อโกง</p>
+<p><strong>4. ฐานทางกฎหมาย</strong><br>• <strong>ความยินยอม (Consent)</strong> สำหรับข้อมูล KYC/ข้อมูลอ่อนไหวและการเข้าถึงตำแหน่ง<br>• <strong>ความจำเป็นเพื่อปฏิบัติตามสัญญา</strong> สำหรับข้อมูลบัญชีและการจับคู่งาน</p>
+<p><strong>5. การเปิดเผยข้อมูล</strong><br>เปิดเผยข้อมูลติดต่อระหว่างคู่จ้าง <strong>เฉพาะเมื่อมีการจ้าง (hired) แล้วเท่านั้น</strong> เราไม่ขายข้อมูลส่วนบุคคล</p>
+<p><strong>6. ระยะเวลาเก็บและการลบ</strong><br>เก็บเท่าที่จำเป็นต่อการให้บริการ ผู้ใช้ขอลบบัญชีและข้อมูลได้ผ่านฟังก์ชันในแอป</p>
+<p><strong>7. ความปลอดภัยของข้อมูล</strong><br>จัดเก็บในระบบที่มีการควบคุมการเข้าถึง เอกสาร KYC เข้าถึงได้เฉพาะผู้ดูแลที่ได้รับอนุญาต</p>
+<p><strong>8. สิทธิของเจ้าของข้อมูล (PDPA)</strong><br>ท่านมีสิทธิ: เข้าถึง / ขอสำเนา / แก้ไข / ลบ / คัดค้าน / ระงับการใช้ / ถอนความยินยอมได้ทุกเมื่อ (การถอน consent อาจทำให้ใช้บางบริการไม่ได้)</p>`;
+
+function openPolicyModal(tab) {
+  document.getElementById('policyModal').style.display = 'flex';
+  switchPolicyTab(tab || 'terms');
+}
+function closePolicyModal() {
+  document.getElementById('policyModal').style.display = 'none';
+}
+function switchPolicyTab(tab) {
+  const accent = 'background:var(--accent);color:#fff;border-color:var(--accent)';
+  const plain  = 'background:var(--surface);color:var(--text);border-color:var(--border)';
+  document.getElementById('policyTabTerms').style.cssText   = (tab === 'terms')   ? accent : plain;
+  document.getElementById('policyTabPrivacy').style.cssText = (tab === 'privacy') ? accent : plain;
+  document.getElementById('policyContent').innerHTML = tab === 'terms' ? POLICY_TERMS : POLICY_PRIVACY;
 }
 </script>
 

@@ -864,10 +864,11 @@ async def google_callback(
 
 
 class RegisterRequest(BaseModel):
-    email:    EmailStr
-    password: str  = Field(..., min_length=6, max_length=100)
-    role:     str  = Field(..., pattern="^(worker|employer)$")
-    phone:    Optional[str] = Field(None, max_length=20)
+    email:           EmailStr
+    password:        str  = Field(..., min_length=6, max_length=100)
+    role:            str  = Field(..., pattern="^(worker|employer)$")
+    phone:           Optional[str] = Field(None, max_length=20)
+    terms_accepted:  bool = Field(...)   # PDPA: must be True — recorded as consent evidence
 
 class LoginRequest(BaseModel):
     email:    EmailStr
@@ -875,6 +876,9 @@ class LoginRequest(BaseModel):
 
 @app.post("/auth/register", status_code=201, tags=["Auth"])
 async def register(body: RegisterRequest, db: asyncpg.Connection = Depends(get_db)):
+    if not body.terms_accepted:
+        raise HTTPException(status_code=400, detail="ต้องยอมรับข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัวก่อนสมัคร")
+
     # Check duplicate
     existing = await db.fetchval("SELECT id FROM users WHERE email=$1", body.email)
     if existing:
@@ -890,11 +894,11 @@ async def register(body: RegisterRequest, db: asyncpg.Connection = Depends(get_d
 
     user = await db.fetchrow(
         """
-        INSERT INTO users (email, phone, password_hash, role)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO users (email, phone, password_hash, role, terms_accepted_at, policy_version)
+        VALUES ($1, $2, $3, $4, NOW(), $5)
         RETURNING id, role
         """,
-        body.email, body.phone, hashed, body.role,
+        body.email, body.phone, hashed, body.role, "1.0",
     )
 
     token = create_token(str(user["id"]), user["role"])
