@@ -50,6 +50,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   input:focus,select:focus,textarea:focus{border-color:var(--accent);}
   select option{background:var(--surface2);}
   textarea{resize:vertical;min-height:80px;}
+  input[type=date],input[type=time]{text-align:left;-webkit-appearance:none;appearance:none;min-height:42px;}
   .btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
   .btn-primary{background:var(--accent);color:#0d0f12;}
   .btn-primary:hover{background:#00ffb3;transform:translateY(-1px);}
@@ -161,7 +162,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
       left: 0;
       height: 100%;
       z-index: 1000;
-      transform: translateX(-220px);
+      transform: translateX(-100%);
       transition: transform .25s ease;
       overflow-y: auto;
     }
@@ -177,6 +178,10 @@ html, body { margin:0; padding:0; background:#0d0f12; }
     .stats { grid-template-columns: repeat(2, 1fr); }
     .form-row { grid-template-columns: 1fr; }
     .btn { padding: 8px 14px; }
+    .page { padding: 20px 14px; }
+    input, select, textarea { font-size: 16px; }
+    .myjob-head { flex-direction: column; }
+    .myjob-head > div:last-child { width: 100%; justify-content: flex-start; }
   }
 
 
@@ -3405,7 +3410,7 @@ async function loadMyJobs() {
     const locale = _lang === 'en' ? 'en-GB' : 'th-TH';
     el.innerHTML = data.map(j => `
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div class="myjob-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px">
           <div style="flex:1;min-width:0">
             <div style="font-weight:600;font-size:16px">${esc(j.title)}</div>
             <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(j.location_name||'-')} • ฿${j.daily_wage_rate}${t('per_day')} • ${j.duration_days} ${t('days_unit')}</div>
