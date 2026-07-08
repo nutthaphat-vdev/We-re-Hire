@@ -180,8 +180,8 @@ html, body { margin:0; padding:0; background:#0d0f12; }
     .btn { padding: 8px 14px; }
     .page { padding: 20px 14px; }
     input, select, textarea { font-size: 16px; }
-    .myjob-head { flex-direction: column; }
-    .myjob-head > div:last-child { width: 100%; justify-content: flex-start; }
+    .myjob-head, .notif-head { flex-direction: column; }
+    .myjob-head > div:last-child, .notif-head > div:last-child { width: 100%; justify-content: flex-start; }
   }
 
 
@@ -4192,7 +4192,7 @@ async function loadNotifications() {
             <div style="display:flex;gap:12px;align-items:flex-start">
               <div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;line-height:1;background:${['new_applicant'].includes(n.type)?'rgba(0,153,255,.18)':['hired','verified','job_verified'].includes(n.type)?'rgba(0,229,160,.18)':['dispute','disputed','job_disputed'].includes(n.type)?'rgba(255,71,87,.18)':['no_show','noshow'].includes(n.type)?'rgba(255,107,53,.18)':'rgba(107,122,148,.18)'}">${icon}</div>
               <div style="flex:1;min-width:0">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
+                <div class="notif-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
                   <div style="font-weight:600;font-size:14px;word-break:break-word">${_notifTranslateTitle(n.title)}</div>
                   <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">
                     <span class="badge ${lbl.color}" style="font-size:10px">${esc(lbl.text)}</span>
