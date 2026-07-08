@@ -1113,7 +1113,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
             </div>
             <div class="form-group">
               <label data-i18n="postjob_days">จำนวนวัน</label>
-              <input type="number" id="jobDays" placeholder="5">
+              <input type="number" id="jobDays" placeholder="1" value="1">
             </div>
           </div>
           <div class="form-row">
@@ -1147,6 +1147,30 @@ html, body { margin:0; padding:0; background:#0d0f12; }
               <label data-i18n="postjob_ot_rate">ค่า OT (฿/ชม.)</label>
               <input type="number" id="jobOTRate" placeholder="เช่น 75" min="0">
             </div>
+          </div>
+          <div class="form-group">
+            <label>วิธีจ่ายเงิน <span style="color:var(--danger)">*</span></label>
+            <select id="jobPayMethod" required>
+              <option value="">— เลือกวิธีจ่ายเงิน —</option>
+              <option value="cash_shift">เงินสด จ่ายท้าย shift</option>
+              <option value="transfer_daily">โอนเงิน จ่ายท้ายวัน</option>
+              <option value="other">อื่นๆ (ระบุในรายละเอียด)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>ผู้ติดต่อหน้างาน <span style="font-size:11px;color:var(--muted)">(ไม่บังคับ — แสดงเฉพาะผู้ถูกเลือก)</span></label>
+            <input type="text" id="jobContact" placeholder="ชื่อผู้ติดต่อหน้างาน + จุดสังเกต เช่น สมชาย 08x, หน้าร้านป้ายเขียว">
+          </div>
+          <div class="form-group">
+            <label>การแต่งกาย <span style="font-size:11px;color:var(--muted)">(ไม่บังคับ)</span></label>
+            <select id="jobDressCode">
+              <option value="">ไม่กำหนด</option>
+              <option value="smart_casual">แต่งกายสุภาพ</option>
+              <option value="tshirt_long">เสื้อยืด+กางเกงขายาว</option>
+              <option value="work_clothes">ชุดที่เลอะได้</option>
+              <option value="safety_shoes">รองเท้าปิดหน้า/เซฟตี้</option>
+              <option value="uniform_provided">ชุดฟอร์ม (มีให้ที่หน้างาน)</option>
+            </select>
           </div>
           <div class="form-group">
             <label data-i18n="postjob_skills">ทักษะที่ต้องการ (คั่นด้วยจุลภาค)</label>
@@ -2852,6 +2876,18 @@ function initNearbyMap() {
 }
 
 // ─── NEARBY JOBS ───────────────────────────────────────────
+const PAY_METHOD_LABEL = {
+  cash_shift:     'เงินสด จ่ายท้าย shift',
+  transfer_daily: 'โอน จ่ายท้ายวัน',
+  other:          'วิธีจ่ายอื่นๆ',
+};
+const DRESS_CODE_LABEL = {
+  smart_casual:      'แต่งกายสุภาพ',
+  tshirt_long:       'เสื้อยืด+กางเกงขายาว',
+  work_clothes:      'ชุดที่เลอะได้',
+  safety_shoes:      'รองเท้าปิดหน้า/เซฟตี้',
+  uniform_provided:  'ชุดฟอร์ม (มีให้)',
+};
 async function searchNearby() {
   const lat = parseFloat(document.getElementById('searchLat').value);
   const lng = parseFloat(document.getElementById('searchLng').value);
@@ -2927,6 +2963,8 @@ async function searchNearby() {
                 ${j.work_start && j.work_end ? '<span style="font-size:11px;padding:3px 8px;background:rgba(0,153,255,.08);border:1px solid rgba(0,153,255,.2);border-radius:20px;color:var(--accent2)">⏰ ' + esc(j.work_start) + '–' + esc(j.work_end) + '</span>' : ''}
                 ${j.ot_rate ? '<span style="font-size:11px;padding:3px 8px;background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.2);border-radius:20px;color:var(--warn)">💰 OT ' + j.ot_rate + '฿/ชม.</span>' : ''}
                 ${j.start_date ? '<span style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted)">🗓 ' + esc(j.start_date) + '</span>' : ''}
+                ${j.pay_method ? '<span style="font-size:11px;padding:3px 8px;background:rgba(0,229,160,.12);border:1px solid rgba(0,229,160,.35);border-radius:20px;color:var(--accent);font-weight:600">💵 ' + esc(PAY_METHOD_LABEL[j.pay_method]||j.pay_method) + '</span>' : ''}
+                ${j.dress_code ? '<span style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted)">👔 ' + esc(DRESS_CODE_LABEL[j.dress_code]||j.dress_code) + '</span>' : ''}
               </div>
               <div class="tags" style="gap:6px">
                 ${j.matched_skills.map(s=>'<span class="tag tag-match">✓ ' + esc(s) + '</span>').join('')}
@@ -3000,7 +3038,12 @@ async function loadMyApps() {
       const statusBadge = '<span class="badge ' + (sColor[a.status]||'badge-gray') + '">' + (t(stKey[a.status])||a.status) + '</span>';
       const jobMeta = esc(a.job.location_name||'-') + ' • ฿' + a.job.daily_wage_rate + t('per_day') + ' • ' + a.job.duration_days + ' ' + t('days_unit')
         + (a.job.work_start ? ' • ⏰ ' + esc(a.job.work_start) + '–' + esc(a.job.work_end) : '')
-        + (a.job.ot_rate ? ' • 💰 OT ' + a.job.ot_rate + '฿/ชม.' : '');
+        + (a.job.ot_rate ? ' • 💰 OT ' + a.job.ot_rate + '฿/ชม.' : '')
+        + (a.job.pay_method ? ' • 💵 ' + esc(PAY_METHOD_LABEL[a.job.pay_method]||a.job.pay_method) : '')
+        + (a.job.dress_code ? ' • 👔 ' + esc(DRESS_CODE_LABEL[a.job.dress_code]||a.job.dress_code) : '');
+      const contactBlock = (a.job.contact_info && ['hired','checked_in','working','completed','verified'].includes(a.status))
+        ? '<div style="margin-top:10px;padding:10px 12px;background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.2);border-radius:8px;font-size:12px"><span style="font-weight:600;color:var(--accent)">📞 ผู้ติดต่อหน้างาน:</span> ' + esc(a.job.contact_info) + '</div>'
+        : '';
       return '<div class="card" id="appcard-' + a.id + '" style="border-left:3px solid ' + bc + ';margin-bottom:12px">'
         + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:10px">'
           + '<div style="flex:1;min-width:0">'
@@ -3039,6 +3082,7 @@ async function loadMyApps() {
           ${a.backup_confirmed_wage ? `<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">💰 ค่าจ้างที่จะได้: <span style="color:var(--accent)">${a.backup_confirmed_wage.toLocaleString()}฿</span></div>` : ''}
           <button class="btn btn-primary btn-sm" onclick="doAcceptBackup('${a.id}',this)" style="font-size:12px;padding:6px 16px">${t('backup_accept_btn')}</button>
         </div>` : '')
+        + contactBlock
         + '</div>';
     };
     let html = '';
@@ -3160,6 +3204,8 @@ async function doPostJob() {
     if (!document.getElementById('jobTitle').value.trim()) throw new Error('กรุณาระบุชื่อตำแหน่ง');
     if (!wage || wage <= 0)  throw new Error('กรุณาระบุค่าแรงที่ถูกต้อง');
     if (!days || days <= 0)  throw new Error('กรุณาระบุจำนวนวันที่ถูกต้อง');
+    const payMethod = document.getElementById('jobPayMethod').value;
+    if (!payMethod) throw new Error('กรุณาเลือกวิธีจ่ายเงิน');
     const workStart = document.getElementById('jobStartTime').value;
     const workEnd   = document.getElementById('jobEndTime').value;
     if ((workStart && !workEnd) || (!workStart && workEnd)) throw new Error('กรุณาระบุเวลาเริ่ม-เลิกงานให้ครบ');
@@ -3178,6 +3224,9 @@ async function doPostJob() {
       lng:             parseFloat(document.getElementById('jobLng').value),
       location_name:   document.getElementById('jobLocation').value.trim() || undefined,
       zone_name:       document.getElementById('jobZone').value,
+      pay_method:      payMethod,
+      contact_info:    document.getElementById('jobContact').value.trim() || undefined,
+      dress_code:      document.getElementById('jobDressCode').value || undefined,
     };
     if (workStart) body.work_start = workStart;
     if (workEnd)   body.work_end   = workEnd;

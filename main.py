@@ -1222,6 +1222,9 @@ class JobCreate(BaseModel):
     work_start:      Optional[str] = Field(None, pattern=r"^\d{2}:\d{2}$")  # "08:00"
     work_end:        Optional[str] = Field(None, pattern=r"^\d{2}:\d{2}$")  # "17:00"
     ot_rate:         Optional[float] = Field(None, ge=0)  # ฿/ชม. OT
+    pay_method:      Optional[str] = Field(None, max_length=30)
+    contact_info:    Optional[str] = None
+    dress_code:      Optional[str] = Field(None, max_length=200)
 
 class JobStatusUpdate(BaseModel):
     status: str = Field(..., pattern="^(open|closed|draft)$")
@@ -1289,16 +1292,19 @@ async def post_job(
         INSERT INTO job_postings
             (employer_id, title, description, required_skills, daily_wage_rate,
              duration_days, slots_available, location, location_name, zone_name,
-             start_date, work_start, work_end, ot_rate, auto_close_at)
+             start_date, work_start, work_end, ot_rate, auto_close_at,
+             pay_method, contact_info, dress_code)
         VALUES
             ($1, $2, $3, $4, $5, $6, $7,
-             ST_MakePoint($8, $9)::geography, $10, $11, $12, $13, $14, $15, $16)
+             ST_MakePoint($8, $9)::geography, $10, $11, $12, $13, $14, $15, $16,
+             $17, $18, $19)
         RETURNING id, title, status, created_at, auto_close_at
         """,
         emp_id, body.title, body.description, clean_skills,
         body.daily_wage_rate, body.duration_days, body.slots_available,
         body.lng, body.lat, body.location_name, body.zone_name, start_date,
         work_start_t, work_end_t, body.ot_rate, auto_close_at,
+        body.pay_method, body.contact_info, body.dress_code,
     )
     return dict(row)
 
@@ -1505,6 +1511,7 @@ async def get_my_applications(
             jp.duration_days,
             jp.location_name,
             jp.work_start, jp.work_end, jp.ot_rate,
+            jp.pay_method, jp.dress_code, jp.contact_info,
             ST_Y(jp.location::geometry) AS job_lat,
             ST_X(jp.location::geometry) AS job_lng
         FROM   job_applications ja
@@ -1545,6 +1552,10 @@ async def get_my_applications(
                 "work_start":      str(r["work_start"])[:5] if r["work_start"] else None,
                 "work_end":        str(r["work_end"])[:5]   if r["work_end"]   else None,
                 "ot_rate":         float(r["ot_rate"]) if r["ot_rate"] else None,
+                "pay_method":      r["pay_method"],
+                "dress_code":      r["dress_code"],
+                # contact_info follows Contact Lock: visible only after hired
+                "contact_info":    r["contact_info"] if r["status"] in MAPS_STATUSES else None,
             }
         }
         for r in rows
@@ -1735,6 +1746,7 @@ async def get_nearby_jobs(
             jp.slots_available - jp.slots_filled AS slots_remaining,
             jp.location_name, jp.zone_name, jp.start_date,
             jp.work_start, jp.work_end, jp.ot_rate,
+            jp.pay_method, jp.dress_code,
             ST_Y(jp.location::geometry) AS job_lat,
             ST_X(jp.location::geometry) AS job_lng,
             ST_Distance(
@@ -1784,6 +1796,8 @@ async def get_nearby_jobs(
             "work_start":      str(row["work_start"])[:5] if row["work_start"] else None,
             "work_end":        str(row["work_end"])[:5]   if row["work_end"]   else None,
             "ot_rate":         float(row["ot_rate"]) if row["ot_rate"] else None,
+            "pay_method":      row["pay_method"],
+            "dress_code":      row["dress_code"],
             "distance_km":     round(float(row["distance_km"]), 2),
             "job_lat":         float(row["job_lat"]),
             "job_lng":         float(row["job_lng"]),
