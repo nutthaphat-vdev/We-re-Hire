@@ -350,6 +350,8 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   }
   .lp-market-num { font-size:28px;font-weight:800;color:var(--accent2);font-family:'IBM Plex Mono',monospace; }
   .lp-market-label { font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5; }
+  /* howto section outer grid */
+  .lp-howto-grid { display:grid;grid-template-columns:3fr 2fr;gap:40px;text-align:left;margin-top:8px; }
   /* footer cta */
   .lp-footer-cta {
     width:100%;padding:64px 24px;text-align:center;
@@ -358,7 +360,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
     position:relative;z-index:1;
   }
   @media(max-width:600px) {
-    .lp-cards,.lp-steps,.lp-features,.lp-market { grid-template-columns:1fr; }
+    .lp-cards,.lp-steps,.lp-features,.lp-market,.lp-howto-grid { grid-template-columns:1fr; }
     .lp-title { font-size:42px; }
     .lp-stats-bar { flex-wrap:wrap; }
     .lp-stat-item { border-right:none;border-bottom:1px solid rgba(255,255,255,.06);padding:12px 0; }
@@ -547,6 +549,8 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   }
   .lp-market-num { font-size:28px;font-weight:800;color:var(--accent2);font-family:'IBM Plex Mono',monospace; }
   .lp-market-label { font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5; }
+  /* howto section outer grid */
+  .lp-howto-grid { display:grid;grid-template-columns:3fr 2fr;gap:40px;text-align:left;margin-top:8px; }
   /* footer cta */
   .lp-footer-cta {
     width:100%;padding:64px 24px;text-align:center;
@@ -555,7 +559,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
     position:relative;z-index:1;
   }
   @media(max-width:600px) {
-    .lp-cards,.lp-steps,.lp-features,.lp-market { grid-template-columns:1fr; }
+    .lp-cards,.lp-steps,.lp-features,.lp-market,.lp-howto-grid { grid-template-columns:1fr; }
     .lp-title { font-size:42px; }
     .lp-stats-bar { flex-wrap:wrap; }
     .lp-stat-item { border-right:none;border-bottom:1px solid rgba(255,255,255,.06);padding:12px 0; }
@@ -706,6 +710,95 @@ html, body { margin:0; padding:0; background:#0d0f12; }
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HOW TO USE (วิธีใช้งาน จับมือทีละขั้น) ──────────────── -->
+  <div class="lp-section">
+    <div class="lp-section-inner">
+      <div class="lp-section-label" data-i18n="howto_label">วิธีใช้งาน</div>
+      <div class="lp-section-title" data-i18n="howto_title">ง่ายๆ ใครก็ทำได้</div>
+      <div class="lp-section-sub" data-i18n="howto_sub">ไม่ต้องเก่งมือถือ ทำตามทีละขั้น</div>
+
+      <div class="lp-howto-grid">
+        <!-- Worker steps (7) -->
+        <div>
+          <div style="font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--accent);margin-bottom:20px;letter-spacing:.1em" data-i18n="howto_w_lbl">👷 สำหรับคนหางาน (Worker)</div>
+          <div class="lp-steps" style="grid-template-columns:1fr">
+            <div class="lp-step">
+              <div class="lp-step-num accent">01</div>
+              <h4 data-i18n="howto_w1h">สมัครสมาชิก</h4>
+              <p data-i18n="howto_w1p">กด "สมัครสมาชิก" → ใส่เบอร์หรืออีเมล + ตั้งรหัสผ่าน → ติ๊กยอมรับข้อตกลง → กดสมัคร</p>
+            </div>
+            <div class="lp-step">
+              <div class="lp-step-num accent">02</div>
+              <h4 data-i18n="howto_w2h">บอกงานที่ทำได้</h4>
+              <p data-i18n="howto_w2p">เลือกทักษะที่ถนัด + ใส่ที่อยู่ + บอกค่าแรงที่ต้องการ (ทำได้เลย ฟรี ไม่มีค่าใช้จ่าย)</p>
+            </div>
+            <div class="lp-step">
+              <div class="lp-step-num accent">03</div>
+              <h4 data-i18n="howto_w3h">ยืนยันตัวตน (ทำครั้งเดียว)</h4>
+              <p data-i18n="howto_w3p">ถ่ายรูปบัตรประชาชนหน้า-หลัง + เซลฟี่คู่บัตร → ทีมงานตรวจสอบ → ได้ badge "ยืนยันแล้ว"</p>
+            </div>
+            <div class="lp-step">
+              <div class="lp-step-num accent">04</div>
+              <h4 data-i18n="howto_w4h">กด "หางานใกล้ฉัน"</h4>
+              <p data-i18n="howto_w4p">ระบบหางานที่ตรงกับทักษะของคุณในรัศมีใกล้บ้าน → เลื่อนดูงาน → เจองานที่ชอบ กด "สมัคร"</p>
+            </div>
+            <div class="lp-step">
+              <div class="lp-step-num accent">05</div>
+              <h4 data-i18n="howto_w5h">รอผลและรับแจ้งเตือน</h4>
+              <p data-i18n="howto_w5p">นายจ้างดูโปรไฟล์ → ถ้าถูกเลือก มีแจ้งเตือนทันที และเห็นเบอร์ติดต่อนายจ้างในแอป</p>
+            </div>
+            <div class="lp-step">
+              <div class="lp-step-num accent">06</div>
+              <h4 data-i18n="howto_w6h">เช็คอินวันงาน</h4>
+              <p data-i18n="howto_w6p">ถึงวันงาน ไปที่หน้างาน → กด "เช็คอิน" ในแอป (ต้องอยู่ใกล้จุดงานภายใน 150 เมตร)</p>
+            </div>
+            <div class="lp-step">
+              <div class="lp-step-num accent">07</div>
+              <h4 data-i18n="howto_w7h">ทำงานเสร็จ รับเงิน</h4>
+              <p data-i18n="howto_w7p">ทำงานครบ → กด "จบงาน" → รับค่าแรงจากนายจ้างตามที่ตกลงไว้ในโพสต์งาน</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Employer steps (4) -->
+        <div>
+          <div style="font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--accent2);margin-bottom:20px;letter-spacing:.1em" data-i18n="howto_e_lbl">🏭 สำหรับผู้จ้าง (Employer)</div>
+          <div class="lp-steps" style="grid-template-columns:1fr">
+            <div class="lp-step">
+              <div class="lp-step-num blue">01</div>
+              <h4 data-i18n="howto_e1h">โพสต์งาน</h4>
+              <p data-i18n="howto_e1p">ระบุตำแหน่งงาน ทักษะที่ต้องการ ค่าแรง วันเวลา และที่ตั้ง → กด "โพสต์" ภายใน 2 นาที</p>
+            </div>
+            <div class="lp-step">
+              <div class="lp-step-num blue">02</div>
+              <h4 data-i18n="howto_e2h">ดูผู้สมัครและเลือกจ้าง</h4>
+              <p data-i18n="howto_e2p">ระบบคัดและจัดอันดับผู้สมัครให้อัตโนมัติ → เปิดดูโปรไฟล์ → กด "จ้าง" คนที่ใช่</p>
+            </div>
+            <div class="lp-step">
+              <div class="lp-step-num blue">03</div>
+              <h4 data-i18n="howto_e3h">ติดตามวันงาน</h4>
+              <p data-i18n="howto_e3p">ได้รับแจ้งเตือนเมื่อ Worker เช็คอิน · ถ้าไม่มา ระบบแจ้งอัตโนมัติและเปิดรายชื่อสำรองทันที</p>
+            </div>
+            <div class="lp-step">
+              <div class="lp-step-num blue">04</div>
+              <h4 data-i18n="howto_e4h">ยืนยันจบงาน</h4>
+              <p data-i18n="howto_e4p">Worker กด "จบงาน" → กด "ยืนยัน" เพื่อปิดงาน → ทั้งสองฝ่ายให้คะแนนกัน</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div style="text-align:center;margin-top:48px">
+        <button class="lp-btn" onclick="showAuthFromLanding()" style="max-width:320px;width:100%">
+          <span data-i18n="howto_cta">เริ่มเลย — สมัครฟรี</span>
+          <svg class="lp-btn-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+        </button>
+        <div style="font-size:12px;color:var(--muted);margin-top:12px" data-i18n="howto_cta_sub">ฟรี ไม่มีค่าสมัคร • ชำระเฉพาะเมื่อจ้างงานสำเร็จ</div>
       </div>
     </div>
   </div>
@@ -1479,6 +1572,23 @@ const LANG = {
     lp_es1h:'โพสต์งานใน 2 นาที', lp_es1p:'ระบุตำแหน่ง, skills ที่ต้องการ, ค่าแรง และวันเริ่มงาน',
     lp_es2h:'รับ ranked candidates ทันที', lp_es2p:'ระบบ rank ผู้สมัครด้วย match score (skills + ระยะทาง + ค่าแรง) ให้อัตโนมัติ',
     lp_es3h:'จ้าง → ระบบจัดการ lifecycle', lp_es3p:'Anti-ghosting อัตโนมัติ ถ้า worker ไม่มา ระบบหา backup ให้ทันที',
+    howto_label:'วิธีใช้งาน',
+    howto_title:'ง่ายๆ ใครก็ทำได้',
+    howto_sub:'ไม่ต้องเก่งมือถือ ทำตามทีละขั้น',
+    howto_w_lbl:'👷 สำหรับคนหางาน (Worker)',
+    howto_w1h:'สมัครสมาชิก', howto_w1p:'กด "สมัครสมาชิก" → ใส่เบอร์หรืออีเมล + ตั้งรหัสผ่าน → ติ๊กยอมรับข้อตกลง → กดสมัคร',
+    howto_w2h:'บอกงานที่ทำได้', howto_w2p:'เลือกทักษะที่ถนัด + ใส่ที่อยู่ + บอกค่าแรงที่ต้องการ (ทำได้เลย ฟรี ไม่มีค่าใช้จ่าย)',
+    howto_w3h:'ยืนยันตัวตน (ทำครั้งเดียว)', howto_w3p:'ถ่ายรูปบัตรประชาชนหน้า-หลัง + เซลฟี่คู่บัตร → ทีมงานตรวจสอบ → ได้ badge "ยืนยันแล้ว"',
+    howto_w4h:'กด "หางานใกล้ฉัน"', howto_w4p:'ระบบหางานที่ตรงกับทักษะของคุณในรัศมีใกล้บ้าน → เลื่อนดูงาน → เจองานที่ชอบ กด "สมัคร"',
+    howto_w5h:'รอผลและรับแจ้งเตือน', howto_w5p:'นายจ้างดูโปรไฟล์ → ถ้าถูกเลือก มีแจ้งเตือนทันที และเห็นเบอร์ติดต่อนายจ้างในแอป',
+    howto_w6h:'เช็คอินวันงาน', howto_w6p:'ถึงวันงาน ไปที่หน้างาน → กด "เช็คอิน" ในแอป (ต้องอยู่ใกล้จุดงานภายใน 150 เมตร)',
+    howto_w7h:'ทำงานเสร็จ รับเงิน', howto_w7p:'ทำงานครบ → กด "จบงาน" → รับค่าแรงจากนายจ้างตามที่ตกลงไว้ในโพสต์งาน',
+    howto_e_lbl:'🏭 สำหรับผู้จ้าง (Employer)',
+    howto_e1h:'โพสต์งาน', howto_e1p:'ระบุตำแหน่งงาน ทักษะที่ต้องการ ค่าแรง วันเวลา และที่ตั้ง → กด "โพสต์" ภายใน 2 นาที',
+    howto_e2h:'ดูผู้สมัครและเลือกจ้าง', howto_e2p:'ระบบคัดและจัดอันดับผู้สมัครให้อัตโนมัติ → เปิดดูโปรไฟล์ → กด "จ้าง" คนที่ใช่',
+    howto_e3h:'ติดตามวันงาน', howto_e3p:'ได้รับแจ้งเตือนเมื่อ Worker เช็คอิน · ถ้าไม่มา ระบบแจ้งอัตโนมัติและเปิดรายชื่อสำรองทันที',
+    howto_e4h:'ยืนยันจบงาน', howto_e4p:'Worker กด "จบงาน" → กด "ยืนยัน" เพื่อปิดงาน → ทั้งสองฝ่ายให้คะแนนกัน',
+    howto_cta:'เริ่มเลย — สมัครฟรี', howto_cta_sub:'ฟรี ไม่มีค่าสมัคร • ชำระเฉพาะเมื่อจ้างงานสำเร็จ',
     lp_feat_title:'ออกแบบมาเพื่อแก้ปัญหาจริง',
     lp_feat_sub:'ปัญหาหลักของตลาดแรงงานรายวันคือ ghosting, ข้อมูลปลอม, และไม่มีระบบ accountability — WeHire แก้ทุกจุด',
     lp_f1h:'Anti-Ghosting อัตโนมัติ', lp_f1p:'Worker hired แต่ไม่เช็คอิน → +30 นาที แจ้ง employer → +60 นาที ระบบ mark no-show และเปิด backup queue ทันที ไม่ต้องรอ',
@@ -1663,6 +1773,23 @@ const LANG = {
     lp_es1h:'Post a Job in 2 Minutes', lp_es1p:'Specify position, required skills, wage, and start date',
     lp_es2h:'Get Ranked Candidates Instantly', lp_es2p:'System ranks applicants by match score (skills + distance + wage) automatically',
     lp_es3h:'Hire → System Manages the Lifecycle', lp_es3p:'Automatic anti-ghosting — if a worker no-shows, backup queue opens immediately',
+    howto_label:'How to Use',
+    howto_title:'Step by Step — Anyone Can Do It',
+    howto_sub:'No tech experience needed — just follow along',
+    howto_w_lbl:'👷 For Workers',
+    howto_w1h:'Sign Up', howto_w1p:'Tap "Sign Up" → enter phone/email + set password → check the agreement box → tap sign up',
+    howto_w2h:'Tell Us What You Can Do', howto_w2p:'Select your skills + add your location + set your expected wage (free, no cost)',
+    howto_w3h:'Verify Your Identity (once only)', howto_w3p:'Photo your ID card front & back + a selfie holding your card → team reviews → you get a "Verified" badge',
+    howto_w4h:'Find Jobs Nearby', howto_w4p:'Tap "Find Jobs Near Me" → browse matched listings → see something you like, tap "Apply"',
+    howto_w5h:'Wait for the Result', howto_w5p:'Employer reviews your profile → if selected, you get an instant notification and the employer\'s contact number appears',
+    howto_w6h:'Check In on the Day', howto_w6p:'Arrive at the work site → tap "Check In" in the app (you must be within 150 m of the site)',
+    howto_w7h:'Finish & Get Paid', howto_w7p:'Complete the job → tap "End Job" → receive your wage from the employer as agreed in the job post',
+    howto_e_lbl:'🏭 For Employers',
+    howto_e1h:'Post a Job', howto_e1p:'Enter position, required skills, wage, date/time, and location → tap "Post" — done in 2 minutes',
+    howto_e2h:'Browse Applicants & Hire', howto_e2p:'System ranks candidates automatically → view profiles → tap "Hire" on the right person',
+    howto_e3h:'Track on the Day', howto_e3p:'Get notified when the worker checks in · If they don\'t show, auto-alert fires and backup list opens immediately',
+    howto_e4h:'Confirm Job Complete', howto_e4p:'Worker taps "End Job" → you tap "Confirm" to close the job → both sides rate each other',
+    howto_cta:'Get Started — Sign Up Free', howto_cta_sub:'Free to sign up • Pay only when you hire',
     lp_feat_title:'Built to Solve Real Problems',
     lp_feat_sub:'The daily labour market is plagued by ghosting, fake profiles, and zero accountability — WeHire fixes all of it',
     lp_f1h:'Automatic Anti-Ghosting', lp_f1p:'Worker hired but no check-in → +30 min employer alert → +60 min auto no-show + backup queue opens immediately',
