@@ -7,6 +7,7 @@ Stack: FastAPI + asyncpg + Supabase (PostgreSQL + PostGIS) + PyJWT
 """
 
 import os
+import re
 import logging
 import asyncpg
 import jwt
@@ -879,15 +880,21 @@ async def register(body: RegisterRequest, db: asyncpg.Connection = Depends(get_d
     if not body.terms_accepted:
         raise HTTPException(status_code=400, detail="ต้องยอมรับข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัวก่อนสมัคร")
 
+    # Normalize and validate phone (required)
+    phone = re.sub(r"\D", "", body.phone or "")
+    if not phone:
+        raise HTTPException(status_code=400, detail="กรุณากรอกเบอร์โทรศัพท์")
+    if not re.fullmatch(r"0\d{9}", phone):
+        raise HTTPException(status_code=400, detail="เบอร์โทรไม่ถูกต้อง — ต้องเป็นเลข 10 หลัก ขึ้นต้นด้วย 0")
+
     # Check duplicate
     existing = await db.fetchval("SELECT id FROM users WHERE email=$1", body.email)
     if existing:
         raise HTTPException(status_code=409, detail="อีเมลนี้ถูกใช้งานแล้ว")
 
-    if body.phone:
-        existing_phone = await db.fetchval("SELECT id FROM users WHERE phone=$1", body.phone)
-        if existing_phone:
-            raise HTTPException(status_code=409, detail="เบอร์โทรนี้ถูกใช้งานแล้ว")
+    existing_phone = await db.fetchval("SELECT id FROM users WHERE phone=$1", phone)
+    if existing_phone:
+        raise HTTPException(status_code=409, detail="เบอร์โทรนี้ถูกใช้งานแล้ว")
 
     # Hash password (bcrypt cost=12 — ปลอดภัยดี ไม่แรงเกิน)
     hashed = bcrypt.hashpw(body.password.encode(), bcrypt.gensalt(rounds=12)).decode()
@@ -898,7 +905,7 @@ async def register(body: RegisterRequest, db: asyncpg.Connection = Depends(get_d
         VALUES ($1, $2, $3, $4, NOW(), $5)
         RETURNING id, role
         """,
-        body.email, body.phone, hashed, body.role, "1.0",
+        body.email, phone, hashed, body.role, "1.0",
     )
 
     token = create_token(str(user["id"]), user["role"])
