@@ -2877,7 +2877,17 @@ async function loadWorkerProfile() {
             <div class="form-group"><label>${t('profile_exp_lbl')}</label><input type="number" id="editExp" value="${p.experience_years}"></div>
             <div class="form-group"><label>${t('profile_rate_lbl')}</label><input type="number" id="editRate" value="${p.daily_rate_expected||''}"></div>
           </div>
-          <div class="form-group"><label>${t('profile_loc_lbl')}</label><input type="text" id="editLocation" value="${p.location_name||''}"></div>
+          <div class="form-group">
+            <label>${t('profile_loc_lbl')}</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="editPlaceInput" placeholder="พิมพ์ที่อยู่ เช่น อ่อนนุช กรุงเทพ..." style="flex:1" value="${p.location_name||''}">
+              <button class="btn btn-secondary btn-sm" onclick="useMyLocationForEdit()" style="white-space:nowrap">📍 GPS</button>
+            </div>
+            <div id="editLocationDisplay" style="font-size:12px;color:var(--accent);margin-top:6px;font-family:'IBM Plex Mono',monospace;min-height:18px"></div>
+            <div id="editMapPreview" style="display:none;border-radius:8px;overflow:hidden;margin-top:8px;height:140px;"></div>
+          </div>
+          <input type="hidden" id="editLat" value="${p.lat||''}">
+          <input type="hidden" id="editLng" value="${p.lng||''}">
           <div class="form-group">
             <label>${t('profile_nationality')}</label>
             <select id="editNationality">
@@ -2946,7 +2956,15 @@ async function loadWorkerProfile() {
 
 function showEditProfile() {
   const f = document.getElementById('editProfileForm');
-  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  const opening = f.style.display === 'none';
+  f.style.display = opening ? 'block' : 'none';
+  if (!opening) return;
+  initPlacesAutocomplete('editPlaceInput','editLat','editLng','editLocationDisplay','editMapPreview');
+  const lat = parseFloat(document.getElementById('editLat').value);
+  const lng = parseFloat(document.getElementById('editLng').value);
+  if (!isNaN(lat) && !isNaN(lng)) {
+    showMapPreview('editMapPreview', lat, lng, document.getElementById('editPlaceInput').value || 'ตำแหน่งปัจจุบัน', 'editLat', 'editLng', 'editLocationDisplay', 'editPlaceInput');
+  }
 }
 
 async function doCreateProfile() {
@@ -2976,7 +2994,9 @@ async function doUpdateProfile() {
       skills,
       experience_years:    parseInt(document.getElementById('editExp').value),
       daily_rate_expected: parseFloat(document.getElementById('editRate').value) || undefined,
-      location_name:       document.getElementById('editLocation').value.trim() || undefined,
+      location_name:       document.getElementById('editPlaceInput').value.trim() || undefined,
+      lat:                 document.getElementById('editLat').value ? parseFloat(document.getElementById('editLat').value) : undefined,
+      lng:                 document.getElementById('editLng').value ? parseFloat(document.getElementById('editLng').value) : undefined,
       nationality_type:    document.getElementById('editNationality')?.value || undefined,
     });
     showAlert('alertEditProfile','✅ อัปเดตสำเร็จ!','success');
@@ -3872,6 +3892,7 @@ function toggleLastLocation(cb) {
   }
 }
 function useMyLocationForProfile() { setLocationFromGPS('createLat','createLng','createLocationDisplay','createMapPreview','createPlaceInput'); }
+function useMyLocationForEdit()    { setLocationFromGPS('editLat','editLng','editLocationDisplay','editMapPreview','editPlaceInput'); }
 
 // init autocomplete เมื่อ Google Maps โหลดเสร็จ
 function initAllAutocompletes() {
