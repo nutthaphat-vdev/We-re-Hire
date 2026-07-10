@@ -13,6 +13,7 @@ import asyncpg
 import jwt
 
 logger = logging.getLogger("wehire")
+import asyncio
 import bcrypt
 import httpx
 from contextlib import asynccontextmanager
@@ -21,7 +22,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from typing import Optional
 from uuid import UUID
 
-from fastapi import FastAPI, Depends, HTTPException, Header, Request, status, File, UploadFile
+from fastapi import FastAPI, Depends, HTTPException, Header, Request, status, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -1512,6 +1513,7 @@ async def get_my_applications(
             ja.backup_offered_at,
             ja.backup_accepted_at,
             ja.backup_confirmed_wage,
+            ja.payment_status, ja.paid_amount, ja.slip_url, ja.employer_paid_at,
             jp.id          AS job_id,
             jp.title       AS job_title,
             jp.daily_wage_rate,
@@ -1529,6 +1531,16 @@ async def get_my_applications(
         worker_id,
     )
     MAPS_STATUSES = {"hired", "checked_in", "working", "completed", "verified"}
+
+    # Generate signed URLs for payment slips concurrently (best-effort)
+    async def _maybe_sign(path: Optional[str]) -> Optional[str]:
+        if not path:
+            return None
+        url = await _storage_signed_url(path)
+        return url or None
+
+    slip_signed = await asyncio.gather(*[_maybe_sign(r["slip_url"]) for r in rows])
+
     return [
         {
             "id":                    str(r["id"]),
@@ -1546,6 +1558,10 @@ async def get_my_applications(
             "backup_offered_at":     r["backup_offered_at"].isoformat() if r["backup_offered_at"] else None,
             "backup_accepted_at":    r["backup_accepted_at"].isoformat() if r["backup_accepted_at"] else None,
             "backup_confirmed_wage": float(r["backup_confirmed_wage"]) if r["backup_confirmed_wage"] else None,
+            "payment_status":        r["payment_status"] or "unpaid",
+            "paid_amount":           float(r["paid_amount"]) if r["paid_amount"] else None,
+            "employer_paid_at":      r["employer_paid_at"].isoformat() if r["employer_paid_at"] else None,
+            "slip_url":              slip_signed[i],
             "maps_link":             (
                 f"https://www.google.com/maps/dir/?api=1&destination={r['job_lat']},{r['job_lng']}"
                 if r["status"] in MAPS_STATUSES else None
@@ -1565,7 +1581,7 @@ async def get_my_applications(
                 "contact_info":    r["contact_info"] if r["status"] in MAPS_STATUSES else None,
             }
         }
-        for r in rows
+        for i, r in enumerate(rows)
     ]
 
 
@@ -1846,6 +1862,7 @@ async def get_candidates(
             ja.matched_skills,
             ja.status,
             ja.checkin_at, ja.work_started_at, ja.work_ended_at, ja.employer_verified_at,
+            ja.payment_status, ja.paid_amount,
             jp.required_skills,
             jp.work_start, jp.work_end
         FROM   job_applications ja
@@ -1878,6 +1895,8 @@ async def get_candidates(
             "employer_verified_at":    r["employer_verified_at"].isoformat() if r["employer_verified_at"] else None,
             "work_start":              str(r["work_start"])[:5] if r["work_start"] else None,
             "work_end":                str(r["work_end"])[:5]   if r["work_end"]   else None,
+            "payment_status":          r["payment_status"] or "unpaid",
+            "paid_amount":             float(r["paid_amount"]) if r["paid_amount"] else None,
         }
         for r in rows
     ]
@@ -2350,6 +2369,139 @@ async def employer_verify_complete(
     except Exception:
         pass
     return {"status": "verified"}
+
+
+# ============================================================
+# PAYMENT PROOF FLOW
+# ============================================================
+
+@app.post("/applications/{app_id}/pay", tags=["Payment"])
+async def employer_pay(
+    app_id:     UUID,
+    amount:     float              = Form(...),
+    pay_method: str                = Form(...),
+    slip:       Optional[UploadFile] = File(None),
+    user:       dict               = Depends(require_employer),
+    db:         asyncpg.Connection = Depends(get_db),
+):
+    """Employer แจ้งว่าจ่ายเงินแล้ว พร้อมแนบสลิปถ้าโอน"""
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="จำนวนเงินต้องมากกว่า 0")
+    if pay_method not in ("cash", "transfer"):
+        raise HTTPException(status_code=400, detail="pay_method ต้องเป็น cash หรือ transfer")
+    slip_has_file = slip and slip.filename
+    if pay_method == "transfer" and not slip_has_file:
+        raise HTTPException(status_code=400, detail="วิธีโอนเงินต้องแนบสลิปโอน")
+
+    row = await _get_app_for_employer(app_id, user, db)
+    if row["status"] != "completed":
+        raise HTTPException(status_code=409, detail=f"Worker ยังไม่ได้แจ้งเสร็จงาน (สถานะ: {row['status']})")
+
+    existing = await db.fetchval(
+        "SELECT payment_status FROM job_applications WHERE id=$1", app_id
+    )
+    if existing not in (None, "unpaid"):
+        raise HTTPException(status_code=409, detail=f"ชำระเงินไปแล้ว (สถานะ: {existing})")
+
+    slip_path = None
+    if pay_method == "transfer" and slip_has_file:
+        slip_data = await slip.read()
+        ct = slip.content_type or "image/jpeg"
+        if ct not in _ALLOWED_IMAGE_TYPES:
+            raise HTTPException(status_code=400, detail="สลิป: รองรับเฉพาะ JPG, PNG, WebP")
+        if len(slip_data) > _MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail="สลิป: ขนาดไฟล์ต้องไม่เกิน 5MB")
+        slip_path = f"payments/{app_id}/slip.jpg"
+        await _storage_upload(slip_path, slip_data, ct)
+
+    await db.execute(
+        """
+        UPDATE job_applications
+        SET    paid_amount       = $1,
+               pay_method_actual = $2,
+               slip_url          = $3,
+               employer_paid_at  = NOW(),
+               payment_status    = 'paid_pending'
+        WHERE  id = $4
+        """,
+        amount, pay_method, slip_path, app_id,
+    )
+    method_th = "โอนเงิน" if pay_method == "transfer" else "เงินสด"
+    try:
+        await db.execute(
+            "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, 'payment_update', '💰 นายจ้างแจ้งจ่ายเงินแล้ว', $2)",
+            row["worker_user_id"],
+            f"นายจ้างแจ้งชำระค่าจ้าง ฿{amount:,.0f} ผ่าน{method_th} กรุณายืนยันการรับเงิน",
+        )
+    except Exception:
+        pass
+    return {"payment_status": "paid_pending"}
+
+
+@app.post("/applications/{app_id}/confirm-payment", tags=["Payment"])
+async def worker_confirm_payment(
+    app_id: UUID,
+    user:   dict               = Depends(require_worker),
+    db:     asyncpg.Connection = Depends(get_db),
+):
+    """Worker ยืนยันได้รับเงินแล้ว"""
+    row = await _get_app_for_worker(app_id, user, db)
+
+    pay_row = await db.fetchrow(
+        "SELECT payment_status, paid_amount FROM job_applications WHERE id=$1", app_id
+    )
+    if not pay_row or pay_row["payment_status"] != "paid_pending":
+        status_str = pay_row["payment_status"] if pay_row else "ไม่พบ"
+        raise HTTPException(status_code=409, detail=f"สถานะการชำระเงิน: {status_str}")
+
+    await db.execute(
+        "UPDATE job_applications SET worker_paid_confirmed_at=NOW(), payment_status='paid_confirmed' WHERE id=$1",
+        app_id,
+    )
+    amount = float(pay_row["paid_amount"]) if pay_row["paid_amount"] else 0
+    try:
+        await db.execute(
+            "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, 'payment_update', '✅ ยืนยันรับเงินแล้ว', $2)",
+            UUID(user["sub"]),
+            f"คุณยืนยันการรับเงิน ฿{amount:,.0f} เรียบร้อยแล้ว",
+        )
+        await db.execute(
+            "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, 'payment_update', '✅ Worker ยืนยันรับเงินแล้ว', $2)",
+            row["employer_user_id"],
+            f"Worker ยืนยันรับเงิน ฿{amount:,.0f} เรียบร้อย — งาน {row['job_title']} สำเร็จสมบูรณ์",
+        )
+    except Exception:
+        pass
+    return {"payment_status": "paid_confirmed"}
+
+
+@app.post("/applications/{app_id}/report-payment", tags=["Payment"])
+async def worker_report_payment(
+    app_id: UUID,
+    user:   dict               = Depends(require_worker),
+    db:     asyncpg.Connection = Depends(get_db),
+):
+    """Worker แจ้งปัญหาการชำระเงิน → notify admin"""
+    row = await _get_app_for_worker(app_id, user, db)
+
+    pay_status = await db.fetchval(
+        "SELECT payment_status FROM job_applications WHERE id=$1", app_id
+    )
+    if pay_status not in (None, "unpaid", "paid_pending"):
+        raise HTTPException(status_code=409, detail=f"ไม่สามารถแจ้งปัญหาได้ (สถานะ: {pay_status})")
+
+    await db.execute(
+        "UPDATE job_applications SET payment_status='payment_disputed' WHERE id=$1", app_id
+    )
+    try:
+        await db.execute(
+            "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, 'payment_update', '⚠️ แจ้งปัญหาการชำระเงินแล้ว', $2)",
+            UUID(user["sub"]),
+            f"ทีมงานได้รับการแจ้งปัญหาการชำระเงินงาน {row['job_title']} แล้ว จะตรวจสอบและติดต่อกลับ",
+        )
+    except Exception:
+        pass
+    return {"payment_status": "payment_disputed"}
 
 
 # ============================================================

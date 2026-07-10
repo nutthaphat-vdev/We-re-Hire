@@ -1450,6 +1450,42 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   </div>
 </div>
 
+<!-- PAYMENT MODAL -->
+<div id="payModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9998;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:360px;max-width:90vw">
+    <div style="font-weight:700;font-size:16px;margin-bottom:16px">💰 แจ้งการชำระเงิน</div>
+    <input type="hidden" id="payAppId">
+    <input type="hidden" id="payJobId">
+    <input type="hidden" id="payJobTitle">
+    <div class="form-group">
+      <label>จำนวนเงิน (บาท)</label>
+      <input type="number" id="payAmount" placeholder="เช่น 600" min="1" step="1"
+        style="width:100%;box-sizing:border-box;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;margin-top:4px">
+    </div>
+    <div class="form-group">
+      <label>วิธีชำระเงิน</label>
+      <div style="display:flex;gap:20px;margin-top:8px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px">
+          <input type="radio" name="payMethod" value="cash" checked onchange="payMethodChanged()"> 💵 เงินสด
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px">
+          <input type="radio" name="payMethod" value="transfer" onchange="payMethodChanged()"> 📱 โอนเงิน
+        </label>
+      </div>
+    </div>
+    <div id="paySlipGroup" style="display:none" class="form-group">
+      <label>แนบสลิปโอนเงิน <span style="color:var(--danger)">*</span></label>
+      <input type="file" id="paySlip" accept="image/jpeg,image/png,image/webp"
+        style="margin-top:6px;font-size:13px;color:var(--text)">
+    </div>
+    <div id="alertPay" style="margin-top:8px"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-secondary" onclick="closePayModal()" style="flex:1">ยกเลิก</button>
+      <button id="paySubmitBtn" class="btn btn-primary" onclick="doPaySubmit()" style="flex:1">ยืนยันชำระเงิน</button>
+    </div>
+  </div>
+</div>
+
 <!-- DEBUG PANEL -->
 <div id="debugPanel" style="display:none">
   <div id="debugHeader" onclick="toggleDebug()">
@@ -1664,6 +1700,17 @@ const LANG = {
     del_modal_cancel:'ยกเลิก',
     del_modal_confirm_btn:'ลบบัญชีถาวร',
     del_modal_deleting:'กำลังลบ...',
+    // Payment proof
+    pay_btn:'💰 ชำระเงิน',
+    pay_pending_badge:'รอ Worker ยืนยัน',
+    pay_confirmed_badge:'💰 ได้รับเงินแล้ว',
+    pay_disputed_badge:'⚠️ มีปัญหาการชำระเงิน',
+    pay_submit_btn:'ยืนยันชำระเงิน',
+    pay_confirm_btn:'✓ ยืนยันได้รับเงิน',
+    pay_report_btn:'ไม่ได้รับ / จำนวนไม่ตรง',
+    pay_pending_worker_title:'นายจ้างแจ้งจ่ายเงิน',
+    pay_view_slip:'🧾 ดู Slip',
+    pay_disputed_worker_note:'แจ้งปัญหาแล้ว รอทีมงานตรวจสอบ',
   },
   en: {
     login_tab:'Login', register_tab:'Register',
@@ -1865,6 +1912,17 @@ const LANG = {
     del_modal_cancel:'Cancel',
     del_modal_confirm_btn:'Delete Account',
     del_modal_deleting:'Deleting...',
+    // Payment proof
+    pay_btn:'💰 Pay Worker',
+    pay_pending_badge:'Awaiting Confirmation',
+    pay_confirmed_badge:'💰 Payment Received',
+    pay_disputed_badge:'⚠️ Payment Disputed',
+    pay_submit_btn:'Confirm Payment',
+    pay_confirm_btn:'✓ Confirm Receipt',
+    pay_report_btn:'Not received / Wrong amount',
+    pay_pending_worker_title:'Employer has paid',
+    pay_view_slip:'🧾 View Slip',
+    pay_disputed_worker_note:'Dispute reported — our team will review',
   },
 };
 let _lang = localStorage.getItem('wh_lang') || 'th';
@@ -3214,6 +3272,29 @@ async function loadMyApps() {
             + '<div id="contact-' + a.id + '" style="display:none;margin-top:10px"></div>'
           ) : '')
         + (a.status === 'disputed' ? `<div style="margin-top:12px;padding:12px 14px;background:rgba(255,107,53,.06);border-radius:8px;border-left:3px solid var(--warn)"><div style="font-size:13px;font-weight:600;color:var(--warn)">⚠️ ${t('disputed_title')}</div><div style="font-size:12px;color:var(--muted);margin-top:4px">${t('disputed_note')}</div></div>` : '')
+        + (() => {
+            const ps = a.payment_status || 'unpaid';
+            if (!['completed','verified'].includes(a.status)) return '';
+            if (ps === 'paid_pending') {
+              const amtStr = a.paid_amount ? '฿' + Number(a.paid_amount).toLocaleString() : '';
+              return `<div style="margin-top:12px;padding:12px 14px;background:rgba(0,153,255,.08);border:1px solid rgba(0,153,255,.25);border-radius:8px">
+                <div style="font-size:13px;font-weight:600;margin-bottom:6px">💸 ${t('pay_pending_worker_title')} ${amtStr}</div>
+                ${a.slip_url ? `<a href="${esc(a.slip_url)}" target="_blank" class="btn btn-secondary btn-sm" style="font-size:11px;margin-bottom:8px;display:inline-block;text-decoration:none">${t('pay_view_slip')}</a>` : ''}
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <button class="btn btn-primary btn-sm" onclick="doConfirmPayment('${a.id}',this)" style="font-size:12px">${t('pay_confirm_btn')}</button>
+                  <button class="btn btn-secondary btn-sm" onclick="doReportPayment('${a.id}',this)" style="font-size:11px;color:#e65100;border-color:#e65100">${t('pay_report_btn')}</button>
+                </div>
+              </div>`;
+            }
+            if (ps === 'paid_confirmed') {
+              const amtStr = a.paid_amount ? ' ฿' + Number(a.paid_amount).toLocaleString() : '';
+              return `<div style="margin-top:8px"><span class="badge badge-green">${t('pay_confirmed_badge')}${amtStr}</span></div>`;
+            }
+            if (ps === 'payment_disputed') {
+              return `<div style="margin-top:8px;font-size:12px;color:#e65100">⚠️ ${t('pay_disputed_worker_note')}</div>`;
+            }
+            return '';
+          })()
         + (a.backup_offered_at && !a.backup_accepted_at && a.status !== 'hired' ? `<div style="margin-top:12px;padding:14px 16px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.35);border-radius:10px;border-left:3px solid var(--accent)">
           <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:4px">${t('backup_offer_title')}</div>
           <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${t('backup_offer_hint')}</div>
@@ -3577,9 +3658,17 @@ async function loadCandidates(jobId, jobTitle) {
               <div id="contact-${c.application_id}" style="display:none;font-size:11px;text-align:right;margin-top:4px"></div>` : ''}
             ${c.status === 'completed' ? `
               <button class="btn btn-primary btn-sm" onclick="doVerify('${c.application_id}',this)">${t('cand_verify_btn')}</button>
-              <button class="btn btn-secondary btn-sm" style="font-size:11px;color:#e65100;border-color:#e65100" onclick="doDispute('${c.application_id}',this)">${t('cand_dispute_btn')}</button>` : ''}
+              <button class="btn btn-secondary btn-sm" style="font-size:11px;color:#e65100;border-color:#e65100" onclick="doDispute('${c.application_id}',this)">${t('cand_dispute_btn')}</button>
+              ${(!c.payment_status || c.payment_status === 'unpaid') ? `<button class="btn btn-secondary btn-sm" style="font-size:11px;color:var(--accent2);border-color:var(--accent2)" onclick="openPayModal('${c.application_id}','${jobId}','${esc(jobTitle)}')">${t('pay_btn')}</button>` : ''}
+              ${c.payment_status === 'paid_pending' ? `<span class="badge badge-warn" style="font-size:10px">💸 ${t('pay_pending_badge')}</span>` : ''}
+              ${c.payment_status === 'paid_confirmed' ? `<span class="badge badge-green" style="font-size:10px">${t('pay_confirmed_badge')}</span>` : ''}
+              ${c.payment_status === 'payment_disputed' ? `<span class="badge badge-danger" style="font-size:10px">${t('pay_disputed_badge')}</span>` : ''}` : ''}
             ${c.status === 'verified' ? `
-              <span class="badge badge-green" style="font-size:10px">${t('cand_success')}</span>` : ''}
+              <span class="badge badge-green" style="font-size:10px">${t('cand_success')}</span>
+              ${(!c.payment_status || c.payment_status === 'unpaid') ? `<button class="btn btn-secondary btn-sm" style="font-size:11px;color:var(--accent2);border-color:var(--accent2)" onclick="openPayModal('${c.application_id}','${jobId}','${esc(jobTitle)}')">${t('pay_btn')}</button>` : ''}
+              ${c.payment_status === 'paid_pending' ? `<span class="badge badge-warn" style="font-size:10px">💸 ${t('pay_pending_badge')}</span>` : ''}
+              ${c.payment_status === 'paid_confirmed' ? `<span class="badge badge-green" style="font-size:10px">${t('pay_confirmed_badge')}</span>` : ''}
+              ${c.payment_status === 'payment_disputed' ? `<span class="badge badge-danger" style="font-size:10px">${t('pay_disputed_badge')}</span>` : ''}` : ''}
             ${c.status === 'disputed' ? `
               <span style="font-size:11px;color:#e65100">${t('cand_in_review')}</span>` : ''}
             <button onclick="showReportModal('${c.worker_id}')" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:2px 0">${t('cand_report')}</button>
@@ -3970,6 +4059,109 @@ async function doDispute(appId, btn) {
     btn.innerHTML = '⚠️ โต้แย้ง';
     // endpoint ยังไม่มีใน MVP — แจ้ง user
     alert('ฟีเจอร์ Dispute จะพร้อมใช้งาน Phase 3\nตอนนี้ระบบจะ auto-escalate ให้ admin หลัง 2 ชั่วโมง');
+  }
+}
+
+// ─── PAYMENT PROOF ─────────────────────────────────────────
+
+function payMethodChanged() {
+  const method = document.querySelector('input[name="payMethod"]:checked')?.value;
+  document.getElementById('paySlipGroup').style.display = method === 'transfer' ? 'block' : 'none';
+}
+
+function openPayModal(appId, jobId, jobTitle) {
+  document.getElementById('payAppId').value   = appId;
+  document.getElementById('payJobId').value   = jobId   || '';
+  document.getElementById('payJobTitle').value = jobTitle || '';
+  document.getElementById('payAmount').value  = '';
+  const cashRadio = document.querySelector('input[name="payMethod"][value="cash"]');
+  if (cashRadio) cashRadio.checked = true;
+  document.getElementById('paySlipGroup').style.display = 'none';
+  const slipInput = document.getElementById('paySlip');
+  if (slipInput) slipInput.value = '';
+  document.getElementById('alertPay').innerHTML = '';
+  const btn = document.getElementById('paySubmitBtn');
+  btn.disabled = false;
+  btn.innerHTML = t('pay_submit_btn');
+  document.getElementById('payModal').style.display = 'flex';
+}
+
+function closePayModal() {
+  document.getElementById('payModal').style.display = 'none';
+}
+
+async function doPaySubmit() {
+  const appId  = document.getElementById('payAppId').value;
+  const amount = document.getElementById('payAmount').value;
+  const method = document.querySelector('input[name="payMethod"]:checked')?.value;
+  const slip   = document.getElementById('paySlip')?.files[0];
+
+  if (!amount || parseFloat(amount) <= 0) {
+    document.getElementById('alertPay').innerHTML = '<div class="alert alert-error">กรุณากรอกจำนวนเงิน</div>';
+    return;
+  }
+  if (method === 'transfer' && !slip) {
+    document.getElementById('alertPay').innerHTML = '<div class="alert alert-error">กรุณาแนบสลิปโอนเงิน</div>';
+    return;
+  }
+
+  const jobId    = document.getElementById('payJobId').value;
+  const jobTitle = document.getElementById('payJobTitle').value;
+  const btn      = document.getElementById('paySubmitBtn');
+  btn.disabled   = true;
+  btn.innerHTML  = '<span class="loading" style="width:12px;height:12px"></span>';
+
+  try {
+    const form = new FormData();
+    form.append('amount', amount);
+    form.append('pay_method', method);
+    if (method === 'transfer' && slip) form.append('slip', slip);
+
+    const r = await fetch(API + `/applications/${appId}/pay`, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token },
+      body: form,
+    });
+    if (!r.ok) {
+      const e = await r.json();
+      throw new Error(e.detail || 'ชำระเงินไม่สำเร็จ');
+    }
+    closePayModal();
+    if (jobId) loadCandidates(jobId, jobTitle);
+  } catch(e) {
+    document.getElementById('alertPay').innerHTML = `<div class="alert alert-error">${esc(e.message)}</div>`;
+    btn.disabled = false;
+    btn.innerHTML = t('pay_submit_btn');
+  }
+}
+
+async function doConfirmPayment(appId, btn) {
+  if (!confirm('ยืนยันว่าได้รับเงินแล้วใช่ไหม?')) return;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>';
+  try {
+    await api('POST', `/applications/${appId}/confirm-payment`);
+    const block = btn.closest('div[style*="background:rgba(0,153,255"]');
+    if (block) block.outerHTML = `<div style="margin-top:8px"><span class="badge badge-green">${t('pay_confirmed_badge')}</span></div>`;
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = t('pay_confirm_btn');
+    alert(e.message);
+  }
+}
+
+async function doReportPayment(appId, btn) {
+  if (!confirm('แจ้งปัญหาการชำระเงินใช่ไหม? ทีมงานจะตรวจสอบและติดต่อกลับ')) return;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>';
+  try {
+    await api('POST', `/applications/${appId}/report-payment`);
+    const block = btn.closest('div[style*="background:rgba(0,153,255"]');
+    if (block) block.outerHTML = `<div style="margin-top:8px;font-size:12px;color:#e65100">⚠️ ${t('pay_disputed_worker_note')}</div>`;
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = t('pay_report_btn');
+    alert(e.message);
   }
 }
 
