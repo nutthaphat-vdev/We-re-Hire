@@ -2394,8 +2394,8 @@ async def employer_pay(
         raise HTTPException(status_code=400, detail="วิธีโอนเงินต้องแนบสลิปโอน")
 
     row = await _get_app_for_employer(app_id, user, db)
-    if row["status"] != "completed":
-        raise HTTPException(status_code=409, detail=f"Worker ยังไม่ได้แจ้งเสร็จงาน (สถานะ: {row['status']})")
+    if row["status"] not in ("completed", "verified"):
+        raise HTTPException(status_code=409, detail=f"งานต้องเสร็จก่อนจึงจะจ่ายได้ (สถานะ: {row['status']}) — ต้องเป็น completed หรือ verified")
 
     existing = await db.fetchval(
         "SELECT payment_status FROM job_applications WHERE id=$1", app_id
@@ -2499,6 +2499,13 @@ async def worker_report_payment(
             UUID(user["sub"]),
             f"ทีมงานได้รับการแจ้งปัญหาการชำระเงินงาน {row['job_title']} แล้ว จะตรวจสอบและติดต่อกลับ",
         )
+        admin_ids = await db.fetch("SELECT id FROM users WHERE role='admin'")
+        for admin_row in admin_ids:
+            await db.execute(
+                "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, 'payment_update', '⚠️ มีข้อพิพาทการชำระเงิน', $2)",
+                admin_row["id"],
+                f"Worker แจ้งปัญหาการชำระเงินงาน {row['job_title']} (application: {app_id}) — กรุณาตรวจสอบ",
+            )
     except Exception:
         pass
     return {"payment_status": "payment_disputed"}
