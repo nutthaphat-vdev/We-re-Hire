@@ -1565,6 +1565,8 @@ const LANG = {
     profile_cat_lbl:'หมวดงาน', profile_jobtitle_lbl:'ตำแหน่งงาน',
     profile_exp_lbl:'ประสบการณ์ (ปี)', profile_rate_lbl:'ค่าแรงที่คาด (฿/วัน)',
     profile_loc_lbl:'ชื่อสถานที่', profile_nat_th:'🇹🇭 ไทย', profile_nat_foreign:'🌏 ต่างด้าว',
+    profile_address_lbl:'ที่อยู่', profile_province_lbl:'จังหวัด', profile_postal_lbl:'รหัสไปรษณีย์',
+    profile_postal_error:'รหัสไปรษณีย์ต้องเป็นตัวเลข 5 หลัก', profile_province_error:'กรุณาเลือกจังหวัด',
     kyc_title:'🪪 ส่งเอกสาร KYC', kyc_face_lbl:'รูปถ่ายหน้าตรง (JPG/PNG สูงสุด 5MB)',
     kyc_id_lbl:'รูปบัตรประชาชน (JPG/PNG สูงสุด 5MB)', kyc_submit_btn:'📤 ส่งเอกสาร KYC',
     profile_edit_btn:'✏️ แก้ไขโปรไฟล์', profile_save:'บันทึก', profile_cancel:'ยกเลิก',
@@ -1779,6 +1781,8 @@ const LANG = {
     profile_cat_lbl:'Job Category', profile_jobtitle_lbl:'Job Title',
     profile_exp_lbl:'Experience (years)', profile_rate_lbl:'Expected Rate (฿/day)',
     profile_loc_lbl:'Location Name', profile_nat_th:'🇹🇭 Thai', profile_nat_foreign:'🌏 Foreign',
+    profile_address_lbl:'Address', profile_province_lbl:'Province', profile_postal_lbl:'Postal Code',
+    profile_postal_error:'Postal code must be 5 digits', profile_province_error:'Please select a province',
     kyc_title:'🪪 Submit KYC Documents', kyc_face_lbl:'Profile photo (JPG/PNG max 5MB)',
     kyc_id_lbl:'ID card photo (JPG/PNG max 5MB)', kyc_submit_btn:'📤 Submit KYC',
     profile_edit_btn:'✏️ Edit profile', profile_save:'Save', profile_cancel:'Cancel',
@@ -1921,6 +1925,24 @@ const LANG = {
     pay_disputed_worker_note:'Dispute reported — our team will review',
   },
 };
+const THAI_PROVINCES = [
+  'กรุงเทพมหานคร','กระบี่','กาญจนบุรี','กาฬสินธุ์','กำแพงเพชร',
+  'ขอนแก่น','จันทบุรี','ฉะเชิงเทรา','ชลบุรี','ชัยนาท',
+  'ชัยภูมิ','ชุมพร','เชียงราย','เชียงใหม่','ตรัง',
+  'ตราด','ตาก','นครนายก','นครปฐม','นครพนม',
+  'นครราชสีมา','นครศรีธรรมราช','นครสวรรค์','นนทบุรี','นราธิวาส',
+  'น่าน','บึงกาฬ','บุรีรัมย์','ปทุมธานี','ประจวบคีรีขันธ์',
+  'ปราจีนบุรี','ปัตตานี','พระนครศรีอยุธยา','พะเยา','พังงา',
+  'พัทลุง','พิจิตร','พิษณุโลก','เพชรบุรี','เพชรบูรณ์',
+  'แพร่','ภูเก็ต','มหาสารคาม','มุกดาหาร','แม่ฮ่องสอน',
+  'ยโสธร','ยะลา','ร้อยเอ็ด','ระนอง','ระยอง',
+  'ราชบุรี','ลพบุรี','ลำปาง','ลำพูน','เลย',
+  'ศรีสะเกษ','สกลนคร','สงขลา','สตูล','สมุทรปราการ',
+  'สมุทรสงคราม','สมุทรสาคร','สระแก้ว','สระบุรี','สิงห์บุรี',
+  'สุโขทัย','สุพรรณบุรี','สุราษฎร์ธานี','สุรินทร์','หนองคาย',
+  'หนองบัวลำภู','อ่างทอง','อำนาจเจริญ','อุดรธานี','อุตรดิตถ์',
+  'อุทัยธานี','อุบลราชธานี',
+];
 let _lang = localStorage.getItem('wh_lang') || 'th';
 function t(key) { return (LANG[_lang] || LANG.th)[key] || key; }
 function setLang(lang) {
@@ -2878,16 +2900,22 @@ async function loadWorkerProfile() {
             <div class="form-group"><label>${t('profile_rate_lbl')}</label><input type="number" id="editRate" value="${p.daily_rate_expected||''}"></div>
           </div>
           <div class="form-group">
-            <label>${t('profile_loc_lbl')}</label>
-            <div style="display:flex;gap:8px">
-              <input type="text" id="editPlaceInput" placeholder="พิมพ์ที่อยู่ เช่น อ่อนนุช กรุงเทพ..." style="flex:1" value="${p.location_name||''}">
-              <button class="btn btn-secondary btn-sm" onclick="useMyLocationForEdit()" style="white-space:nowrap">📍 GPS</button>
-            </div>
-            <div id="editLocationDisplay" style="font-size:12px;color:var(--accent);margin-top:6px;font-family:'IBM Plex Mono',monospace;min-height:18px"></div>
-            <div id="editMapPreview" style="display:none;border-radius:8px;overflow:hidden;margin-top:8px;height:140px;"></div>
+            <label>${t('profile_address_lbl')}</label>
+            <input type="text" id="editAddressText" placeholder="เช่น 123 ซอยสุขุมวิท 77" value="${p.address_text||''}">
           </div>
-          <input type="hidden" id="editLat" value="${p.lat||''}">
-          <input type="hidden" id="editLng" value="${p.lng||''}">
+          <div class="form-row">
+            <div class="form-group">
+              <label>${t('profile_province_lbl')}</label>
+              <select id="editProvince">
+                <option value="">— เลือกจังหวัด —</option>
+                ${THAI_PROVINCES.map(pv => `<option value="${pv}" ${p.province===pv?'selected':''}>${pv}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>${t('profile_postal_lbl')}</label>
+              <input type="text" id="editPostalCode" placeholder="10110" maxlength="5" value="${p.postal_code||''}">
+            </div>
+          </div>
           <div class="form-group">
             <label>${t('profile_nationality')}</label>
             <select id="editNationality">
@@ -2932,17 +2960,22 @@ async function loadWorkerProfile() {
             <div class="form-group"><label>ค่าแรงที่คาด (฿/วัน)</label><input type="number" id="createRate" placeholder="500"></div>
           </div>
           <div class="form-group">
-            <label>ที่อยู่ / สถานที่</label>
-            <div style="display:flex;gap:8px">
-              <input type="text" id="createPlaceInput" placeholder="พิมพ์ที่อยู่ของคุณ เช่น อ่อนนุช กรุงเทพ..." style="flex:1">
-              <button class="btn btn-secondary btn-sm" onclick="useMyLocationForProfile()" style="white-space:nowrap">📍 GPS</button>
-            </div>
-            <div id="createLocationDisplay" style="font-size:12px;color:var(--accent);margin-top:6px;font-family:'IBM Plex Mono',monospace;min-height:18px"></div>
-            <div id="createMapPreview" style="display:none;border-radius:8px;overflow:hidden;margin-top:8px;height:140px;"></div>
+            <label>${t('profile_address_lbl')}</label>
+            <input type="text" id="createAddressText" placeholder="เช่น 123 ซอยสุขุมวิท 77">
           </div>
-          <input type="hidden" id="createLat" value="">
-          <input type="hidden" id="createLng" value="">
-          <div class="form-group"><label>ชื่อสถานที่ (แสดงใน profile)</label><input type="text" id="createLocation" placeholder="อ่อนนุช, กรุงเทพฯ"></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>${t('profile_province_lbl')}</label>
+              <select id="createProvince">
+                <option value="">— เลือกจังหวัด —</option>
+                ${THAI_PROVINCES.map(pv => `<option value="${pv}">${pv}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>${t('profile_postal_lbl')}</label>
+              <input type="text" id="createPostalCode" placeholder="10110" maxlength="5">
+            </div>
+          </div>
           <div id="alertCreateProfile"></div>
           <button class="btn btn-primary" onclick="doCreateProfile()">✅ สร้างโปรไฟล์</button>
         </div>`;
@@ -2958,27 +2991,26 @@ function showEditProfile() {
   const f = document.getElementById('editProfileForm');
   const opening = f.style.display === 'none';
   f.style.display = opening ? 'block' : 'none';
-  if (!opening) return;
-  initPlacesAutocomplete('editPlaceInput','editLat','editLng','editLocationDisplay','editMapPreview');
-  const lat = parseFloat(document.getElementById('editLat').value);
-  const lng = parseFloat(document.getElementById('editLng').value);
-  if (!isNaN(lat) && !isNaN(lng)) {
-    showMapPreview('editMapPreview', lat, lng, document.getElementById('editPlaceInput').value || 'ตำแหน่งปัจจุบัน', 'editLat', 'editLng', 'editLocationDisplay', 'editPlaceInput');
-  }
 }
 
 async function doCreateProfile() {
   try {
     const skills = document.getElementById('createSkills').value.split(',').map(s=>s.trim()).filter(Boolean);
-    if (!document.getElementById('createLat').value || !document.getElementById('createLng').value) throw new Error(t('no_pin_error'));
+    const province    = document.getElementById('createProvince').value;
+    const postalCode  = document.getElementById('createPostalCode').value.trim();
+    const addressText = document.getElementById('createAddressText').value.trim();
+    if (!province) throw new Error(t('profile_province_error'));
+    if (postalCode && !/^\d{5}$/.test(postalCode)) throw new Error(t('profile_postal_error'));
+    const locationName = [addressText, province, postalCode].filter(Boolean).join(' ') || undefined;
     await api('POST', '/workers/profile', {
       full_name:           document.getElementById('createName').value.trim(),
       skills,
       experience_years:    parseInt(document.getElementById('createExp').value) || 0,
       daily_rate_expected: parseFloat(document.getElementById('createRate').value) || undefined,
-      lat:                 parseFloat(document.getElementById('createLat').value),
-      lng:                 parseFloat(document.getElementById('createLng').value),
-      location_name:       document.getElementById('createLocation').value.trim() || undefined,
+      address_text:        addressText || undefined,
+      province,
+      postal_code:         postalCode || undefined,
+      location_name:       locationName,
     });
     showAlert('alertCreateProfile','✅ สร้างโปรไฟล์สำเร็จ!','success');
     setTimeout(() => loadWorkerProfile(), 1000);
@@ -2989,15 +3021,22 @@ async function doCreateProfile() {
 
 async function doUpdateProfile() {
   try {
-    const skills = document.getElementById('editSkills').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const skills      = document.getElementById('editSkills').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const province    = document.getElementById('editProvince').value;
+    const postalCode  = document.getElementById('editPostalCode').value.trim();
+    const addressText = document.getElementById('editAddressText').value.trim();
+    if (!province) throw new Error(t('profile_province_error'));
+    if (postalCode && !/^\d{5}$/.test(postalCode)) throw new Error(t('profile_postal_error'));
+    const locationName = [addressText, province, postalCode].filter(Boolean).join(' ') || undefined;
     await api('PATCH', '/workers/profile', {
       skills,
       experience_years:    parseInt(document.getElementById('editExp').value),
       daily_rate_expected: parseFloat(document.getElementById('editRate').value) || undefined,
-      location_name:       document.getElementById('editPlaceInput').value.trim() || undefined,
-      lat:                 document.getElementById('editLat').value ? parseFloat(document.getElementById('editLat').value) : undefined,
-      lng:                 document.getElementById('editLng').value ? parseFloat(document.getElementById('editLng').value) : undefined,
       nationality_type:    document.getElementById('editNationality')?.value || undefined,
+      address_text:        addressText || undefined,
+      province:            province || undefined,
+      postal_code:         postalCode || undefined,
+      location_name:       locationName,
     });
     showAlert('alertEditProfile','✅ อัปเดตสำเร็จ!','success');
     setTimeout(() => loadWorkerProfile(), 1000);
@@ -3891,15 +3930,11 @@ function toggleLastLocation(cb) {
     document.getElementById('jobLocationDisplay').textContent = '';
   }
 }
-function useMyLocationForProfile() { setLocationFromGPS('createLat','createLng','createLocationDisplay','createMapPreview','createPlaceInput'); }
-function useMyLocationForEdit()    { setLocationFromGPS('editLat','editLng','editLocationDisplay','editMapPreview','editPlaceInput'); }
-
 // init autocomplete เมื่อ Google Maps โหลดเสร็จ
 function initAllAutocompletes() {
   if (!window.google) { setTimeout(initAllAutocompletes, 500); return; }
   initPlacesAutocomplete('searchPlaceInput','searchLat','searchLng','searchLocationDisplay','searchMapPreview');
   initPlacesAutocomplete('jobPlaceInput','jobLat','jobLng','jobLocationDisplay','jobMapPreview');
-  initPlacesAutocomplete('createPlaceInput','createLat','createLng','createLocationDisplay','createMapPreview');
   log('info', '✓ Google Maps Places ready');
 }
 initAllAutocompletes();

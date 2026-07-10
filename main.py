@@ -962,9 +962,12 @@ class WorkerProfileCreate(BaseModel):
     skills:              list[str] = Field(default=[])
     experience_years:    int   = Field(default=0, ge=0, le=50)
     daily_rate_expected: Optional[float] = Field(None, gt=0)
-    lat:                 float = Field(..., ge=-90,  le=90)
-    lng:                 float = Field(..., ge=-180, le=180)
+    lat:                 Optional[float] = Field(None, ge=-90,  le=90)
+    lng:                 Optional[float] = Field(None, ge=-180, le=180)
     location_name:       Optional[str] = Field(None, max_length=255)
+    address_text:        Optional[str] = Field(None, max_length=500)
+    province:            Optional[str] = Field(None, max_length=50)
+    postal_code:         Optional[str] = Field(None, max_length=10)
 
 class WorkerProfileUpdate(BaseModel):
     skills:              Optional[list[str]] = None
@@ -975,6 +978,9 @@ class WorkerProfileUpdate(BaseModel):
     location_name:       Optional[str]       = Field(None, max_length=255)
     is_available:        Optional[bool]      = None
     nationality_type:    Optional[str]       = Field(None, pattern="^(thai|foreign)$")
+    address_text:        Optional[str]       = Field(None, max_length=500)
+    province:            Optional[str]       = Field(None, max_length=50)
+    postal_code:         Optional[str]       = Field(None, max_length=10)
 
 @app.get("/workers/profile/me", tags=["Worker"])
 async def get_worker_profile(
@@ -986,6 +992,7 @@ async def get_worker_profile(
         SELECT id, full_name, skills, experience_years, daily_rate_expected,
                background_check_status, location_name, is_available,
                nationality_type, work_permit_url, work_permit_expiry,
+               address_text, province, postal_code,
                ST_X(location::geometry) AS lng,
                ST_Y(location::geometry) AS lat,
                updated_at
@@ -1059,21 +1066,41 @@ async def create_worker_profile(
     # Clean skills — lowercase + dedupe
     clean_skills = list({s.strip().lower() for s in body.skills if s.strip()})
 
-    row = await db.fetchrow(
-        """
-        INSERT INTO worker_profiles
-            (user_id, full_name, skills, experience_years, daily_rate_expected,
-             location, location_name)
-        VALUES
-            ($1, $2, $3, $4, $5,
-             ST_MakePoint($6, $7)::geography, $8)
-        RETURNING id, full_name, skills, experience_years, daily_rate_expected,
-                  background_check_status, location_name, is_available
-        """,
-        UUID(user["sub"]), body.full_name, clean_skills,
-        body.experience_years, body.daily_rate_expected,
-        body.lng, body.lat, body.location_name,
-    )
+    if body.lat is not None and body.lng is not None:
+        row = await db.fetchrow(
+            """
+            INSERT INTO worker_profiles
+                (user_id, full_name, skills, experience_years, daily_rate_expected,
+                 location, location_name, address_text, province, postal_code)
+            VALUES
+                ($1, $2, $3, $4, $5,
+                 ST_MakePoint($6, $7)::geography, $8, $9, $10, $11)
+            RETURNING id, full_name, skills, experience_years, daily_rate_expected,
+                      background_check_status, location_name, is_available,
+                      address_text, province, postal_code
+            """,
+            UUID(user["sub"]), body.full_name, clean_skills,
+            body.experience_years, body.daily_rate_expected,
+            body.lng, body.lat, body.location_name,
+            body.address_text, body.province, body.postal_code,
+        )
+    else:
+        row = await db.fetchrow(
+            """
+            INSERT INTO worker_profiles
+                (user_id, full_name, skills, experience_years, daily_rate_expected,
+                 location_name, address_text, province, postal_code)
+            VALUES
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING id, full_name, skills, experience_years, daily_rate_expected,
+                      background_check_status, location_name, is_available,
+                      address_text, province, postal_code
+            """,
+            UUID(user["sub"]), body.full_name, clean_skills,
+            body.experience_years, body.daily_rate_expected,
+            body.location_name,
+            body.address_text, body.province, body.postal_code,
+        )
     return dict(row)
 
 @app.patch("/workers/profile", tags=["Worker"])
@@ -1096,6 +1123,12 @@ async def update_worker_profile(
         updates["is_available"] = body.is_available
     if body.nationality_type is not None:
         updates["nationality_type"] = body.nationality_type
+    if body.address_text is not None:
+        updates["address_text"] = body.address_text
+    if body.province is not None:
+        updates["province"] = body.province
+    if body.postal_code is not None:
+        updates["postal_code"] = body.postal_code
 
     if not updates and body.lat is None:
         raise HTTPException(status_code=400, detail="ไม่มีข้อมูลที่ต้องอัปเดต")
@@ -1121,7 +1154,8 @@ async def update_worker_profile(
         SET    {', '.join(set_parts)}
         WHERE  user_id = ${idx}
         RETURNING id, full_name, skills, experience_years, daily_rate_expected,
-                  background_check_status, location_name, is_available
+                  background_check_status, location_name, is_available,
+                  address_text, province, postal_code
     """
     row = await db.fetchrow(query, *params)
     if not row:
