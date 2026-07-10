@@ -797,14 +797,6 @@ html, body { margin:0; padding:0; background:#0d0f12; }
         </div>
       </div>
 
-      <!-- CTA -->
-      <div style="text-align:center;margin-top:48px">
-        <button class="lp-btn" onclick="showAuthFromLanding()" style="max-width:320px;width:100%">
-          <span data-i18n="howto_cta">เริ่มเลย — สมัครฟรี</span>
-          <svg class="lp-btn-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-        </button>
-        <div style="font-size:12px;color:var(--muted);margin-top:12px" data-i18n="howto_cta_sub">ฟรี ไม่มีค่าสมัคร • ชำระเฉพาะเมื่อจ้างงานสำเร็จ</div>
-      </div>
     </div>
   </div>
 
@@ -1313,8 +1305,8 @@ html, body { margin:0; padding:0; background:#0d0f12; }
             <div id="jobLocationDisplay" style="font-size:12px;color:var(--accent);margin-top:6px;font-family:'IBM Plex Mono',monospace;min-height:18px"></div>
             <div id="jobMapPreview" style="display:none;border-radius:8px;overflow:hidden;margin-top:8px;height:160px;"></div>
           </div>
-          <input type="hidden" id="jobLat" value="13.7018">
-          <input type="hidden" id="jobLng" value="100.6011">
+          <input type="hidden" id="jobLat" value="">
+          <input type="hidden" id="jobLng" value="">
           <button class="btn btn-primary" onclick="doPostJob()"><span data-i18n="postjob_btn">📋 โพสต์งาน</span></button>
         </div>
       </div>
@@ -1630,6 +1622,8 @@ const LANG = {
     howto_e3h:'ติดตามวันงาน', howto_e3p:'ได้รับแจ้งเตือนเมื่อ Worker เช็คอิน · ถ้าไม่มา ระบบแจ้งอัตโนมัติและเปิดรายชื่อสำรองทันที',
     howto_e4h:'ยืนยันจบงาน', howto_e4p:'Worker กด "จบงาน" → กด "ยืนยัน" เพื่อปิดงาน → ทั้งสองฝ่ายให้คะแนนกัน',
     howto_cta:'เริ่มเลย — สมัครฟรี', howto_cta_sub:'ฟรี ไม่มีค่าสมัคร • ชำระเฉพาะเมื่อจ้างงานสำเร็จ',
+    pin_hint:'📍 ปักหมุดบนแผนที่ หรือกด GPS เพื่อระบุพิกัด',
+    no_pin_error:'กรุณาปักหมุดบนแผนที่ หรือกดปุ่มตำแหน่งของฉัน เพื่อระบุพิกัด',
     lp_feat_title:'ออกแบบมาเพื่อแก้ปัญหาจริง',
     lp_feat_sub:'ปัญหาหลักของตลาดแรงงานรายวันคือ ghosting, ข้อมูลปลอม, และไม่มีระบบ accountability — WeHire แก้ทุกจุด',
     lp_f1h:'Anti-Ghosting อัตโนมัติ', lp_f1p:'Worker hired แต่ไม่เช็คอิน → +30 นาที แจ้ง employer → +60 นาที ระบบ mark no-show และเปิด backup queue ทันที ไม่ต้องรอ',
@@ -1842,6 +1836,8 @@ const LANG = {
     howto_e3h:'Track on the Day', howto_e3p:'Get notified when the worker checks in · If they don\'t show, auto-alert fires and backup list opens immediately',
     howto_e4h:'Confirm Job Complete', howto_e4p:'Worker taps "End Job" → you tap "Confirm" to close the job → both sides rate each other',
     howto_cta:'Get Started — Sign Up Free', howto_cta_sub:'Free to sign up • Pay only when you hire',
+    pin_hint:'📍 Pin on the map or tap GPS to set coordinates',
+    no_pin_error:'Please pin a location on the map or tap My Location to set coordinates',
     lp_feat_title:'Built to Solve Real Problems',
     lp_feat_sub:'The daily labour market is plagued by ghosting, fake profiles, and zero accountability — WeHire fixes all of it',
     lp_f1h:'Automatic Anti-Ghosting', lp_f1p:'Worker hired but no check-in → +30 min employer alert → +60 min auto no-show + backup queue opens immediately',
@@ -2934,8 +2930,8 @@ async function loadWorkerProfile() {
             <div id="createLocationDisplay" style="font-size:12px;color:var(--accent);margin-top:6px;font-family:'IBM Plex Mono',monospace;min-height:18px"></div>
             <div id="createMapPreview" style="display:none;border-radius:8px;overflow:hidden;margin-top:8px;height:140px;"></div>
           </div>
-          <input type="hidden" id="createLat" value="13.7018">
-          <input type="hidden" id="createLng" value="100.6011">
+          <input type="hidden" id="createLat" value="">
+          <input type="hidden" id="createLng" value="">
           <div class="form-group"><label>ชื่อสถานที่ (แสดงใน profile)</label><input type="text" id="createLocation" placeholder="อ่อนนุช, กรุงเทพฯ"></div>
           <div id="alertCreateProfile"></div>
           <button class="btn btn-primary" onclick="doCreateProfile()">✅ สร้างโปรไฟล์</button>
@@ -2956,6 +2952,7 @@ function showEditProfile() {
 async function doCreateProfile() {
   try {
     const skills = document.getElementById('createSkills').value.split(',').map(s=>s.trim()).filter(Boolean);
+    if (!document.getElementById('createLat').value || !document.getElementById('createLng').value) throw new Error(t('no_pin_error'));
     await api('POST', '/workers/profile', {
       full_name:           document.getElementById('createName').value.trim(),
       skills,
@@ -3432,6 +3429,7 @@ async function doPostJob() {
       const hrs = calcWorkHours(workStart, workEnd);
       if (hrs > 8) throw new Error('ช่วงเวลาทำงานต้องไม่เกิน 8 ชั่วโมง');
     }
+    if (!document.getElementById('jobLat').value || !document.getElementById('jobLng').value) throw new Error(t('no_pin_error'));
     const body = {
       title:           document.getElementById('jobTitle').value.trim(),
       description:     document.getElementById('jobDesc').value.trim() || undefined,
@@ -3726,7 +3724,11 @@ function initPlacesAutocomplete(inputId, latId, lngId, displayId, mapPreviewId) 
   });
   ac.addListener('place_changed', () => {
     const place = ac.getPlace();
-    if (!place.geometry) return;
+    if (!place.geometry) {
+      const display = document.getElementById(displayId);
+      if (display) display.textContent = t('pin_hint');
+      return;
+    }
     const lat = place.geometry.location.lat();
     const lng = place.geometry.location.lng();
     document.getElementById(latId).value = lat;
