@@ -314,7 +314,7 @@ async def check_noshow_workers():
                                 logger.info(f"[noshow] skip app={row['id']} — status เปลี่ยนไปแล้ว (worker เช็คอิน)")
                                 continue
                             await db.execute(
-                                "UPDATE job_postings SET slots_filled = GREATEST(0, slots_filled - 1) WHERE id=$1",
+                                "UPDATE job_postings SET slots_filled = GREATEST(0, slots_filled - 1), status = CASE WHEN status='filled' THEN 'open' ELSE status END WHERE id=$1",
                                 row["job_id"],
                             )
                             # behavioral score: noshow + 1
@@ -2961,7 +2961,7 @@ async def mark_noshow(
             app_id,
         )
         await db.execute(
-            "UPDATE job_postings SET slots_filled = GREATEST(0, slots_filled - 1) WHERE id=$1",
+            "UPDATE job_postings SET slots_filled = GREATEST(0, slots_filled - 1), status = CASE WHEN status='filled' THEN 'open' ELSE status END WHERE id=$1",
             row["job_id"],
         )
         worker_user_id = await db.fetchval(
