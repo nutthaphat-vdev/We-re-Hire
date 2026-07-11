@@ -304,10 +304,15 @@ async def check_noshow_workers():
                     # ── Auto no-show: +30 นาที ───────────────────────────────
                     if elapsed.total_seconds() >= 30 * 60:
                         async with db.transaction():
-                            await db.execute(
-                                "UPDATE job_applications SET status='no_show', noshow_marked_at=NOW() WHERE id=$1",
+                            # Status guard: mark no_show เฉพาะถ้ายังเป็น 'hired' อยู่จริง
+                            # กัน race — worker อาจเพิ่งเช็คอินระหว่าง cron fetch กับ update
+                            marked = await db.fetchval(
+                                "UPDATE job_applications SET status='no_show', noshow_marked_at=NOW() WHERE id=$1 AND status='hired' RETURNING id",
                                 row["id"],
                             )
+                            if not marked:
+                                logger.info(f"[noshow] skip app={row['id']} — status เปลี่ยนไปแล้ว (worker เช็คอิน)")
+                                continue
                             await db.execute(
                                 "UPDATE job_postings SET slots_filled = GREATEST(0, slots_filled - 1) WHERE id=$1",
                                 row["job_id"],
@@ -427,16 +432,20 @@ async def check_noshow_workers():
             for row in auto_start_rows:
                 try:
                     async with db.transaction():
-                        await db.execute(
+                        # Status guard: auto-start เฉพาะถ้ายังเป็น 'checked_in' (กันทับกรณี employer กด start เอง)
+                        started = await db.fetchval(
                             """
                             UPDATE job_applications
                             SET    status = 'working',
                                    work_started_at  = checkin_at,
                                    auto_confirmed_at = NOW()
-                            WHERE  id = $1
+                            WHERE  id = $1 AND status = 'checked_in'
+                            RETURNING id
                             """,
                             row["id"],
                         )
+                        if not started:
+                            continue
                         # แจ้ง worker
                         await db.execute(
                             """
@@ -2014,15 +2023,20 @@ async def decide_application(
             body.decision, body.note, app_id,
         )
         if body.decision == "hired":
-            await db.execute(
+            # Atomic slot claim — กัน race condition สอง employer/คำขอแย่ง slot สุดท้ายพร้อมกัน
+            claimed = await db.fetchval(
                 """
                 UPDATE job_postings
                 SET    slots_filled = slots_filled + 1,
                        status = CASE WHEN slots_filled + 1 >= slots_available THEN 'filled' ELSE status END
-                WHERE  id = $1
+                WHERE  id = $1 AND slots_filled < slots_available
+                RETURNING id
                 """,
                 row["job_id"],
             )
+            if not claimed:
+                # slot สุดท้ายถูกแย่งไปแล้ว → raise เพื่อ rollback ทั้ง transaction (status='hired' ไม่ถูกบันทึก)
+                raise HTTPException(status_code=409, detail="ที่นั่งเต็มแล้ว")
             # Auto-withdraw overlapping applications for the same worker (batch)
             if row["start_date"]:
                 hired_start = row["start_date"]
@@ -2872,15 +2886,19 @@ async def accept_backup_offer(
             """,
             app_id,
         )
-        await db.execute(
+        # Atomic slot claim — กัน race condition แย่ง slot สุดท้ายพร้อมกัน
+        claimed = await db.fetchval(
             """
             UPDATE job_postings
             SET    slots_filled = slots_filled + 1,
                    status = CASE WHEN slots_filled + 1 >= slots_available THEN 'filled' ELSE status END
-            WHERE  id = $1
+            WHERE  id = $1 AND slots_filled < slots_available
+            RETURNING id
             """,
             row["job_id"],
         )
+        if not claimed:
+            raise HTTPException(status_code=409, detail="ที่นั่งเต็มแล้ว")
         await db.execute(
             """
             INSERT INTO notifications (user_id, type, title, body)
