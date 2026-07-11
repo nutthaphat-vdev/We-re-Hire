@@ -1063,6 +1063,10 @@ html, body { margin:0; padding:0; background:#0d0f12; }
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
         <span>จัดการงาน</span>
       </div>
+      <div class="nav-item" onclick="showPage('admin-payments')" id="nav-admin-payments">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>การจ่ายเงิน</span>
+      </div>
     </nav>
 
     <!-- Danger Zone: Delete Account button ใน sidebar -->
@@ -1373,6 +1377,15 @@ html, body { margin:0; padding:0; background:#0d0f12; }
           <button class="btn btn-secondary btn-sm" onclick="loadAdminJobs('filled',1)">Filled</button>
         </div>
         <div id="adminJobsContent"></div>
+      </div>
+    </div>
+
+    <!-- ADMIN PAYMENTS -->
+    <div class="page" id="page-admin-payments">
+      <div style="padding:32px">
+        <div class="page-title">💰 การจ่ายเงิน</div>
+        <div class="page-sub">หลักฐานการจ่ายเงินงานที่เสร็จแล้ว + ข้อพิพาทการชำระเงิน</div>
+        <div id="adminPaymentsContent"></div>
       </div>
     </div>
 
@@ -2217,11 +2230,11 @@ function initApp() {
     const el = document.getElementById(id);
     if (el) el.style.display = isAdmin ? 'none' : 'flex';
   });
-  ['navWorkerSection','nav-nearby','nav-myapps','nav-workerprofile','nav-myreviews-worker']
+  ['navWorkerSection','nav-nearby','nav-myapps','nav-workerprofile','nav-myreviews-worker','nav-earnings']
     .forEach(id => document.getElementById(id).style.display = isWorker ? (id.startsWith('nav-') ? 'flex' : 'block') : 'none');
   ['navEmployerSection','nav-postjob','nav-myjobs','nav-myreviews-employer']
     .forEach(id => document.getElementById(id).style.display = isEmployer ? (id.startsWith('nav-') ? 'flex' : 'block') : 'none');
-  ['navAdminSection','nav-admin-stats','nav-admin-users','nav-admin-kyc','nav-admin-disputes','nav-admin-jobs']
+  ['navAdminSection','nav-admin-stats','nav-admin-users','nav-admin-kyc','nav-admin-disputes','nav-admin-jobs','nav-admin-payments']
     .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = isAdmin ? (id.startsWith('nav-') ? 'flex' : 'block') : 'none'; });
 
   if (isAdmin) {
@@ -2258,6 +2271,7 @@ function showPage(name) {
   if (name === 'admin-kyc')       loadAdminKYC();
   if (name === 'admin-disputes')  loadAdminDisputes();
   if (name === 'admin-jobs')      loadAdminJobs();
+  if (name === 'admin-payments')  loadAdminPayments();
 }
 
 // ─── KYC UPLOAD ────────────────────────────────────────────
@@ -2521,6 +2535,59 @@ async function adminUpdateJobStatus(jobId, status) {
   try {
     await api('PATCH', `/admin/jobs/${jobId}/status`, { status });
     loadAdminJobs();
+  } catch(e) { alert(e.message); }
+}
+
+async function loadAdminPayments() {
+  const el = document.getElementById('adminPaymentsContent');
+  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
+  try {
+    const data = await api('GET', '/admin/payments');
+    if (!data.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">💰</div><div class="empty-text">ยังไม่มีรายการจ่ายเงิน</div></div>'; return; }
+    const pBadge = {
+      paid_pending:    ['badge-warn',   'รอ Worker ยืนยัน'],
+      paid_confirmed:  ['badge-green',  'จ่ายแล้ว ✓'],
+      payment_disputed:['badge-danger', '⚠️ ข้อพิพาท'],
+    };
+    el.innerHTML = data.map(p => {
+      const [bc, bl] = pBadge[p.payment_status] || ['badge-gray', p.payment_status];
+      const amt = p.paid_amount ? '฿' + Number(p.paid_amount).toLocaleString() : '-';
+      const method = p.pay_method === 'transfer' ? 'โอนเงิน' : (p.pay_method === 'cash' ? 'เงินสด' : (p.pay_method || '-'));
+      return `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:10px">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600">${esc(p.job_title || '-')}</div>
+            <div style="font-size:12px;color:var(--muted)">
+              Worker: ${esc(p.worker_name || '-')} (${esc(p.worker_email || '-')})<br>
+              Employer: ${esc(p.company_name || '-')} (${esc(p.employer_email || '-')})
+            </div>
+          </div>
+          <span class="badge ${bc}" style="flex-shrink:0">${bl}</span>
+        </div>
+        <div style="display:flex;gap:16px;font-size:12px;color:var(--muted);margin-bottom:10px;flex-wrap:wrap">
+          <span>💵 ${amt} • ${method}</span>
+          ${p.employer_paid_at ? `<span>แจ้งจ่าย: ${new Date(p.employer_paid_at).toLocaleString('th-TH')}</span>` : ''}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          ${p.slip_url
+            ? `<a href="${esc(p.slip_url)}" target="_blank" class="btn btn-secondary btn-sm" style="font-size:11px;text-decoration:none">🧾 ดูสลิป</a>`
+            : `<span style="font-size:11px;color:var(--muted)">— ไม่มีสลิป (เงินสด)</span>`}
+          ${p.payment_status === 'payment_disputed'
+            ? `<button class="btn btn-primary btn-sm" onclick="adminResolvePayment('${p.application_id}')" style="font-size:11px">✓ ยืนยันว่าจ่ายแล้ว</button>`
+            : ''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = `<div class="alert alert-error">${e.message}</div>`; }
+}
+
+async function adminResolvePayment(appId) {
+  if (!confirm('ยืนยันว่าตรวจสอบแล้วมีการจ่ายเงินจริง? สถานะจะเปลี่ยนเป็น "จ่ายแล้ว"')) return;
+  const note = prompt('Note (ใส่หรือเว้นว่าง):') || '';
+  try {
+    await api('POST', `/admin/payments/${appId}/resolve`, { note });
+    loadAdminPayments();
   } catch(e) { alert(e.message); }
 }
 
@@ -2890,11 +2957,11 @@ async function loadWorkerProfile() {
             <div class="form-group">
               <label>${t('profile_jobtitle_lbl')}</label>
               <select id="editSkillSelect" onchange="syncSkillCode('editSkillSelect','editSkills')">
-                <option value="${p.skills[0]||''}">${p.skills[0]||'— เลือกตำแหน่ง —'}</option>
+                <option value="${esc(p.skills[0]||'')}">${esc(p.skills[0]||'')||'— เลือกตำแหน่ง —'}</option>
               </select>
             </div>
           </div>
-          <input type="hidden" id="editSkills" value="${p.skills.join(',')}">
+          <input type="hidden" id="editSkills" value="${esc(p.skills.join(','))}">
           <div class="form-row">
             <div class="form-group"><label>${t('profile_exp_lbl')}</label><input type="number" id="editExp" value="${p.experience_years}"></div>
             <div class="form-group"><label>${t('profile_rate_lbl')}</label><input type="number" id="editRate" value="${p.daily_rate_expected||''}"></div>
@@ -3186,7 +3253,7 @@ async function searchNearby() {
         marker.addListener('click', () => {
           infoWindow.setContent(
             `<div style="font-size:12px;line-height:1.5;color:#111">
-              <strong>${j.title}</strong><br>
+              <strong>${esc(j.title)}</strong><br>
               ฿${Number(j.daily_wage_rate).toLocaleString()}${t('per_day')} · ${j.distance_km} ${t('km_unit')}<br>
               Match: <strong style="color:${sc}">${j.match_score}/100</strong>
             </div>`

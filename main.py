@@ -46,7 +46,8 @@ class Settings(BaseSettings):
     supabase_url:         str = "https://wexupoegrynxbhdzioym.supabase.co"
     supabase_anon_key:    str = ""
     supabase_jwt_secret:  str = ""  # Settings → API → JWT Secret
-    supabase_service_key: str = ""  # Settings → API → service_role key (สำหรับ Storage)
+    supabase_service_key: str = ""  # LEGACY service_role JWT (deprecated end-2026)
+    supabase_secret_key:  str = ""  # NEW secret API key (sb_secret_...) — ส่งผ่าน apikey header
     admin_secret:         str = ""  # X-Admin-Secret header สำหรับ admin endpoints
 
     class Config:
@@ -731,15 +732,34 @@ _ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 
 
+def _storage_configured() -> bool:
+    return bool(settings.supabase_secret_key or settings.supabase_service_key)
+
+
+def _storage_auth_headers() -> dict:
+    """
+    Auth headers สำหรับ Supabase Storage REST API.
+    - NEW secret key (sb_secret_...) ไม่ใช่ JWT → ส่งผ่าน 'apikey' header เท่านั้น
+      (ถ้าส่งใน Authorization: Bearer จะโดน reject 'Invalid JWT')
+    - LEGACY service_role เป็น JWT → ส่งทั้ง apikey + Authorization Bearer (ของเดิม)
+    """
+    if settings.supabase_secret_key:
+        return {"apikey": settings.supabase_secret_key}
+    return {
+        "apikey": settings.supabase_service_key,
+        "Authorization": f"Bearer {settings.supabase_service_key}",
+    }
+
+
 async def _storage_upload(path: str, data: bytes, content_type: str) -> None:
     """Upload bytes to Supabase Storage (upsert)."""
-    if not settings.supabase_service_key:
-        raise HTTPException(status_code=500, detail="SUPABASE_SERVICE_KEY ยังไม่ได้ตั้งค่า")
+    if not _storage_configured():
+        raise HTTPException(status_code=500, detail="Supabase Storage key ยังไม่ได้ตั้งค่า")
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.post(
             f"{settings.supabase_url}/storage/v1/object/{_KYC_BUCKET}/{path}",
             headers={
-                "Authorization": f"Bearer {settings.supabase_service_key}",
+                **_storage_auth_headers(),
                 "Content-Type": content_type,
                 "x-upsert": "true",
             },
@@ -751,12 +771,12 @@ async def _storage_upload(path: str, data: bytes, content_type: str) -> None:
 
 async def _storage_signed_url(path: str) -> str:
     """Get 1-hour signed URL for a KYC storage path. Returns '' on failure."""
-    if not settings.supabase_service_key or not path:
+    if not _storage_configured() or not path:
         return ""
     async with httpx.AsyncClient(timeout=10) as client:
         r = await client.post(
             f"{settings.supabase_url}/storage/v1/object/sign/{_KYC_BUCKET}/{path}",
-            headers={"Authorization": f"Bearer {settings.supabase_service_key}"},
+            headers=_storage_auth_headers(),
             json={"expiresIn": 3600},
         )
         if r.status_code != 200:
@@ -1281,6 +1301,9 @@ class AdminKYCReview(BaseModel):
 class AdminDisputeResolve(BaseModel):
     decision: str = Field(..., pattern="^(worker_win|employer_win)$")
     note: Optional[str] = None
+
+class AdminPaymentResolve(BaseModel):
+    note: Optional[str] = Field(None, max_length=500)
 
 class AdminJobStatus(BaseModel):
     status: str = Field(..., pattern="^(open|closed|expired)$")
@@ -3447,6 +3470,126 @@ async def admin_resolve_dispute(
             uid, notif_msg,
         )
     return {"dispute_id": str(dispute_id), "decision": body.decision}
+
+
+@app.get("/admin/payments", tags=["Admin"])
+async def admin_list_payments(
+    user: dict = Depends(require_admin),
+    db:   asyncpg.Connection = Depends(get_db),
+):
+    """
+    Admin ดู payment ของงานที่เสร็จแล้ว เพื่อเก็บเป็นหลักฐาน + เคส payment_disputed ที่ต้อง resolve
+    เรียงลำดับ: disputed ก่อน → pending → confirmed
+    """
+    rows = await db.fetch(
+        """
+        SELECT ja.id, ja.status, ja.payment_status, ja.paid_amount,
+               ja.pay_method_actual, ja.slip_url,
+               ja.employer_paid_at, ja.worker_paid_confirmed_at,
+               jp.title        AS job_title, jp.daily_wage_rate,
+               wp.full_name    AS worker_name, wu.email AS worker_email,
+               ep.company_name, eu.email AS employer_email
+        FROM   job_applications  ja
+        JOIN   job_postings      jp ON jp.id = ja.job_id
+        JOIN   worker_profiles   wp ON wp.id = ja.worker_id
+        JOIN   users             wu ON wu.id = wp.user_id
+        JOIN   employer_profiles ep ON ep.id = jp.employer_id
+        JOIN   users             eu ON eu.id = ep.user_id
+        WHERE  ja.payment_status IN ('paid_pending', 'paid_confirmed', 'payment_disputed')
+        ORDER  BY CASE ja.payment_status
+                    WHEN 'payment_disputed' THEN 0
+                    WHEN 'paid_pending'     THEN 1
+                    ELSE 2
+                  END,
+                 ja.employer_paid_at DESC NULLS LAST
+        LIMIT  200
+        """
+    )
+
+    async def _sign(path: Optional[str]) -> Optional[str]:
+        if not path:
+            return None
+        return (await _storage_signed_url(path)) or None
+
+    signed = await asyncio.gather(*[_sign(r["slip_url"]) for r in rows])
+
+    return [
+        {
+            "application_id":      str(r["id"]),
+            "job_status":          r["status"],
+            "payment_status":      r["payment_status"],
+            "paid_amount":         float(r["paid_amount"]) if r["paid_amount"] else None,
+            "pay_method":          r["pay_method_actual"],
+            "slip_url":            signed[i],
+            "employer_paid_at":    r["employer_paid_at"].isoformat() if r["employer_paid_at"] else None,
+            "worker_confirmed_at": r["worker_paid_confirmed_at"].isoformat() if r["worker_paid_confirmed_at"] else None,
+            "job_title":           r["job_title"],
+            "daily_wage_rate":     float(r["daily_wage_rate"]) if r["daily_wage_rate"] else None,
+            "worker_name":         r["worker_name"],
+            "worker_email":        r["worker_email"],
+            "company_name":        r["company_name"],
+            "employer_email":      r["employer_email"],
+        }
+        for i, r in enumerate(rows)
+    ]
+
+
+@app.post("/admin/payments/{app_id}/resolve", tags=["Admin"])
+async def admin_resolve_payment(
+    app_id: UUID,
+    body:   AdminPaymentResolve,
+    user:   dict = Depends(require_admin),
+    db:     asyncpg.Connection = Depends(get_db),
+):
+    """
+    Admin ตัดสิน payment dispute → paid_confirmed (ได้เฉพาะตอนที่เป็น payment_disputed เท่านั้น)
+    MVP: admin ไม่ได้ขยับเงินจริง แค่บันทึกว่า 'ตรวจแล้วจ่ายจริง'
+    """
+    row = await db.fetchrow(
+        """
+        SELECT ja.id, ja.payment_status, ja.paid_amount,
+               jp.title     AS job_title,
+               wp.user_id   AS worker_uid,
+               ep.user_id   AS employer_uid
+        FROM   job_applications  ja
+        JOIN   job_postings      jp ON jp.id = ja.job_id
+        JOIN   worker_profiles   wp ON wp.id = ja.worker_id
+        JOIN   employer_profiles ep ON ep.id = jp.employer_id
+        WHERE  ja.id = $1
+        """,
+        app_id,
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="ไม่พบใบสมัคร")
+    if row["payment_status"] != "payment_disputed":
+        raise HTTPException(
+            status_code=409,
+            detail=f"resolve ได้เฉพาะเคส payment_disputed (สถานะปัจจุบัน: {row['payment_status']})",
+        )
+
+    await db.execute(
+        """
+        UPDATE job_applications
+        SET    payment_status          = 'paid_confirmed',
+               worker_paid_confirmed_at = COALESCE(worker_paid_confirmed_at, NOW())
+        WHERE  id = $1
+        """,
+        app_id,
+    )
+
+    amount   = float(row["paid_amount"]) if row["paid_amount"] else 0
+    note_str = f" — {body.note}" if body.note else ""
+    msg = f"Admin ตรวจสอบข้อพิพาทการชำระเงินงาน \"{row['job_title']}\" แล้ว ยืนยันว่าจ่ายเงิน ฿{amount:,.0f} เรียบร้อย{note_str}"
+    for uid in (row["worker_uid"], row["employer_uid"]):
+        try:
+            await db.execute(
+                "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, 'payment_update', '⚖️ Admin ตัดสินข้อพิพาทการจ่ายเงินแล้ว', $2)",
+                uid, msg,
+            )
+        except Exception:
+            pass
+
+    return {"application_id": str(app_id), "payment_status": "paid_confirmed"}
 
 
 @app.get("/admin/jobs", tags=["Admin"])
