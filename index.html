@@ -407,9 +407,10 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   .nb-prompt{ position:absolute; inset:0; z-index:30; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:24px; background:rgba(10,12,16,.78); backdrop-filter:blur(6px); }
   .nb-prompt.show{ display:flex; }
   @media (max-width:768px){
-    .nb-panel{ top:auto; bottom:0; left:0; right:0; width:100%; max-width:none; max-height:56%; border-radius:18px 18px 0 0; }
-    .nb-top{ top:10px; left:12px; right:12px; }
-    .nb-gps{ bottom:calc(56% + 14px); }
+    .nb-panel{ top:auto; bottom:0; left:0; right:0; width:100%; max-width:none; max-height:54%; border-radius:18px 18px 0 0; padding-bottom:max(env(safe-area-inset-bottom),10px); }
+    .nb-list{ padding-bottom:16px; }
+    .nb-top{ top:calc(env(safe-area-inset-top,0px) + 8px); left:64px; right:12px; }
+    .nb-gps{ bottom:calc(54% + 14px); }
   }
 </style>
 </head>
@@ -634,9 +635,10 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   .nb-prompt{ position:absolute; inset:0; z-index:30; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:24px; background:rgba(10,12,16,.78); backdrop-filter:blur(6px); }
   .nb-prompt.show{ display:flex; }
   @media (max-width:768px){
-    .nb-panel{ top:auto; bottom:0; left:0; right:0; width:100%; max-width:none; max-height:56%; border-radius:18px 18px 0 0; }
-    .nb-top{ top:10px; left:12px; right:12px; }
-    .nb-gps{ bottom:calc(56% + 14px); }
+    .nb-panel{ top:auto; bottom:0; left:0; right:0; width:100%; max-width:none; max-height:54%; border-radius:18px 18px 0 0; padding-bottom:max(env(safe-area-inset-bottom),10px); }
+    .nb-list{ padding-bottom:16px; }
+    .nb-top{ top:calc(env(safe-area-inset-top,0px) + 8px); left:64px; right:12px; }
+    .nb-gps{ bottom:calc(54% + 14px); }
   }
 </style>
 
@@ -3164,18 +3166,22 @@ let _nearbyMarker = null;
 let _jobMarkers = [];
 let _nearbyScope = 'related';
 
-// map-first: ตั้งความสูง wrap = viewport - topbar (robust ทั้ง desktop/มือถือ)
+// map-first: ตั้งความสูง wrap = viewport ที่เห็นจริง - topbar
+// ใช้ visualViewport (กัน iOS Safari toolbar บัง bottom sheet)
 function sizeNearby() {
   const wrap = document.getElementById('nbWrap');
   if (!wrap) return;
   const tb = document.getElementById('topbar');
-  wrap.style.height = (window.innerHeight - (tb ? tb.offsetHeight : 0)) + 'px';
+  const vh = (window.visualViewport && window.visualViewport.height) ? window.visualViewport.height : window.innerHeight;
+  wrap.style.height = (vh - (tb ? tb.offsetHeight : 0)) + 'px';
   if (_nearbyMap && window.google) google.maps.event.trigger(_nearbyMap, 'resize');
 }
-window.addEventListener('resize', () => {
+function _onNearbyResize() {
   const p = document.getElementById('page-nearby');
   if (p && p.classList.contains('active')) sizeNearby();
-});
+}
+window.addEventListener('resize', _onNearbyResize);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', _onNearbyResize);
 
 function setNearbyScope(scope) {
   _nearbyScope = (scope === 'all') ? 'all' : 'related';
