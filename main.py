@@ -1657,6 +1657,9 @@ async def get_my_applications(
 
 DEFAULT_RADIUS_KM = 10.0
 MAX_RADIUS_KM     = 30.0
+# ระยะอ้างอิงคงที่สำหรับคิด distance score — แยกจากรัศมีค้นหา (ที่ worker เลื่อนเอง)
+# กัน bug: score ของงานต้องคงที่ตามระยะจริง ไม่ inflate ตามวงค้นหา + ค้น/สมัคร ได้ score ตรงกัน
+SCORE_RADIUS_KM   = 30.0
 W_SKILLS   = 0.60
 W_DISTANCE = 0.25
 W_RATE     = 0.15
@@ -1761,7 +1764,7 @@ async def apply_to_job(
         worker_skills   = worker["skills"] or [],
         required_skills = job["required_skills"] or [],
         distance_km     = distance_km,
-        radius_km       = DEFAULT_RADIUS_KM,
+        radius_km       = SCORE_RADIUS_KM,
         worker_rate     = worker["daily_rate_expected"],
         job_rate        = float(job["daily_wage_rate"]),
     )
@@ -1899,7 +1902,7 @@ async def get_nearby_jobs(
             worker_skills   = worker_skills,
             required_skills = row["required_skills"] or [],
             distance_km     = float(row["distance_km"]),
-            radius_km       = radius_km,
+            radius_km       = SCORE_RADIUS_KM,
             worker_rate     = worker_rate,
             job_rate        = float(row["daily_wage_rate"]),
         )
