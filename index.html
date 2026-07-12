@@ -407,10 +407,19 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   .nb-prompt{ position:absolute; inset:0; z-index:30; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:24px; background:rgba(10,12,16,.78); backdrop-filter:blur(6px); }
   .nb-prompt.show{ display:flex; }
   @media (max-width:768px){
-    .nb-panel{ top:auto; bottom:0; left:0; right:0; width:100%; max-width:none; max-height:54%; border-radius:18px 18px 0 0; padding-bottom:max(env(safe-area-inset-bottom),10px); }
-    .nb-list{ padding-bottom:16px; }
-    .nb-top{ top:calc(env(safe-area-inset-top,0px) + 8px); left:64px; right:12px; }
-    .nb-gps{ bottom:calc(54% + 14px); }
+    .nb-panel{ top:auto; bottom:0; left:0; right:0; width:100%; max-width:none; max-height:62%; border-radius:18px 18px 0 0; padding-bottom:max(env(safe-area-inset-bottom),8px); }
+    /* ย่อ controls ให้การ์ด+ปุ่มสมัครมีที่ */
+    .nb-phead{ padding:11px 16px 4px; }
+    .nb-phead h2{ font-size:15px; }
+    .nb-controls{ padding:0 16px 8px; }
+    .nb-controls > div:first-child{ margin:6px 0 3px !important; }
+    .nb-controls input[type=range]{ margin-bottom:0 !important; }
+    .nb-chips{ margin-top:8px; }
+    .nb-chip{ padding:8px; font-size:12px; }
+    .nb-list{ padding:10px 12px 14px; }
+    .nb-locpill{ font-size:12px; padding:7px 12px; max-width:100%; }
+    .nb-top{ top:calc(env(safe-area-inset-top,0px) + 8px); left:60px; right:10px; }
+    .nb-gps{ bottom:calc(62% + 12px); }
   }
 </style>
 </head>
@@ -635,10 +644,19 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   .nb-prompt{ position:absolute; inset:0; z-index:30; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:24px; background:rgba(10,12,16,.78); backdrop-filter:blur(6px); }
   .nb-prompt.show{ display:flex; }
   @media (max-width:768px){
-    .nb-panel{ top:auto; bottom:0; left:0; right:0; width:100%; max-width:none; max-height:54%; border-radius:18px 18px 0 0; padding-bottom:max(env(safe-area-inset-bottom),10px); }
-    .nb-list{ padding-bottom:16px; }
-    .nb-top{ top:calc(env(safe-area-inset-top,0px) + 8px); left:64px; right:12px; }
-    .nb-gps{ bottom:calc(54% + 14px); }
+    .nb-panel{ top:auto; bottom:0; left:0; right:0; width:100%; max-width:none; max-height:62%; border-radius:18px 18px 0 0; padding-bottom:max(env(safe-area-inset-bottom),8px); }
+    /* ย่อ controls ให้การ์ด+ปุ่มสมัครมีที่ */
+    .nb-phead{ padding:11px 16px 4px; }
+    .nb-phead h2{ font-size:15px; }
+    .nb-controls{ padding:0 16px 8px; }
+    .nb-controls > div:first-child{ margin:6px 0 3px !important; }
+    .nb-controls input[type=range]{ margin-bottom:0 !important; }
+    .nb-chips{ margin-top:8px; }
+    .nb-chip{ padding:8px; font-size:12px; }
+    .nb-list{ padding:10px 12px 14px; }
+    .nb-locpill{ font-size:12px; padding:7px 12px; max-width:100%; }
+    .nb-top{ top:calc(env(safe-area-inset-top,0px) + 8px); left:60px; right:10px; }
+    .nb-gps{ bottom:calc(62% + 12px); }
   }
 </style>
 
