@@ -3185,6 +3185,28 @@ function setNearbyScope(scope) {
   searchNearby();
 }
 
+// glass-pill marker บนแผนที่ (custom OverlayView — ไม่ต้องแก้ API key/mapId)
+function _nbPill(lat, lng, label, active, onClick) {
+  const ov = new google.maps.OverlayView();
+  ov.onAdd = function () {
+    const d = document.createElement('div');
+    d.className = 'nb-pill' + (active ? ' active' : '');
+    d.textContent = label;
+    d.style.position = 'absolute';
+    d.addEventListener('click', onClick);
+    this._d = d;
+    this.getPanes().overlayMouseTarget.appendChild(d);
+  };
+  ov.draw = function () {
+    if (!this._d) return;
+    const p = this.getProjection().fromLatLngToDivPixel(new google.maps.LatLng(lat, lng));
+    this._d.style.left = p.x + 'px';
+    this._d.style.top = p.y + 'px';
+  };
+  ov.onRemove = function () { if (this._d) { this._d.remove(); this._d = null; } };
+  return ov;
+}
+
 function initNearbyMap() {
   const container = document.getElementById('searchMapPreview');
   if (!container) return;
@@ -3303,78 +3325,44 @@ async function searchNearby() {
     }
     if (_nbc) _nbc.textContent = `${t('found_prefix')} ${data.count} ${t('found_suffix')}`;
 
-    // Drop job pins on map
+    // Drop glass-pill markers on map (custom OverlayView)
     if (_nearbyMap && window.google) {
-      const infoWindow = new google.maps.InfoWindow();
       data.jobs.forEach((j, i) => {
         if (!j.job_lat || !j.job_lng) return;
-        const sc = j.match_score >= 70 ? '#00e5a0' : j.match_score >= 50 ? '#ff6b35' : '#ef4444';
-        const marker = new google.maps.Marker({
-          position: { lat: j.job_lat, lng: j.job_lng },
-          map: _nearbyMap,
-          title: j.title,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 9,
-            fillColor: sc,
-            fillOpacity: 0.9,
-            strokeColor: '#0d0f12',
-            strokeWeight: 2,
-          },
-          label: { text: String(i + 1), color: '#0d0f12', fontSize: '10px', fontWeight: '700' },
-          zIndex: j.match_score,
-        });
-        marker.addListener('click', () => {
-          infoWindow.setContent(
-            `<div style="font-size:12px;line-height:1.5;color:#111">
-              <strong>${esc(j.title)}</strong><br>
-              ฿${Number(j.daily_wage_rate).toLocaleString()}${t('per_day')} · ${j.distance_km} ${t('km_unit')}<br>
-              Match: <strong style="color:${sc}">${j.match_score}/100</strong>
-            </div>`
-          );
-          infoWindow.open(_nearbyMap, marker);
-          // Scroll to card
+        const label = '฿' + Number(j.daily_wage_rate).toLocaleString();
+        const pill = _nbPill(j.job_lat, j.job_lng, label, i === 0, () => {
           const card = document.getElementById('job-card-' + j.job_id);
           if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (_nearbyMap) _nearbyMap.panTo({ lat: j.job_lat, lng: j.job_lng });
         });
-        _jobMarkers.push(marker);
+        pill.setMap(_nearbyMap);
+        _jobMarkers.push(pill);
       });
     }
-    el.innerHTML = `<div style="font-size:13px;color:var(--muted);margin-bottom:12px">${t('found_prefix')} ${data.count} ${t('found_suffix')}</div>` +
-      data.jobs.map((j, i) => {
-        const sc = j.match_score >= 70 ? 'var(--accent)' : j.match_score >= 50 ? 'var(--warn)' : 'var(--danger)';
-        return `
-        <div class="card" id="job-card-${j.job_id}" style="margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
-            <div style="flex:1;min-width:0">
-              <div style="font-weight:700;font-size:16px;margin-bottom:6px">${esc(j.title)}</div>
-              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
-                <span style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted)">📍 ${esc(j.location_name||j.zone_name||'-')}</span>
-                <span style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted)">📏 ${j.distance_km} ${t('km_unit')}</span>
-                <span style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted)">📅 ${j.duration_days} ${t('days_unit')}</span>
-                <span style="font-size:11px;padding:3px 8px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:20px;color:var(--accent)">👥 ${t('slots_pre')}${j.slots_remaining}${t('slots_suf')}</span>
-                ${j.work_start && j.work_end ? '<span style="font-size:11px;padding:3px 8px;background:rgba(0,153,255,.08);border:1px solid rgba(0,153,255,.2);border-radius:20px;color:var(--accent2)">⏰ ' + esc(j.work_start) + '–' + esc(j.work_end) + '</span>' : ''}
-                ${j.ot_rate ? '<span style="font-size:11px;padding:3px 8px;background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.2);border-radius:20px;color:var(--warn)">💰 OT ' + j.ot_rate + '฿/ชม.</span>' : ''}
-                ${j.start_date ? '<span style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted)">🗓 ' + esc(j.start_date) + '</span>' : ''}
-                ${j.pay_method ? '<span style="font-size:11px;padding:3px 8px;background:rgba(0,229,160,.12);border:1px solid rgba(0,229,160,.35);border-radius:20px;color:var(--accent);font-weight:600">💵 ' + esc(PAY_METHOD_LABEL[j.pay_method]||j.pay_method) + '</span>' : ''}
-                ${j.dress_code ? '<span style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted)">👔 ' + esc(DRESS_CODE_LABEL[j.dress_code]||j.dress_code) + '</span>' : ''}
-              </div>
-              <div class="tags" style="gap:6px">
-                ${j.matched_skills.map(s=>'<span class="tag tag-match">✓ ' + esc(s) + '</span>').join('')}
-                ${j.missing_skills.map(s=>'<span class="tag">' + esc(s) + '</span>').join('')}
-              </div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
-              <span class="badge badge-green" style="font-size:13px;font-weight:700">฿${Number(j.daily_wage_rate).toLocaleString()}/วัน</span>
-              <div style="margin-top:8px;text-align:center">
-                <div style="font-size:28px;font-weight:800;color:${sc};line-height:1">${j.match_score}</div>
-                <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">match</div>
-              </div>
-            </div>
-          </div>
-          <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="applyJob('${j.job_id}',${lat},${lng},this)">${t('apply_btn')}</button>
-        </div>`;
-      }).join('');
+    el.innerHTML = data.jobs.map((j, i) => {
+      const m = Math.round(j.match_score);
+      const mClass = m >= 50 ? 'tag-match' : '';
+      return `
+      <div class="card" id="job-card-${j.job_id}" style="margin-bottom:12px;padding:14px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px">
+          <div style="font-weight:600;font-size:15px;line-height:1.3;min-width:0">${esc(j.title)}</div>
+          <div style="color:var(--accent);font-weight:700;font-size:15px;white-space:nowrap;flex-shrink:0">฿${Number(j.daily_wage_rate).toLocaleString()}${t('per_day')}</div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;display:flex;flex-wrap:wrap;gap:4px 12px">
+          <span>📍 ${esc(j.location_name||j.zone_name||'-')}</span>
+          <span>📏 ${j.distance_km} ${t('km_unit')}</span>
+          <span style="color:var(--accent)">👥 ${t('slots_pre')}${j.slots_remaining}${t('slots_suf')}</span>
+        </div>
+        <div class="tags" style="gap:6px;margin-bottom:12px">
+          ${j.work_start && j.work_end ? '<span class="tag">⏰ ' + esc(j.work_start) + '–' + esc(j.work_end) + '</span>' : ''}
+          ${j.start_date ? '<span class="tag">🗓 ' + esc(j.start_date) + '</span>' : ''}
+          ${j.pay_method ? '<span class="tag" style="color:var(--accent)">💵 ' + esc(PAY_METHOD_LABEL[j.pay_method]||j.pay_method) + '</span>' : ''}
+          <span class="tag ${mClass}">⭐ Match ${m}%</span>
+          ${j.adjacent ? '<span class="tag nb-tag-adjacent">🔗 ' + t('nearby_adjacent_tag') + '</span>' : ''}
+        </div>
+        <button class="btn btn-primary" style="width:100%;padding:10px;font-size:14px" onclick="applyJob('${j.job_id}',${lat},${lng},this)">${t('apply_btn')}</button>
+      </div>`;
+    }).join('');
   } catch(e) {
     el.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
   }
