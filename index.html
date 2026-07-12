@@ -383,6 +383,34 @@ html, body { margin:0; padding:0; background:#0d0f12; }
     background:var(--surface);border:1px solid var(--border);
     border-radius:16px;padding:32px;max-width:360px;width:90%;text-align:center;
   }
+
+  /* ===== Find Jobs — map-first (Step 3) ===== */
+  #page-nearby.active{ padding:0; max-width:none; }
+  .nb-wrap{ position:relative; width:100%; overflow:hidden; }
+  .nb-map{ position:absolute; inset:0; background:#0a0c10; }
+  .nb-top{ position:absolute; top:16px; left:20px; right:20px; display:flex; justify-content:flex-start; gap:10px; z-index:20; pointer-events:none; }
+  .nb-locpill{ pointer-events:auto; background:rgba(16,20,26,.72); backdrop-filter:blur(14px); border:1px solid var(--border); padding:9px 15px; border-radius:24px; font-size:13px; max-width:80%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .nb-panel{ position:absolute; top:70px; left:20px; width:380px; max-width:calc(100% - 40px); max-height:calc(100% - 100px); z-index:15; background:rgba(16,20,26,.82); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,.08); border-radius:18px; box-shadow:0 20px 60px rgba(0,0,0,.5); display:flex; flex-direction:column; overflow:hidden; }
+  .nb-phead{ padding:18px 18px 12px; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .nb-phead h2{ font-size:18px; font-weight:700; }
+  .nb-badge{ background:rgba(0,229,160,.14); color:var(--accent); font-size:12px; font-weight:600; padding:4px 11px; border-radius:20px; white-space:nowrap; }
+  .nb-controls{ padding:0 18px 14px; border-bottom:1px solid rgba(255,255,255,.06); }
+  .nb-chips{ display:flex; gap:8px; margin-top:12px; }
+  .nb-chip{ flex:1; text-align:center; padding:9px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; background:var(--surface2); color:var(--muted); border:1px solid transparent; transition:.15s; }
+  .nb-chip.active{ background:rgba(0,229,160,.14); color:var(--accent); border-color:rgba(0,229,160,.4); }
+  .nb-list{ padding:14px; overflow-y:auto; flex:1; }
+  .nb-list::-webkit-scrollbar{ width:5px } .nb-list::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.12); border-radius:6px }
+  .nb-pill{ transform:translate(-50%,-120%); background:rgba(22,26,32,.9); backdrop-filter:blur(8px); border:1px solid var(--border); color:var(--text); font-weight:600; font-size:12px; padding:5px 11px; border-radius:18px; white-space:nowrap; box-shadow:0 6px 18px rgba(0,0,0,.5); cursor:pointer; font-family:'Sarabun',sans-serif; }
+  .nb-pill.active{ background:rgba(0,229,160,.18); border-color:var(--accent); color:var(--accent); box-shadow:0 0 0 4px rgba(0,229,160,.12),0 8px 22px rgba(0,229,160,.25); }
+  .nb-tag-adjacent{ background:rgba(0,153,255,.14)!important; color:var(--accent2)!important; border:1px solid rgba(0,153,255,.3)!important; }
+  .nb-gps{ position:absolute; bottom:24px; right:24px; width:50px; height:50px; border-radius:50%; z-index:16; background:rgba(16,20,26,.85); backdrop-filter:blur(14px); border:1px solid var(--border); color:var(--text); font-size:20px; cursor:pointer; box-shadow:0 8px 24px rgba(0,0,0,.4); }
+  .nb-prompt{ position:absolute; inset:0; z-index:30; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:24px; background:rgba(10,12,16,.78); backdrop-filter:blur(6px); }
+  .nb-prompt.show{ display:flex; }
+  @media (max-width:768px){
+    .nb-panel{ top:auto; bottom:0; left:0; right:0; width:100%; max-width:none; max-height:56%; border-radius:18px 18px 0 0; }
+    .nb-top{ top:10px; left:12px; right:12px; }
+    .nb-gps{ bottom:calc(56% + 14px); }
+  }
 </style>
 </head>
 <body>
@@ -581,6 +609,34 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   #sessionWarningBox {
     background:var(--surface);border:1px solid var(--border);
     border-radius:16px;padding:32px;max-width:360px;width:90%;text-align:center;
+  }
+
+  /* ===== Find Jobs — map-first (Step 3) ===== */
+  #page-nearby.active{ padding:0; max-width:none; }
+  .nb-wrap{ position:relative; width:100%; overflow:hidden; }
+  .nb-map{ position:absolute; inset:0; background:#0a0c10; }
+  .nb-top{ position:absolute; top:16px; left:20px; right:20px; display:flex; justify-content:flex-start; gap:10px; z-index:20; pointer-events:none; }
+  .nb-locpill{ pointer-events:auto; background:rgba(16,20,26,.72); backdrop-filter:blur(14px); border:1px solid var(--border); padding:9px 15px; border-radius:24px; font-size:13px; max-width:80%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .nb-panel{ position:absolute; top:70px; left:20px; width:380px; max-width:calc(100% - 40px); max-height:calc(100% - 100px); z-index:15; background:rgba(16,20,26,.82); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,.08); border-radius:18px; box-shadow:0 20px 60px rgba(0,0,0,.5); display:flex; flex-direction:column; overflow:hidden; }
+  .nb-phead{ padding:18px 18px 12px; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .nb-phead h2{ font-size:18px; font-weight:700; }
+  .nb-badge{ background:rgba(0,229,160,.14); color:var(--accent); font-size:12px; font-weight:600; padding:4px 11px; border-radius:20px; white-space:nowrap; }
+  .nb-controls{ padding:0 18px 14px; border-bottom:1px solid rgba(255,255,255,.06); }
+  .nb-chips{ display:flex; gap:8px; margin-top:12px; }
+  .nb-chip{ flex:1; text-align:center; padding:9px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; background:var(--surface2); color:var(--muted); border:1px solid transparent; transition:.15s; }
+  .nb-chip.active{ background:rgba(0,229,160,.14); color:var(--accent); border-color:rgba(0,229,160,.4); }
+  .nb-list{ padding:14px; overflow-y:auto; flex:1; }
+  .nb-list::-webkit-scrollbar{ width:5px } .nb-list::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.12); border-radius:6px }
+  .nb-pill{ transform:translate(-50%,-120%); background:rgba(22,26,32,.9); backdrop-filter:blur(8px); border:1px solid var(--border); color:var(--text); font-weight:600; font-size:12px; padding:5px 11px; border-radius:18px; white-space:nowrap; box-shadow:0 6px 18px rgba(0,0,0,.5); cursor:pointer; font-family:'Sarabun',sans-serif; }
+  .nb-pill.active{ background:rgba(0,229,160,.18); border-color:var(--accent); color:var(--accent); box-shadow:0 0 0 4px rgba(0,229,160,.12),0 8px 22px rgba(0,229,160,.25); }
+  .nb-tag-adjacent{ background:rgba(0,153,255,.14)!important; color:var(--accent2)!important; border:1px solid rgba(0,153,255,.3)!important; }
+  .nb-gps{ position:absolute; bottom:24px; right:24px; width:50px; height:50px; border-radius:50%; z-index:16; background:rgba(16,20,26,.85); backdrop-filter:blur(14px); border:1px solid var(--border); color:var(--text); font-size:20px; cursor:pointer; box-shadow:0 8px 24px rgba(0,0,0,.4); }
+  .nb-prompt{ position:absolute; inset:0; z-index:30; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:24px; background:rgba(10,12,16,.78); backdrop-filter:blur(6px); }
+  .nb-prompt.show{ display:flex; }
+  @media (max-width:768px){
+    .nb-panel{ top:auto; bottom:0; left:0; right:0; width:100%; max-width:none; max-height:56%; border-radius:18px 18px 0 0; }
+    .nb-top{ top:10px; left:12px; right:12px; }
+    .nb-gps{ bottom:calc(56% + 14px); }
   }
 </style>
 
@@ -1108,60 +1164,45 @@ html, body { margin:0; padding:0; background:#0d0f12; }
 
     <!-- NEARBY JOBS -->
     <div class="page" id="page-nearby">
-      <div style="padding:24px 28px">
-        <div class="page-title" style="margin-bottom:2px" data-i18n="nearby_title">หางานใกล้บ้าน</div>
-        <div class="page-sub" style="margin-bottom:24px" data-i18n="nearby_sub">ค้นหางานในรัศมีที่กำหนด</div>
-
-        <!-- Map card -->
-        <div style="background:rgba(18,22,30,.8);border:1px solid rgba(42,48,64,.6);border-radius:16px;overflow:hidden;margin-bottom:16px;backdrop-filter:blur(12px)">
-          <div id="searchMapPreview" style="height:260px;width:100%;background:linear-gradient(135deg,#0e1320 0%,#111827 100%);position:relative">
-            <div id="nearbyMapPlaceholder" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted)">
-              <div style="font-size:32px;opacity:.3">🗺</div>
-              <div style="font-size:12px;font-family:'IBM Plex Mono',monospace;opacity:.4" data-i18n="nearby_map_loading">กำลังโหลดแผนที่...</div>
-            </div>
-          </div>
-          <!-- Location bar -->
-          <div style="padding:14px 20px;border-top:1px solid rgba(42,48,64,.6);display:flex;align-items:center;gap:12px">
-            <div style="width:34px;height:34px;border-radius:50%;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px">📍</div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.06em;margin-bottom:2px" data-i18n="nearby_your_loc">ตำแหน่งของคุณ</div>
-              <div id="searchLocationDisplay" style="font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">กำลังระบุตำแหน่ง...</div>
-            </div>
-            <button class="btn btn-secondary btn-sm" onclick="useMyLocation()" style="white-space:nowrap;gap:6px;flex-shrink:0">
-              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path stroke-linecap="round" stroke-width="2" d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
-              GPS
-            </button>
-          </div>
-        </div>
-
+      <div class="nb-wrap" id="nbWrap">
+        <div id="searchMapPreview" class="nb-map"></div>
         <input type="hidden" id="searchPlaceInput">
-        <!-- Radius slider card -->
-        <div style="background:rgba(18,22,30,.8);border:1px solid rgba(42,48,64,.6);border-radius:14px;padding:20px 24px;margin-bottom:20px;backdrop-filter:blur(12px)">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-            <div>
-              <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px" data-i18n="nearby_radius_lbl">รัศมีการค้นหา</div>
-              <div style="font-size:11px;color:var(--muted)" data-i18n="nearby_radius_hint">ยิ่งรัศมีกว้าง ยิ่งเจองานมาก</div>
-            </div>
-            <div style="text-align:right">
-              <div style="font-size:32px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--accent);line-height:1"><span id="radiusVal">10</span></div>
-              <div style="font-size:11px;color:var(--muted);margin-top:2px" data-i18n="nearby_km_full">กิโลเมตร</div>
-            </div>
-          </div>
-          <div style="position:relative;padding:8px 0">
-            <input type="range" id="searchRadius" class="radius-slider" min="1" max="30" value="10"
-              oninput="document.getElementById('radiusVal').textContent=this.value;var pct=(this.value-1)/29*100;this.style.setProperty('--fill',pct+'%')">
-          </div>
-          <div style="display:flex;justify-content:space-between;margin-top:6px">
-            <span style="font-size:11px;color:rgba(107,122,148,.5);font-family:'IBM Plex Mono',monospace">1 <span data-i18n="km_unit">กม.</span></span>
-            <span style="font-size:11px;color:rgba(107,122,148,.5);font-family:'IBM Plex Mono',monospace">30 <span data-i18n="km_unit">กม.</span></span>
-          </div>
-        </div>
-
         <input type="hidden" id="searchLat" value="13.7018">
         <input type="hidden" id="searchLng" value="100.6011">
-        <button class="btn btn-primary btn-block" onclick="searchNearby()" style="padding:14px;font-size:15px;border-radius:12px;box-shadow:0 0 24px rgba(0,229,160,.2)"><span data-i18n="nearby_search_btn">🔍 ค้นหางานใกล้ฉัน</span></button>
 
-        <div id="nearbyResults" style="margin-top:24px"></div>
+        <div class="nb-top">
+          <div class="nb-locpill">📍 <span id="searchLocationDisplay">กำลังระบุตำแหน่ง...</span></div>
+        </div>
+
+        <div class="nb-panel" id="nbPanel">
+          <div class="nb-phead">
+            <h2 data-i18n="nearby_find_title">ค้นหางานด่วน</h2>
+            <span class="nb-badge" id="nbCount">—</span>
+          </div>
+          <div class="nb-controls">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0 6px">
+              <span style="font-size:12px;color:var(--muted)" data-i18n="nearby_radius_lbl">รัศมีการค้นหา</span>
+              <span style="font-size:13px;color:var(--accent);font-weight:600;font-family:'IBM Plex Mono',monospace"><span id="radiusVal">10</span> <span data-i18n="km_unit">กม.</span></span>
+            </div>
+            <input type="range" id="searchRadius" class="radius-slider" min="1" max="30" value="10"
+              oninput="document.getElementById('radiusVal').textContent=this.value;var pct=(this.value-1)/29*100;this.style.setProperty('--fill',pct+'%')"
+              onchange="searchNearby()">
+            <div class="nb-chips">
+              <div class="nb-chip active" id="nbChipRelated" onclick="setNearbyScope('related')" data-i18n="nearby_chip_related">งานที่เกี่ยวข้อง</div>
+              <div class="nb-chip" id="nbChipAll" onclick="setNearbyScope('all')" data-i18n="nearby_chip_all">ทั้งหมด</div>
+            </div>
+          </div>
+          <div class="nb-list" id="nearbyResults"></div>
+        </div>
+
+        <button class="nb-gps" onclick="initNearbyMap()" title="ตำแหน่งของฉัน">🧭</button>
+
+        <div class="nb-prompt" id="nbPrompt">
+          <div style="font-size:40px">📍</div>
+          <div style="font-size:15px;font-weight:600" data-i18n="nearby_gps_title">เปิด GPS เพื่อหางานใกล้คุณ</div>
+          <div style="font-size:13px;color:var(--muted);max-width:260px" data-i18n="nearby_gps_hint">เราใช้ตำแหน่งจริงของคุณเพื่อหางานที่ใกล้ที่สุด</div>
+          <button class="btn btn-primary" onclick="initNearbyMap()" data-i18n="nearby_gps_btn">🧭 เปิด GPS แล้วลองใหม่</button>
+        </div>
       </div>
     </div>
 
@@ -1677,6 +1718,8 @@ const LANG = {
     err_no_location:'กรุณาระบุตำแหน่งก่อนค้นหา', searching_lbl:'กำลังค้นหา...',
     no_jobs_found:'ไม่พบงานในรัศมีที่กำหนด', no_jobs_tip:'ลองเพิ่มรัศมีหรือตรวจสอบ skills ใน profile',
     found_prefix:'พบ', found_suffix:'งาน',
+    nearby_find_title:'ค้นหางานด่วน', nearby_chip_related:'งานที่เกี่ยวข้อง', nearby_chip_all:'ทั้งหมด', nearby_adjacent_tag:'สายงานเดียวกัน',
+    nearby_gps_title:'เปิด GPS เพื่อหางานใกล้คุณ', nearby_gps_hint:'เราใช้ตำแหน่งจริงของคุณเพื่อหางานที่ใกล้ที่สุด', nearby_gps_btn:'🧭 เปิด GPS แล้วลองใหม่',
     slots_pre:'เหลือ ', slots_suf:' ที่',
     // My Apps
     myapps_title:'ประวัติการสมัครงาน', myapps_sub:'ติดตามสถานะใบสมัครของคุณ',
@@ -1893,6 +1936,8 @@ const LANG = {
     err_no_location:'Please set your location first', searching_lbl:'Searching...',
     no_jobs_found:'No jobs found in this area', no_jobs_tip:'Try increasing the radius or check your profile skills',
     found_prefix:'Found', found_suffix:'jobs',
+    nearby_find_title:'Find Jobs Nearby', nearby_chip_related:'Related', nearby_chip_all:'All', nearby_adjacent_tag:'Same field',
+    nearby_gps_title:'Enable GPS to find jobs near you', nearby_gps_hint:'We use your real location to find the closest jobs', nearby_gps_btn:'🧭 Enable GPS & retry',
     slots_pre:'', slots_suf:' left',
     // My Apps
     myapps_title:'My Applications', myapps_sub:'Track your application status',
@@ -2264,7 +2309,7 @@ function showPage(name) {
   if (name === 'workerprofile')   loadWorkerProfile();
   if (name === 'postjob')         { checkEmployerProfile(); loadLastLocation(); }
   if (name === 'myreviews')       loadMyReviews();
-  if (name === 'nearby')          { initNearbyMap(); searchNearby(); }
+  if (name === 'nearby')          { initNearbyMap(); }
   if (name === 'notifications')   { _notifFilter = 'all'; setNotifFilter('all'); }
   if (name === 'admin-stats')     loadAdminStats();
   if (name === 'admin-users')     loadAdminUsers();
@@ -3117,6 +3162,28 @@ let _nearbyMap = null;
 let _nearbyCircle = null;
 let _nearbyMarker = null;
 let _jobMarkers = [];
+let _nearbyScope = 'related';
+
+// map-first: ตั้งความสูง wrap = viewport - topbar (robust ทั้ง desktop/มือถือ)
+function sizeNearby() {
+  const wrap = document.getElementById('nbWrap');
+  if (!wrap) return;
+  const tb = document.getElementById('topbar');
+  wrap.style.height = (window.innerHeight - (tb ? tb.offsetHeight : 0)) + 'px';
+  if (_nearbyMap && window.google) google.maps.event.trigger(_nearbyMap, 'resize');
+}
+window.addEventListener('resize', () => {
+  const p = document.getElementById('page-nearby');
+  if (p && p.classList.contains('active')) sizeNearby();
+});
+
+function setNearbyScope(scope) {
+  _nearbyScope = (scope === 'all') ? 'all' : 'related';
+  const r = document.getElementById('nbChipRelated'), a = document.getElementById('nbChipAll');
+  if (r) r.classList.toggle('active', _nearbyScope === 'related');
+  if (a) a.classList.toggle('active', _nearbyScope === 'all');
+  searchNearby();
+}
 
 function initNearbyMap() {
   const container = document.getElementById('searchMapPreview');
@@ -3165,32 +3232,36 @@ function initNearbyMap() {
     });
   }
 
-  // Try GPS first, fall back to Bangkok default
+  // GPS-first — ใช้ตำแหน่งจริงเสมอ (ไม่ fallback ไปที่อยู่โปรไฟล์/กทม.)
+  sizeNearby();
+  const prompt  = document.getElementById('nbPrompt');
+  const display = document.getElementById('searchLocationDisplay');
+
+  function onGeoOk(pos) {
+    if (prompt) prompt.classList.remove('show');
+    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+    document.getElementById('searchLat').value = lat;
+    document.getElementById('searchLng').value = lng;
+    buildMap(lat, lng);
+    sizeNearby();
+    if (window.google) {
+      new google.maps.Geocoder().geocode({ location: { lat, lng }, language: _lang === 'en' ? 'en' : 'th' }, (res, st) => {
+        if (display) display.textContent = st === 'OK' && res[0] ? res[0].formatted_address : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      });
+    }
+    searchNearby();
+  }
+  function onGeoFail() {
+    // GPS ปฏิเสธ/ไม่ติด → ไม่แอบค้น กทม. แสดง prompt ให้เปิด GPS
+    if (prompt) prompt.classList.add('show');
+    if (display) display.textContent = 'ยังไม่ได้เปิด GPS';
+  }
+
   if (navigator.geolocation) {
-    const display = document.getElementById('searchLocationDisplay');
     if (display) display.textContent = 'กำลังระบุตำแหน่ง GPS...';
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        const lat = pos.coords.latitude, lng = pos.coords.longitude;
-        document.getElementById('searchLat').value = lat;
-        document.getElementById('searchLng').value = lng;
-        buildMap(lat, lng);
-        if (window.google) {
-          new google.maps.Geocoder().geocode({ location: { lat, lng }, language: 'th' }, (res, st) => {
-            if (display) display.textContent = st === 'OK' && res[0] ? res[0].formatted_address : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-          });
-        }
-      },
-      () => {
-        buildMap(13.7018, 100.6011);
-        if (display) display.textContent = 'กรุงเทพมหานคร (ค่าเริ่มต้น)';
-      },
-      { timeout: 6000 }
-    );
+    navigator.geolocation.getCurrentPosition(onGeoOk, onGeoFail, { timeout: 8000, enableHighAccuracy: true });
   } else {
-    buildMap(13.7018, 100.6011);
-    const display = document.getElementById('searchLocationDisplay');
-    if (display) display.textContent = 'กรุงเทพมหานคร (ค่าเริ่มต้น)';
+    onGeoFail();
   }
 }
 
@@ -3219,15 +3290,18 @@ async function searchNearby() {
   const el  = document.getElementById('nearbyResults');
   el.innerHTML = `<div class="empty"><div class="loading" style="width:24px;height:24px"></div><div class="empty-text" style="margin-top:12px">${t('searching_lbl')}</div></div>`;
   try {
-    const data = await api('GET', `/jobs/nearby?lat=${lat}&lng=${lng}&radius_km=${r}`);
+    const data = await api('GET', `/jobs/nearby?lat=${lat}&lng=${lng}&radius_km=${r}&scope=${_nearbyScope}`);
+    const _nbc = document.getElementById('nbCount');
     // Clear previous job markers
     _jobMarkers.forEach(m => m.setMap(null));
     _jobMarkers = [];
 
     if (!data.jobs.length) {
+      if (_nbc) _nbc.textContent = `${t('found_prefix')} 0 ${t('found_suffix')}`;
       el.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">${t('no_jobs_found')}<br><small style="color:var(--muted)">${t('no_jobs_tip')}</small></div></div>`;
       return;
     }
+    if (_nbc) _nbc.textContent = `${t('found_prefix')} ${data.count} ${t('found_suffix')}`;
 
     // Drop job pins on map
     if (_nearbyMap && window.google) {
