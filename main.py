@@ -1815,20 +1815,50 @@ async def get_nearby_jobs(
     lat:       float,
     lng:       float,
     radius_km: float = DEFAULT_RADIUS_KM,
+    scope:     str   = "related",   # "related" = ตรง + หมวดเดียวกัน | "all" = ทุกงานในรัศมี
     user:      dict  = Depends(require_worker),
     db:        asyncpg.Connection = Depends(get_db),
 ):
     radius_km = min(radius_km, MAX_RADIUS_KM)
+    scope     = scope if scope in ("related", "all") else "related"
 
     worker = await db.fetchrow(
         "SELECT skills, daily_rate_expected FROM worker_profiles WHERE user_id=$1",
         UUID(user["sub"]),
     )
-    worker_skills = worker["skills"] if worker else []
+    worker_skills = [s.lower() for s in (worker["skills"] if worker and worker["skills"] else [])]
     worker_rate   = worker["daily_rate_expected"] if worker else None
+    worker_set    = set(worker_skills)
+
+    # ── Category adjacency: ขยาย skill ของ worker → ทุก title code ในหมวดเดียวกัน ──
+    # related_set = ตรง (worker_skills) + ใกล้เคียง (title อื่นในหมวดเดียวกัน)
+    related_set = set(worker_skills)
+    if worker_skills:
+        adj_rows = await db.fetch(
+            """
+            SELECT DISTINCT jt2.code AS code
+            FROM   job_titles jt1
+            JOIN   job_titles jt2 ON jt2.category_id = jt1.category_id
+            WHERE  lower(jt1.code) = ANY($1::text[])
+            """,
+            worker_skills,
+        )
+        related_set |= {r["code"].lower() for r in adj_rows}
+
+    # ── Build query (skill filter ขึ้นกับ scope) ──
+    params = [lng, lat, radius_km]
+    skill_clause = ""
+    # related mode + worker มี skill → กรองเฉพาะงาน direct/adjacent (หรือ general ที่ไม่ระบุ skill)
+    if scope == "related" and worker_skills:
+        params.append(list(related_set))
+        skill_clause = (
+            f"AND (jp.required_skills = '{{}}' "
+            f"OR jp.required_skills && ${len(params)}::text[])"
+        )
+    # scope='all' หรือ worker ไม่มี skill → ไม่กรอง (โชว์ทุกงานในรัศมี)
 
     rows = await db.fetch(
-        """
+        f"""
         SELECT
             jp.id, jp.title, jp.required_skills, jp.daily_wage_rate,
             jp.duration_days,
@@ -1852,19 +1882,19 @@ async def get_nearby_jobs(
                    ST_MakePoint($1, $2)::geography,
                    $3 * 1000
                )
-          AND  (
-                 cardinality($4::text[]) = 0
-                 OR jp.required_skills = '{}'
-                 OR jp.required_skills && $4::text[]
-               )
+          {skill_clause}
         ORDER  BY distance_km ASC
         LIMIT  50
         """,
-        lng, lat, radius_km, worker_skills,
+        *params,
     )
 
     results = []
     for row in rows:
+        req_set = {s.lower() for s in (row["required_skills"] or [])}
+        is_direct   = bool(req_set & worker_set)
+        is_adjacent = (not is_direct) and bool(req_set & related_set)
+
         score, matched, missing = compute_match_score(
             worker_skills   = worker_skills,
             required_skills = row["required_skills"] or [],
@@ -1893,10 +1923,17 @@ async def get_nearby_jobs(
             "match_score":     score,
             "matched_skills":  matched,
             "missing_skills":  missing,
+            # relevance flags — frontend ใช้ทำแท็บ + tag "🔗 สายงานเดียวกัน"
+            "is_direct":       is_direct,
+            "adjacent":        is_adjacent,   # หมวดเดียวกันแต่ title ไม่ตรง
         })
 
-    results.sort(key=lambda x: (-x["match_score"], x["distance_km"]))
-    return {"count": len(results), "jobs": results}
+    # direct match ก่อน → adjacent → อื่นๆ, ในกลุ่มเดียวกันเรียง match สูง/ใกล้
+    results.sort(key=lambda x: (
+        0 if x["is_direct"] else (1 if x["adjacent"] else 2),
+        -x["match_score"], x["distance_km"],
+    ))
+    return {"count": len(results), "jobs": results, "scope": scope}
 
 
 @app.get("/jobs/{job_id}/candidates", tags=["Matching"])
