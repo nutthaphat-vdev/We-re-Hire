@@ -138,6 +138,20 @@ body{background-color:var(--bg-dark);color:var(--text-main);font-family:'Prompt'
   .section-title{font-size:2rem;}
   .content-section{padding:40px 16px;}
 }
+/* ===== Thai typography — กัน "เบียด" (ไทยมีสระ/วรรณยุกต์บน-ล่าง ต้องการ line-height มากกว่าอังกฤษ) ===== */
+html[lang="th"] .hero-title{ line-height:1.32 !important; letter-spacing:0 !important; }
+html[lang="th"] .section-title{ line-height:1.4 !important; letter-spacing:0 !important; }
+html[lang="th"] .cta-container h2{ line-height:1.4; }
+html[lang="th"] .hero-subtitle,
+html[lang="th"] .section-subtitle,
+html[lang="th"] .step-content p,
+html[lang="th"] .feature-card p,
+html[lang="th"] .showcase-info p,
+html[lang="th"] .timeline-list li,
+html[lang="th"] .stat-label{ line-height:1.75; }
+html[lang="th"] .feature-card h3,
+html[lang="th"] .step-content h4,
+html[lang="th"] .timeline-header{ line-height:1.5; }
 </style>
 </head>
 <body>
