@@ -700,7 +700,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   }
 </style>
 
-<div id="landingPage">
+<div id="landingPage" style="display:none">
   <div id="landingBg"></div>
   <!-- Lang toggle — absolute top-right, flag images -->
   <div style="position:absolute;top:18px;right:20px;z-index:100;display:flex;gap:8px;align-items:center">
@@ -5039,7 +5039,7 @@ doLogout = function() {
   _origDoLogout();
   document.getElementById('authPage').style.display = 'none';
   // Show landing after logout
-  document.getElementById('landingPage').style.display = 'flex';
+  document.getElementById('authPage').style.display = 'flex';  // landing ย้ายไป landing.html แล้ว → index.html โชว์ login แทน
   loadLandingStats();
 };
 
@@ -5052,7 +5052,7 @@ if (token && userRole) {
     log('warn', 'Stored session expired — require re-login');
     localStorage.clear();
     token = ''; userRole = ''; userId = '';
-    document.getElementById('landingPage').style.display = 'flex';
+    document.getElementById('authPage').style.display = 'flex';  // landing ย้ายไป landing.html แล้ว → index.html โชว์ login แทน
   } else {
     initApp();
     _resetSessionTimers();
@@ -5060,7 +5060,7 @@ if (token && userRole) {
 } else {
   handleGoogleCallback().then(handled => {
     if (!handled) {
-      document.getElementById('landingPage').style.display = 'flex';
+      document.getElementById('authPage').style.display = 'flex';  // landing ย้ายไป landing.html แล้ว → index.html โชว์ login แทน
       loadLandingStats();
       log('info', 'Ready — waiting for login');
     }
