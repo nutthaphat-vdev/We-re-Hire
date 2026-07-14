@@ -422,6 +422,46 @@ html, body { margin:0; padding:0; background:#0d0f12; }
     .nb-gps{ bottom:calc(62% + 12px); }
   }
 </style>
+<!-- ===== Landing — Gemini glass restyle (Piece 1: dark) ===== -->
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  #landingPage{ font-family:'Prompt','Sarabun',sans-serif !important; }
+  #landingPage .lp-card, #landingPage .lp-step, #landingPage .lp-feature, #landingPage .lp-market-item{
+    background: rgba(30,41,59,.38) !important;
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border:1px solid rgba(255,255,255,.09) !important;
+    border-radius:18px !important;
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  }
+  #landingPage .lp-card:hover, #landingPage .lp-feature:hover, #landingPage .lp-step:hover{
+    transform: translateY(-3px);
+    border-color: rgba(0,229,160,.4) !important;
+    box-shadow: 0 12px 34px rgba(0,0,0,.35);
+  }
+  #landingPage .lp-stats-bar{
+    background: rgba(30,41,59,.38) !important;
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border:1px solid rgba(255,255,255,.09) !important;
+    border-radius:20px !important;
+  }
+  #landingPage .lp-btn{ border-radius:14px !important; box-shadow: 0 8px 26px rgba(0,229,160,.28); }
+  #landingPage .lp-title{ letter-spacing:-.02em; }
+  /* floating showcase job cards in hero */
+  #landingPage .lp-hero{ position:relative; }
+  .lp-float{ position:absolute; z-index:3; display:flex; align-items:center; gap:12px;
+    background: rgba(20,26,34,.82); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:12px 16px;
+    box-shadow:0 12px 34px rgba(0,0,0,.45); font-family:'Prompt',sans-serif; }
+  .lp-float .lp-float-ic{ width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0; }
+  .lp-float h5{ font-size:14px;font-weight:600;margin:0;color:#e8edf5; }
+  .lp-float p{ font-size:11px;color:#94a3b8;margin:2px 0 0; }
+  .lp-float .lp-float-price{ font-weight:700;color:#00e5a0;font-size:15px;margin-left:6px; }
+  .lp-float.left{ top:15%; left:3%; animation:lpfloat1 6s ease-in-out infinite; }
+  .lp-float.right{ top:58%; right:3%; animation:lpfloat2 7s ease-in-out infinite; }
+  @keyframes lpfloat1{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+  @keyframes lpfloat2{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(12px)} }
+  @media(max-width:960px){ .lp-float{ display:none; } }
+</style>
 </head>
 <body>
 <!-- LANDING PAGE -->
@@ -676,6 +716,16 @@ html, body { margin:0; padding:0; background:#0d0f12; }
 
   <!-- ── HERO ─────────────────────────────────────────────── -->
   <div class="lp-hero">
+    <div class="lp-float left">
+      <div class="lp-float-ic" style="background:rgba(0,229,160,.16)">👨‍🍳</div>
+      <div><h5>ผู้ช่วยเสิร์ฟ (ด่วน)</h5><p>ร้านเจ๊ไฝ • เริ่ม 17:00</p></div>
+      <div class="lp-float-price">฿750</div>
+    </div>
+    <div class="lp-float right">
+      <div class="lp-float-ic" style="background:rgba(0,153,255,.16)">🔧</div>
+      <div><h5>ช่างซ่อมแอร์บ้าน</h5><p>เขตพญาไท • พรุ่งนี้</p></div>
+      <div class="lp-float-price">฿600</div>
+    </div>
     <div class="lp-wrap">
       <div class="lp-eyebrow">
         <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent)"></span>
