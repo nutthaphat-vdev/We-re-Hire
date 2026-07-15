@@ -88,11 +88,23 @@ def apply_job(c, tok, job_id) -> str:
     return check(r, 201)["application_id"]
 
 
+def _code_body(r):
+    return r.status_code, (r.json() if r.text and r.headers.get("content-type","").startswith("application/json") else r.text)
+
+
 def hire(c, tok, app_id):
     """คืน (status_code, body_or_text)"""
     r = api(c, "PATCH", f"/applications/{app_id}/decide", token=tok,
             json={"decision": "hired", "note": "test"})
-    return r.status_code, (r.json() if r.text and r.headers.get("content-type","").startswith("application/json") else r.text)
+    return _code_body(r)
+
+
+def send_backup(c, tok, app_id):
+    return _code_body(api(c, "POST", f"/applications/{app_id}/send-backup", token=tok))
+
+
+def accept_backup(c, tok, app_id):
+    return _code_body(api(c, "POST", f"/applications/{app_id}/accept-backup", token=tok))
 
 
 def app_status_map(c, tok) -> dict:
@@ -184,6 +196,24 @@ def run(base: str) -> bool:
                  f"got HTTP {code_n}  detail={detail[:60]}")
         except Exception as e:
             step("4. Multi-day span", False, str(e))
+
+        # ── Test 5: Backup-accept double-hire guard ──────────────
+        try:
+            D5 = (date.today() + timedelta(days=60)).isoformat()
+            j1 = post_job(c, emp, "J1", D5, "09:00", "13:00")
+            j2 = post_job(c, emp, "J2", D5, "10:00", "12:00")   # ทับ J1
+            aj1 = apply_job(c, wrk, j1)
+            code_j1, _ = hire(c, emp, aj1)                       # hire J1
+            assert code_j1 == 200, f"hire J1 expected 200 got {code_j1}"
+            aj2 = apply_job(c, wrk, j2)                          # สมัคร J2 (หลัง hired J1)
+            code_sb, _ = send_backup(c, emp, aj2)                # employer ส่ง backup offer J2
+            code_ab, body_ab = accept_backup(c, wrk, aj2)        # worker รับ backup → ต้องเด้ง
+            ok = code_ab == 409
+            detail = body_ab.get("detail", "") if isinstance(body_ab, dict) else str(body_ab)
+            step("5. Backup-accept double-hire (accept J2 ทับ J1 → 409)", ok,
+                 f"send-backup={code_sb} accept={code_ab}  detail={detail[:50]}")
+        except Exception as e:
+            step("5. Backup-accept double-hire", False, str(e))
 
     return _summary()
 

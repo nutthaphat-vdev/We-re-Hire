@@ -2689,8 +2689,20 @@ async def get_backup_workers(
             ja.backup_accepted_at
         FROM   job_applications ja
         JOIN   worker_profiles  wp ON wp.id = ja.worker_id
+        JOIN   job_postings     jp ON jp.id = ja.job_id
         WHERE  ja.job_id = $1
           AND  ja.status IN ('applied', 'shortlisted')
+          AND  wp.is_available = TRUE
+          AND  NOT (jp.start_date IS NOT NULL AND EXISTS (
+                   SELECT 1
+                   FROM   job_applications ja3
+                   JOIN   job_postings    jp3 ON jp3.id = ja3.job_id
+                   WHERE  ja3.worker_id = wp.id
+                     AND  ja3.status    IN ('hired', 'checked_in', 'working')
+                     AND  jp3.start_date IS NOT NULL
+                     AND  job_occupied_range(jp3.start_date, jp3.duration_days, jp3.work_start, jp3.work_end)
+                          && job_occupied_range(jp.start_date, jp.duration_days, jp.work_start, jp.work_end)
+               ))
         ORDER  BY ja.match_score DESC, ja.distance_km ASC
         LIMIT  10
         """,
@@ -2771,6 +2783,17 @@ async def _cascade_backup_offer(
           AND  ja.status           IN ('applied', 'shortlisted')
           AND  ja.backup_offered_at IS NULL
           AND  wp.location         IS NOT NULL
+          AND  wp.is_available      = TRUE
+          AND  NOT (jp.start_date IS NOT NULL AND EXISTS (
+                   SELECT 1
+                   FROM   job_applications ja3
+                   JOIN   job_postings    jp3 ON jp3.id = ja3.job_id
+                   WHERE  ja3.worker_id = wp.id
+                     AND  ja3.status    IN ('hired', 'checked_in', 'working')
+                     AND  jp3.start_date IS NOT NULL
+                     AND  job_occupied_range(jp3.start_date, jp3.duration_days, jp3.work_start, jp3.work_end)
+                          && job_occupied_range(jp.start_date, jp.duration_days, jp.work_start, jp.work_end)
+               ))
         ORDER  BY ST_Distance(wp.location, jp.location) ASC
         LIMIT  1
         """,
@@ -2923,6 +2946,7 @@ async def accept_backup_offer(
                jp.title          AS job_title,
                jp.slots_available, jp.slots_filled,
                jp.location_name,
+               jp.start_date, jp.duration_days, jp.work_start, jp.work_end,
                ST_Y(jp.location::geometry) AS job_lat,
                ST_X(jp.location::geometry) AS job_lng,
                ep.user_id        AS employer_user_id
@@ -2948,6 +2972,33 @@ async def accept_backup_offer(
     place_name = row["location_name"] or "สถานที่ทำงาน"
 
     async with db.transaction():
+        # 🔒 serialize การ hire ของ worker คนเดียวกัน — กัน double-hire race
+        await db.execute("SELECT pg_advisory_xact_lock(hashtext($1))", str(worker_id))
+
+        # 🛡️ Guard: ห้ามรับ backup ที่ชนเวลากับ active job อื่นของ worker (อุด double-hire)
+        if row["start_date"]:
+            conflict = await db.fetchval(
+                """
+                SELECT 1
+                FROM   job_applications ja2
+                JOIN   job_postings    jp2 ON jp2.id = ja2.job_id
+                WHERE  ja2.worker_id = $1
+                  AND  ja2.id       != $2
+                  AND  ja2.status    IN ('hired', 'checked_in', 'working')
+                  AND  jp2.start_date IS NOT NULL
+                  AND  job_occupied_range(jp2.start_date, jp2.duration_days, jp2.work_start, jp2.work_end)
+                       && job_occupied_range($3, $4, $5, $6)
+                LIMIT  1
+                """,
+                worker_id, app_id,
+                row["start_date"], row["duration_days"], row["work_start"], row["work_end"],
+            )
+            if conflict:
+                raise HTTPException(
+                    status_code=409,
+                    detail="คุณมีงานอื่นที่ชนช่วงเวลานี้อยู่แล้ว ไม่สามารถรับงานสำรองนี้ได้",
+                )
+
         await db.execute(
             """
             UPDATE job_applications
@@ -2969,6 +3020,26 @@ async def accept_backup_offer(
         )
         if not claimed:
             raise HTTPException(status_code=409, detail="ที่นั่งเต็มแล้ว")
+
+        # ➕ ถอด application อื่นที่ยัง pending และชนเวลากับงานที่เพิ่งรับ (เหมือน decide)
+        if row["start_date"]:
+            await db.execute(
+                """
+                UPDATE job_applications ja2
+                SET    status        = 'withdrawn',
+                       employer_note = 'ผู้สมัครรับงานอื่นในช่วงเวลานี้แล้ว'
+                FROM   job_postings jp2
+                WHERE  ja2.job_id     = jp2.id
+                  AND  ja2.worker_id  = $1
+                  AND  ja2.status     IN ('applied', 'shortlisted')
+                  AND  ja2.job_id    != $2
+                  AND  jp2.start_date IS NOT NULL
+                  AND  job_occupied_range(jp2.start_date, jp2.duration_days, jp2.work_start, jp2.work_end)
+                       && job_occupied_range($3, $4, $5, $6)
+                """,
+                worker_id, row["job_id"],
+                row["start_date"], row["duration_days"], row["work_start"], row["work_end"],
+            )
         await db.execute(
             """
             INSERT INTO notifications (user_id, type, title, body)
