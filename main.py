@@ -2027,6 +2027,8 @@ async def decide_application(
                jp.location_name,
                jp.start_date,
                jp.duration_days,
+               jp.work_start,
+               jp.work_end,
                ST_Y(jp.location::geometry) AS job_lat,
                ST_X(jp.location::geometry) AS job_lng,
                wp.full_name      AS worker_name
@@ -2063,6 +2065,36 @@ async def decide_application(
             body.decision, body.note, app_id,
         )
         if body.decision == "hired":
+            # 🔒 Serialize การ hire ของ worker คนเดียวกัน — กัน double-hire race (2 employer พร้อมกัน)
+            await db.execute(
+                "SELECT pg_advisory_xact_lock(hashtext($1))",
+                str(row["worker_id"]),
+            )
+
+            # 🛡️ Guard: worker ต้องไม่ถือ active job อื่นที่ชนช่วงเวลานี้ (อุด double-hire)
+            if row["start_date"]:
+                conflict = await db.fetchval(
+                    """
+                    SELECT 1
+                    FROM   job_applications ja2
+                    JOIN   job_postings    jp2 ON jp2.id = ja2.job_id
+                    WHERE  ja2.worker_id = $1
+                      AND  ja2.id       != $2
+                      AND  ja2.status    IN ('hired', 'checked_in', 'working')
+                      AND  jp2.start_date IS NOT NULL
+                      AND  job_occupied_range(jp2.start_date, jp2.duration_days, jp2.work_start, jp2.work_end)
+                           && job_occupied_range($3, $4, $5, $6)
+                    LIMIT  1
+                    """,
+                    row["worker_id"], app_id,
+                    row["start_date"], row["duration_days"], row["work_start"], row["work_end"],
+                )
+                if conflict:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="ผู้สมัครรับงานอื่นที่ชนช่วงเวลานี้ไปแล้ว ไม่สามารถจ้างซ้ำได้",
+                    )
+
             # Atomic slot claim — กัน race condition สอง employer/คำขอแย่ง slot สุดท้ายพร้อมกัน
             claimed = await db.fetchval(
                 """
@@ -2077,29 +2109,27 @@ async def decide_application(
             if not claimed:
                 # slot สุดท้ายถูกแย่งไปแล้ว → raise เพื่อ rollback ทั้ง transaction (status='hired' ไม่ถูกบันทึก)
                 raise HTTPException(status_code=409, detail="ที่นั่งเต็มแล้ว")
-            # Auto-withdraw overlapping applications for the same worker (batch)
+            # Auto-withdraw overlapping PENDING applications (time-based via job_occupied_range)
             if row["start_date"]:
-                hired_start = row["start_date"]
-                hired_end   = hired_start + timedelta(days=row["duration_days"])
                 worker_name = row["worker_name"] or "Worker"
 
                 withdrawn = await db.fetch(
                     """
-                    UPDATE job_applications
+                    UPDATE job_applications ja2
                     SET    status        = 'withdrawn',
                            employer_note = 'ผู้สมัครรับงานอื่นในช่วงเวลานี้แล้ว'
-                    WHERE  worker_id = $1
-                      AND  status IN ('applied', 'shortlisted')
-                      AND  job_id  != $2
-                      AND  job_id IN (
-                               SELECT id FROM job_postings
-                               WHERE  start_date IS NOT NULL
-                                 AND  start_date <= $3
-                                 AND  start_date + duration_days >= $4
-                           )
-                    RETURNING job_id
+                    FROM   job_postings jp2
+                    WHERE  ja2.job_id     = jp2.id
+                      AND  ja2.worker_id  = $1
+                      AND  ja2.status     IN ('applied', 'shortlisted')
+                      AND  ja2.job_id    != $2
+                      AND  jp2.start_date IS NOT NULL
+                      AND  job_occupied_range(jp2.start_date, jp2.duration_days, jp2.work_start, jp2.work_end)
+                           && job_occupied_range($3, $4, $5, $6)
+                    RETURNING ja2.job_id AS job_id
                     """,
-                    row["worker_id"], row["job_id"], hired_end, hired_start,
+                    row["worker_id"], row["job_id"],
+                    row["start_date"], row["duration_days"], row["work_start"], row["work_end"],
                 )
 
                 if withdrawn:
