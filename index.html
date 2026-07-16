@@ -3052,6 +3052,9 @@ async function loadDashboard() {
 async function loadWorkerProfile() {
   const el = document.getElementById('workerProfileContent');
   el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
+  // เบอร์อยู่บนตาราง users (ไม่ใช่ worker_profiles) — ดึงมา pre-fill ช่องเบอร์
+  let myPhone = '';
+  try { const _me = await api('GET', '/auth/me'); myPhone = _me.phone || ''; } catch(_e) {}
   try {
     const p = await api('GET', '/workers/profile/me');
     const bgColor = { pending:'badge-warn', approved:'badge-green', failed:'badge-danger', expired:'badge-gray' };
@@ -3139,6 +3142,7 @@ async function loadWorkerProfile() {
       <div id="editProfileForm" style="display:none">
         <div class="card">
           <div style="font-weight:600;margin-bottom:16px">${t('profile_edit_header')}</div>
+          <div class="form-group"><label>เบอร์โทรศัพท์</label><input type="tel" id="editPhone" placeholder="08x-xxx-xxxx" value="${esc(myPhone)}"></div>
           <div class="form-row">
             <div class="form-group">
               <label>${t('profile_cat_lbl')}</label>
@@ -3199,6 +3203,7 @@ async function loadWorkerProfile() {
         <div class="card">
           <div style="font-weight:600;margin-bottom:16px">สร้างโปรไฟล์</div>
           <div class="form-group"><label>ชื่อ-นามสกุล</label><input type="text" id="createName" placeholder="สมชาย ใจดี"></div>
+          <div class="form-group"><label>เบอร์โทรศัพท์</label><input type="tel" id="createPhone" placeholder="08x-xxx-xxxx" value="${esc(myPhone)}"></div>
           <div class="form-row">
             <div class="form-group">
               <label>หมวดงาน</label>
@@ -3263,6 +3268,7 @@ async function doCreateProfile() {
     const locationName = [addressText, province, postalCode].filter(Boolean).join(' ') || undefined;
     await api('POST', '/workers/profile', {
       full_name:           document.getElementById('createName').value.trim(),
+      phone:               document.getElementById('createPhone').value.trim() || undefined,
       skills,
       experience_years:    parseInt(document.getElementById('createExp').value) || 0,
       daily_rate_expected: parseFloat(document.getElementById('createRate').value) || undefined,
@@ -3297,6 +3303,8 @@ async function doUpdateProfile() {
       postal_code:         postalCode || undefined,
       location_name:       locationName,
     });
+    const _ph = (document.getElementById('editPhone')?.value || '').trim();
+    if (_ph) await api('PATCH', '/auth/phone', { phone: _ph });
     showAlert('alertEditProfile','✅ อัปเดตสำเร็จ!','success');
     setTimeout(() => loadWorkerProfile(), 1000);
   } catch(e) {
