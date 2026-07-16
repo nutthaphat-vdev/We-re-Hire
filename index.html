@@ -3227,19 +3227,34 @@ async function loadWorkerProfile() {
     // ยังไม่มีโปรไฟล์ — แสดงฟอร์มสร้าง
     if (e.message.includes('ไม่พบโปรไฟล์') || e.message.includes('404')) {
       el.innerHTML = `
-        <div class="alert alert-info">ยังไม่มีโปรไฟล์ — กรุณากรอกข้อมูลด้านล่าง</div>
-        <div class="card">
-          <div style="font-weight:600;margin-bottom:16px">สร้างโปรไฟล์</div>
-          <div class="form-group"><label>ชื่อ-นามสกุล</label><input type="text" id="createName" placeholder="สมชาย ใจดี"></div>
-          <div class="form-group"><label>เบอร์โทรศัพท์</label><input type="tel" id="createPhone" placeholder="08x-xxx-xxxx" value="${esc(myPhone)}"></div>
-          <div class="form-row">
-            <div class="form-group">
+        <style>
+          .wp-edit{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px}
+          .wp-edit .wp-head{font-size:1.35rem;font-weight:700;margin-bottom:4px;color:var(--text)}
+          .wp-edit .wp-sub{color:var(--muted);font-size:.9rem;margin-bottom:24px}
+          .wp-edit .wp-cell{display:flex;flex-direction:column;gap:7px}
+          .wp-edit .wp-grp{display:flex;flex-direction:column;gap:7px;margin-bottom:18px}
+          .wp-edit .wp-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+          @media(max-width:640px){.wp-edit{padding:20px}.wp-edit .wp-row{grid-template-columns:1fr}}
+          .wp-edit label{font-size:.85rem;color:var(--muted);font-weight:500}
+          .wp-edit input,.wp-edit select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:12px 14px;border-radius:9px;font-size:.95rem;outline:none;width:100%;transition:border-color .15s}
+          .wp-edit input:focus,.wp-edit select:focus{border-color:var(--accent)}
+          .wp-edit .wp-actions{display:flex;gap:10px;margin-top:8px}
+          .wp-banner{background:rgba(0,153,255,.08);border:1px solid rgba(0,153,255,.28);color:var(--accent2);padding:12px 16px;border-radius:10px;font-size:.9rem;margin-bottom:14px}
+        </style>
+        <div class="wp-banner">👋 ยังไม่มีโปรไฟล์ — กรอกข้อมูลด้านล่างเพื่อเริ่มรับงาน</div>
+        <div class="wp-edit">
+          <div class="wp-head">สร้างโปรไฟล์</div>
+          <div class="wp-sub">กรอกข้อมูลตามจริง เพื่อให้เราจับคู่งานที่เหมาะสม</div>
+          <div class="wp-grp"><label>ชื่อ-นามสกุล</label><input type="text" id="createName" placeholder="สมชาย ใจดี"></div>
+          <div class="wp-grp"><label>เบอร์โทรศัพท์</label><input type="tel" id="createPhone" placeholder="08x-xxx-xxxx" value="${esc(myPhone)}"></div>
+          <div class="wp-row">
+            <div class="wp-cell">
               <label>หมวดงาน</label>
               <select id="createCategory" onchange="loadJobTitles('createCategory','createSkillSelect')">
                 <option value="">— เลือกหมวดงาน —</option>
               </select>
             </div>
-            <div class="form-group">
+            <div class="wp-cell">
               <label>ตำแหน่งงาน</label>
               <select id="createSkillSelect" onchange="syncSkillCode('createSkillSelect','createSkills')">
                 <option value="">— เลือกตำแหน่ง —</option>
@@ -3247,29 +3262,29 @@ async function loadWorkerProfile() {
             </div>
           </div>
           <input type="hidden" id="createSkills" value="">
-          <div class="form-row">
-            <div class="form-group"><label>ประสบการณ์ (ปี)</label><input type="number" id="createExp" value="0"></div>
-            <div class="form-group"><label>ค่าแรงที่คาด (฿/วัน)</label><input type="number" id="createRate" placeholder="500"></div>
+          <div class="wp-row">
+            <div class="wp-cell"><label>ประสบการณ์ (ปี)</label><input type="number" id="createExp" value="0"></div>
+            <div class="wp-cell"><label>ค่าแรงที่คาด (฿/วัน)</label><input type="number" id="createRate" placeholder="500"></div>
           </div>
-          <div class="form-group">
+          <div class="wp-grp">
             <label>${t('profile_address_lbl')}</label>
             <input type="text" id="createAddressText" placeholder="เช่น 123 ซอยสุขุมวิท 77">
           </div>
-          <div class="form-row">
-            <div class="form-group">
+          <div class="wp-row">
+            <div class="wp-cell">
               <label>${t('profile_province_lbl')}</label>
               <select id="createProvince">
                 <option value="">— เลือกจังหวัด —</option>
                 ${THAI_PROVINCES.map(pv => `<option value="${pv}">${pv}</option>`).join('')}
               </select>
             </div>
-            <div class="form-group">
+            <div class="wp-cell">
               <label>${t('profile_postal_lbl')}</label>
               <input type="text" id="createPostalCode" placeholder="10110" maxlength="5">
             </div>
           </div>
           <div id="alertCreateProfile"></div>
-          <button class="btn btn-primary" onclick="doCreateProfile()">✅ สร้างโปรไฟล์</button>
+          <div class="wp-actions"><button class="btn btn-primary" onclick="doCreateProfile()">✅ สร้างโปรไฟล์</button></div>
         </div>`;
       // Re-init dropdowns หลัง form render
       initCategoryDropdowns();
