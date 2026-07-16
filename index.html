@@ -3140,17 +3140,31 @@ async function loadWorkerProfile() {
         </div>` : ''}
       </div>
       <div id="editProfileForm" style="display:none">
-        <div class="card">
-          <div style="font-weight:600;margin-bottom:16px">${t('profile_edit_header')}</div>
-          <div class="form-group"><label>เบอร์โทรศัพท์</label><input type="tel" id="editPhone" placeholder="08x-xxx-xxxx" value="${esc(myPhone)}"></div>
-          <div class="form-row">
-            <div class="form-group">
+        <style>
+          .wp-edit{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px}
+          .wp-edit .wp-head{font-size:1.35rem;font-weight:700;margin-bottom:4px;color:var(--text)}
+          .wp-edit .wp-sub{color:var(--muted);font-size:.9rem;margin-bottom:24px}
+          .wp-edit .wp-cell{display:flex;flex-direction:column;gap:7px}
+          .wp-edit .wp-grp{display:flex;flex-direction:column;gap:7px;margin-bottom:18px}
+          .wp-edit .wp-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+          @media(max-width:640px){.wp-edit{padding:20px}.wp-edit .wp-row{grid-template-columns:1fr}}
+          .wp-edit label{font-size:.85rem;color:var(--muted);font-weight:500}
+          .wp-edit input,.wp-edit select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:12px 14px;border-radius:9px;font-size:.95rem;outline:none;width:100%;transition:border-color .15s}
+          .wp-edit input:focus,.wp-edit select:focus{border-color:var(--accent)}
+          .wp-edit .wp-actions{display:flex;gap:10px;margin-top:8px}
+        </style>
+        <div class="wp-edit">
+          <div class="wp-head">${t('profile_edit_header')}</div>
+          <div class="wp-sub">อัปเดตข้อมูลส่วนตัวและทักษะของคุณ</div>
+          <div class="wp-grp"><label>เบอร์โทรศัพท์</label><input type="tel" id="editPhone" placeholder="08x-xxx-xxxx" value="${esc(myPhone)}"></div>
+          <div class="wp-row">
+            <div class="wp-cell">
               <label>${t('profile_cat_lbl')}</label>
               <select id="editCategory" onchange="loadJobTitles('editCategory','editSkillSelect')">
                 <option value="">— เลือกหมวดงาน —</option>
               </select>
             </div>
-            <div class="form-group">
+            <div class="wp-cell">
               <label>${t('profile_jobtitle_lbl')}</label>
               <select id="editSkillSelect" onchange="syncSkillCode('editSkillSelect','editSkills')">
                 <option value="${esc(p.skills[0]||'')}">${esc(p.skills[0]||'')||'— เลือกตำแหน่ง —'}</option>
@@ -3158,37 +3172,32 @@ async function loadWorkerProfile() {
             </div>
           </div>
           <input type="hidden" id="editSkills" value="${esc(p.skills.join(','))}">
-          <div class="form-row">
-            <div class="form-group"><label>${t('profile_exp_lbl')}</label><input type="number" id="editExp" value="${p.experience_years}"></div>
-            <div class="form-group"><label>${t('profile_rate_lbl')}</label><input type="number" id="editRate" value="${p.daily_rate_expected||''}"></div>
+          <div class="wp-row">
+            <div class="wp-cell"><label>${t('profile_exp_lbl')}</label><input type="number" id="editExp" value="${p.experience_years}"></div>
+            <div class="wp-cell"><label>${t('profile_rate_lbl')}</label><input type="number" id="editRate" value="${p.daily_rate_expected||''}"></div>
           </div>
-          <div class="form-group">
+          <div class="wp-grp">
             <label>${t('profile_address_lbl')}</label>
             <input type="text" id="editAddressText" placeholder="เช่น 123 ซอยสุขุมวิท 77" value="${p.address_text||''}">
           </div>
-          <div class="form-row">
-            <div class="form-group">
+          <div class="wp-row">
+            <div class="wp-cell">
               <label>${t('profile_province_lbl')}</label>
               <select id="editProvince">
                 <option value="">— เลือกจังหวัด —</option>
                 ${THAI_PROVINCES.map(pv => `<option value="${pv}" ${p.province===pv?'selected':''}>${pv}</option>`).join('')}
               </select>
             </div>
-            <div class="form-group">
+            <div class="wp-cell">
               <label>${t('profile_postal_lbl')}</label>
               <input type="text" id="editPostalCode" placeholder="10110" maxlength="5" value="${p.postal_code||''}">
             </div>
           </div>
-          <div class="form-group">
-            <label>${t('profile_nationality')}</label>
-            <select id="editNationality">
-              <option value="thai" ${p.nationality_type !== 'foreign' ? 'selected' : ''}>${t('profile_nat_th')}</option>
-              <option value="foreign" ${p.nationality_type === 'foreign' ? 'selected' : ''}>${t('profile_nat_foreign')}</option>
-            </select>
-          </div>
           <div id="alertEditProfile"></div>
-          <button class="btn btn-primary" onclick="doUpdateProfile()">${t('profile_save')}</button>
-          <button class="btn btn-secondary" onclick="document.getElementById('editProfileForm').style.display='none'" style="margin-left:8px">${t('profile_cancel')}</button>
+          <div class="wp-actions">
+            <button class="btn btn-primary" onclick="doUpdateProfile()">${t('profile_save')}</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('editProfileForm').style.display='none'">${t('profile_cancel')}</button>
+          </div>
         </div>
       </div>`;
     // โหลด review summary async
