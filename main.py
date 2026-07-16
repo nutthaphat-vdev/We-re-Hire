@@ -687,11 +687,17 @@ app.add_middleware(
 
 security = HTTPBearer()
 
-def create_token(user_id: str, role: str) -> str:
+JWT_REMEMBER_MINUTES = 60 * 24 * 30   # 30 วัน สำหรับ "จำฉันไว้" (remember me)
+
+# Fixed bcrypt hash — รันเทียบเมื่อไม่เจอ user เพื่อให้เวลาตอบเท่ากัน (กัน timing enumeration)
+_DUMMY_BCRYPT_HASH = bcrypt.hashpw(b"timing-safe-dummy", bcrypt.gensalt(rounds=12)).decode()
+
+def create_token(user_id: str, role: str, remember: bool = False) -> str:
+    minutes = JWT_REMEMBER_MINUTES if remember else settings.jwt_expire_minutes
     payload = {
         "sub":  user_id,
         "role": role,
-        "exp":  datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expire_minutes),
+        "exp":  datetime.now(timezone.utc) + timedelta(minutes=minutes),
         "iat":  datetime.now(timezone.utc),
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
@@ -870,13 +876,14 @@ async def google_callback(
     # Upsert user ใน DB ของเรา
     user = await db.fetchrow(
         """
-        INSERT INTO users (email, password_hash, role)
-        VALUES ($1, 'google_oauth', $2)
+        INSERT INTO users (email, password_hash, role, terms_accepted_at, policy_version)
+        VALUES ($1, 'google_oauth', $2, NOW(), '1.0')
         ON CONFLICT (email) DO UPDATE
             SET role = CASE
                 WHEN users.password_hash = 'google_oauth' THEN $2
                 ELSE users.role   -- ถ้า email มีอยู่แล้ว (สมัครด้วย password) ไม่เปลี่ยน role
             END
+            -- ไม่ทับ terms_accepted_at เดิม (user เก่าเก็บ consent ไว้แล้ว)
         RETURNING id, role, is_active
         """,
         email, body.role,
@@ -902,8 +909,10 @@ class RegisterRequest(BaseModel):
     terms_accepted:  bool = Field(...)   # PDPA: must be True — recorded as consent evidence
 
 class LoginRequest(BaseModel):
-    email:    EmailStr
-    password: str
+    identifier: Optional[str] = None   # เบอร์ (0XXXXXXXXX) หรืออีเมล
+    email:      Optional[str] = None   # legacy alias — frontend เดิมส่ง email ยังใช้ได้
+    password:   str
+    remember:   bool = False
 
 @app.post("/auth/register", status_code=201, tags=["Auth"])
 async def register(body: RegisterRequest, db: asyncpg.Connection = Depends(get_db)):
@@ -950,19 +959,33 @@ async def register(body: RegisterRequest, db: asyncpg.Connection = Depends(get_d
 @app.post("/auth/login", tags=["Auth"])
 @limiter.limit("10/minute")
 async def login(request: Request, body: LoginRequest, db: asyncpg.Connection = Depends(get_db)):
-    user = await db.fetchrow(
-        "SELECT id, password_hash, role, is_active FROM users WHERE email=$1",
-        body.email,
-    )
+    ident = (body.identifier or body.email or "").strip()
+    if not ident:
+        raise HTTPException(status_code=400, detail="กรุณากรอกเบอร์โทรหรืออีเมล")
+
+    if "@" in ident:                                   # อีเมล
+        user = await db.fetchrow(
+            "SELECT id, password_hash, role, is_active FROM users WHERE email=$1",
+            ident,
+        )
+    else:                                              # เบอร์ — normalize เหลือแต่ตัวเลข
+        phone = re.sub(r"\D", "", ident)
+        user = await db.fetchrow(
+            "SELECT id, password_hash, role, is_active FROM users WHERE phone=$1",
+            phone,
+        )
+
     if not user:
-        raise HTTPException(status_code=401, detail="อีเมลหรือรหัสผ่านไม่ถูกต้อง")
+        # constant-time: รัน bcrypt หลอกให้เวลาตอบเท่ากับกรณีเจอ user (กัน timing enumeration)
+        bcrypt.checkpw(body.password.encode(), _DUMMY_BCRYPT_HASH.encode())
+        raise HTTPException(status_code=401, detail="เบอร์/อีเมลหรือรหัสผ่านไม่ถูกต้อง")
     if not user["is_active"]:
         raise HTTPException(status_code=403, detail="บัญชีถูกระงับ")
 
     if not bcrypt.checkpw(body.password.encode(), user["password_hash"].encode()):
-        raise HTTPException(status_code=401, detail="อีเมลหรือรหัสผ่านไม่ถูกต้อง")
+        raise HTTPException(status_code=401, detail="เบอร์/อีเมลหรือรหัสผ่านไม่ถูกต้อง")
 
-    token = create_token(str(user["id"]), user["role"])
+    token = create_token(str(user["id"]), user["role"], remember=body.remember)
     return {
         "access_token": token,
         "token_type":   "bearer",
@@ -982,12 +1005,41 @@ async def me(user: dict = Depends(get_current_user), db: asyncpg.Connection = De
     return dict(row)
 
 
+async def _set_user_phone(db, user_uuid: UUID, phone_raw: str) -> str:
+    """Validate + set users.phone (normalize 0XXXXXXXXX + unique). ใช้ตอน complete profile — สำคัญกับ Google user ที่ไม่มีเบอร์"""
+    phone = re.sub(r"\D", "", phone_raw or "")
+    if not re.fullmatch(r"0\d{9}", phone):
+        raise HTTPException(status_code=400, detail="เบอร์โทรไม่ถูกต้อง — ต้องเป็นเลข 10 หลัก ขึ้นต้นด้วย 0")
+    dup = await db.fetchval(
+        "SELECT id FROM users WHERE phone=$1 AND id != $2", phone, user_uuid
+    )
+    if dup:
+        raise HTTPException(status_code=409, detail="เบอร์โทรนี้ถูกใช้งานแล้ว")
+    await db.execute("UPDATE users SET phone=$1 WHERE id=$2", phone, user_uuid)
+    return phone
+
+
+class PhoneUpdate(BaseModel):
+    phone: str = Field(..., max_length=20)
+
+@app.patch("/auth/phone", tags=["Auth"])
+async def update_phone(
+    body: PhoneUpdate,
+    user: dict = Depends(get_current_user),
+    db:   asyncpg.Connection = Depends(get_db),
+):
+    """ตั้ง/เปลี่ยนเบอร์โทร — สำคัญกับ Google user ที่ยังไม่มีเบอร์ (contact-lock ต้องใช้)"""
+    phone = await _set_user_phone(db, UUID(user["sub"]), body.phone)
+    return {"phone": phone}
+
+
 # ============================================================
 # WORKER PROFILE
 # ============================================================
 
 class WorkerProfileCreate(BaseModel):
     full_name:           str   = Field(..., min_length=1, max_length=100)
+    phone:               Optional[str] = Field(None, max_length=20)   # จำเป็นถ้า users.phone ว่าง (Google user)
     skills:              list[str] = Field(default=[])
     experience_years:    int   = Field(default=0, ge=0, le=50)
     daily_rate_expected: Optional[float] = Field(None, gt=0)
@@ -1091,6 +1143,10 @@ async def create_worker_profile(
     )
     if existing:
         raise HTTPException(status_code=409, detail="มีโปรไฟล์อยู่แล้ว ใช้ PATCH แทน")
+
+    # เบอร์โทร: ถ้าฟอร์มส่งมา → set (Google user) · ไม่ hard-require ที่นี่ (กัน frontend เก่าพัง) — apply/post gate บังคับจริง
+    if body.phone:
+        await _set_user_phone(db, UUID(user["sub"]), body.phone)
 
     # Clean skills — lowercase + dedupe
     clean_skills = list({s.strip().lower() for s in body.skills if s.strip()})
@@ -1200,6 +1256,7 @@ class EmployerProfileCreate(BaseModel):
     company_name:   str = Field(..., min_length=1, max_length=200)
     business_type:  Optional[str] = Field(None, max_length=100)
     contact_person: str = Field(..., min_length=1, max_length=100)
+    phone:          Optional[str] = Field(None, max_length=20)   # จำเป็นถ้า users.phone ว่าง (Google user)
 
 class EmployerProfileUpdate(BaseModel):
     company_name:   Optional[str] = Field(None, min_length=1, max_length=200)
@@ -1234,6 +1291,10 @@ async def create_employer_profile(
     )
     if existing:
         raise HTTPException(status_code=409, detail="มีโปรไฟล์อยู่แล้ว ใช้ PATCH แทน")
+
+    # เบอร์โทร: ถ้าฟอร์มส่งมา → set (Google user) · ไม่ hard-require ที่นี่ (กัน frontend เก่าพัง) — apply/post gate บังคับจริง
+    if body.phone:
+        await _set_user_phone(db, UUID(user["sub"]), body.phone)
 
     row = await db.fetchrow(
         """
@@ -1329,6 +1390,10 @@ async def post_job(
     )
     if not emp_id:
         raise HTTPException(status_code=404, detail="สร้าง Employer Profile ก่อน")
+
+    # contact-lock ต้องมีเบอร์ — กัน Google user เก่าที่ยังไม่ได้กรอกเบอร์
+    if not await db.fetchval("SELECT phone FROM users WHERE id=$1", UUID(user["sub"])):
+        raise HTTPException(status_code=400, detail="กรุณาเพิ่มเบอร์โทรในโปรไฟล์ก่อนโพสต์งาน")
 
     clean_skills = list({s.strip().lower() for s in body.required_skills if s.strip()})
 
@@ -1727,6 +1792,10 @@ async def apply_to_job(
     )
     if not worker:
         raise HTTPException(status_code=404, detail="สร้าง Worker Profile ก่อน")
+
+    # contact-lock ต้องมีเบอร์ — กัน Google user เก่าที่ยังไม่ได้กรอกเบอร์
+    if not await db.fetchval("SELECT phone FROM users WHERE id=$1", UUID(user["sub"])):
+        raise HTTPException(status_code=400, detail="กรุณาเพิ่มเบอร์โทรในโปรไฟล์ก่อนสมัครงาน")
 
     # Work Permit enforcement — แรงงานต่างด้าวต้องมี Work Permit ที่ยังไม่หมดอายุ
     if worker["nationality_type"] == "foreign":
