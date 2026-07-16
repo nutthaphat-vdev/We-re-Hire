@@ -3151,10 +3151,10 @@ async function loadWorkerProfile() {
               <img id="kycFacePreview" style="display:none">
             </label>
           </div>
-          <label class="wp-consent">
-            <input type="checkbox" id="kycConsentCheck" style="margin-top:2px;flex-shrink:0;accent-color:var(--accent)">
-            <span>ข้าพเจ้ายินยอมให้ WeHire เก็บ ใช้ และประมวลผลข้อมูลส่วนบุคคล รวมถึงรูปบัตรประชาชน/Passport/Work Permit, Selfie และตำแหน่งที่ตั้ง เพื่อวัตถุประสงค์การยืนยันตัวตนและการให้บริการจับคู่งาน ตาม<a href="#" onclick="openPolicyModal('privacy');return false" style="color:var(--accent)">นโยบายความเป็นส่วนตัว</a> (PDPA) <span style="color:var(--danger)">*</span></span>
-          </label>
+          <div style="display:flex;align-items:flex-start;gap:8px;margin:16px 0 12px">
+            <input type="checkbox" id="kycConsentCheck" style="margin-top:2px;flex:0 0 auto;accent-color:var(--accent)">
+            <span style="flex:1;min-width:0;font-size:11px;line-height:1.5;color:var(--muted)">ข้าพเจ้ายินยอมให้ WeHire เก็บ ใช้ และประมวลผลข้อมูลส่วนบุคคล รวมถึงรูปบัตรประชาชน/Passport/Work Permit, Selfie และตำแหน่งที่ตั้ง เพื่อวัตถุประสงค์การยืนยันตัวตนและการให้บริการจับคู่งาน ตาม<a href="#" onclick="openPolicyModal('privacy');return false" style="color:var(--accent)">นโยบายความเป็นส่วนตัว</a> (PDPA) <span style="color:var(--danger)">*</span></span>
+          </div>
           <button class="btn btn-primary btn-sm" onclick="submitKYC()" id="kycSubmitBtn">${t('kyc_submit_btn')}</button>
         </div>` : ''}
       </div>
