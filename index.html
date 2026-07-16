@@ -3081,43 +3081,57 @@ async function loadWorkerProfile() {
       : p.full_name.charAt(0).toUpperCase();
     const avatarStyle = p.profile_photo_url ? 'width:60px;height:60px;font-size:22px;flex-shrink:0;padding:0;overflow:hidden;background:none;' : 'width:60px;height:60px;font-size:22px;flex-shrink:0;';
     el.innerHTML = `
-      <div class="card" style="background:linear-gradient(135deg,rgba(0,229,160,.06),rgba(0,153,255,.04));margin-bottom:12px">
-        <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px">
-          <div class="avatar" style="${avatarStyle}">${avatarInner}</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-              <div style="font-size:18px;font-weight:700">${esc(p.full_name)}</div>
-              ${kycBadge}
+      <style>
+        .wp-hero{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;margin-bottom:16px}
+        .wp-hero .hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:26px}
+        .wp-hero .hero-id{display:flex;align-items:center;gap:20px;min-width:0}
+        .wp-hero .hero-av{width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#10b981);color:#fff;font-size:2.1rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 8px 20px rgba(16,185,129,.25);overflow:hidden}
+        .wp-hero .hero-name{font-size:1.5rem;font-weight:700;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+        .wp-hero .hero-loc{color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:12px;font-size:.95rem}
+        .wp-hero .hero-badges{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+        .wp-hero .bdg{padding:6px 12px;border-radius:20px;font-size:.85rem;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+        .wp-hero .bdg-pending{background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3)}
+        .wp-hero .bdg-green{background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3)}
+        .wp-hero .bdg-verify{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3);cursor:pointer;transition:background .2s}
+        .wp-hero .bdg-verify:hover{background:rgba(59,130,246,.25)}
+        .wp-hero .btn-edit{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 16px;border-radius:8px;font-size:.9rem;font-weight:500;display:inline-flex;align-items:center;gap:8px;cursor:pointer;flex-shrink:0;transition:border-color .2s}
+        .wp-hero .btn-edit:hover{border-color:var(--muted)}
+        .wp-hero .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+        .wp-hero .stat{background:var(--bg);border:1px solid var(--border);padding:20px 16px;border-radius:14px;text-align:center;transition:transform .2s,border-color .2s}
+        .wp-hero .stat:hover{border-color:var(--muted);transform:translateY(-2px)}
+        .wp-hero .stat .s-l{color:var(--muted);font-size:.88rem;margin-bottom:8px;font-weight:500}
+        .wp-hero .stat .s-v{font-size:1.4rem;font-weight:700;color:var(--text)}
+        .wp-hero .stat .s-v.hl{color:var(--accent)}
+        .wp-hero .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent);margin-right:6px;box-shadow:0 0 8px rgba(0,229,160,.5)}
+        .wp-hero .sk-l{color:var(--muted);font-size:.9rem;margin-bottom:10px}
+        @media(max-width:640px){.wp-hero{padding:20px}.wp-hero .hero-top{flex-direction:column;align-items:stretch}.wp-hero .stats{grid-template-columns:1fr;gap:10px}.wp-hero .btn-edit{justify-content:center}}
+      </style>
+      <div class="wp-hero">
+        <div class="hero-top">
+          <div class="hero-id">
+            <div class="hero-av">${avatarInner}</div>
+            <div style="min-width:0">
+              <div class="hero-name">${esc(p.full_name)} ${kycBadge}</div>
+              <div class="hero-loc"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#F43F5E;flex-shrink:0"><path d="M20 10c0 5-8 12-8 12s-8-7-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.6"/></svg> ${esc(p.location_name||t('profile_no_loc'))}</div>
+              <div class="hero-badges">
+                <span class="bdg ${p.background_check_status==='approved'||p.background_check_status==='verified'?'bdg-green':'bdg-pending'}">${p.background_check_status}</span>
+                ${p.background_check_status !== 'verified' ? `<span class="bdg bdg-verify" onclick="requestBackgroundCheck(this)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><line x1="15.8" y1="15.8" x2="21" y2="21"/></svg> ${t('profile_verify_btn')}</span>` : ''}
+              </div>
+              <div id="workerReviewSummary" style="margin-top:10px"></div>
             </div>
-            <div style="font-size:13px;color:var(--muted);margin-bottom:8px">📍 ${esc(p.location_name||t('profile_no_loc'))}</div>
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <span class="badge ${bgColor[p.background_check_status]||'badge-gray'}">${p.background_check_status}</span>
-              ${p.background_check_status !== 'verified' ? `
-              <button class="btn btn-secondary btn-sm" onclick="requestBackgroundCheck(this)" style="font-size:11px">${t('profile_verify_btn')}</button>` : ''}
-            </div>
-            <div id="workerReviewSummary" style="margin-top:8px"></div>
           </div>
-          <button class="btn btn-secondary btn-sm" onclick="showEditProfile()" style="flex-shrink:0">${t('profile_edit_btn')}</button>
+          <button class="btn-edit" onclick="showEditProfile()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 5.5l3 3"/><path d="M4 20l1-4L16.5 4.5a1.5 1.5 0 0 1 2 0l1 1a1.5 1.5 0 0 1 0 2L8 19l-4 1z"/></svg> ${t('profile_edit_btn')}</button>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
-          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center">
-            <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:4px;text-transform:uppercase">${t('profile_exp')}</div>
-            <div style="font-weight:700;font-size:16px">${p.experience_years} ${t('profile_exp_unit')}</div>
-          </div>
-          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center">
-            <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:4px;text-transform:uppercase">${t('profile_rate_day')}</div>
-            <div style="font-weight:700;font-size:16px;color:var(--accent)">฿${p.daily_rate_expected||'-'}</div>
-          </div>
-          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center">
-            <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:4px;text-transform:uppercase">${t('profile_status_lbl')}</div>
-            <div style="font-weight:700;font-size:13px">${availStr}</div>
-          </div>
+        <div class="stats">
+          <div class="stat"><div class="s-l">${t('profile_exp')}</div><div class="s-v">${p.experience_years} ${t('profile_exp_unit')}</div></div>
+          <div class="stat"><div class="s-l">${t('profile_rate_day')}</div><div class="s-v hl">฿${p.daily_rate_expected||'-'}</div></div>
+          <div class="stat"><div class="s-l">${t('profile_status_lbl')}</div><div class="s-v"><span class="dot"></span>${availStr}</div></div>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.05em">${t('profile_skills_lbl')}</div>
+        <div class="sk-l">${t('profile_skills_lbl')}</div>
         <div class="tags" style="flex-wrap:wrap;gap:6px">${skillsHtml}</div>
         ${wpSection}
+      </div>
         ${p.background_check_status === 'pending' ? `
-        <div class="divider"></div>
         <style>
           .wp-kyc{background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.18);border-radius:20px;padding:32px}
           .wp-kyc .wp-kyc-head{display:flex;align-items:center;gap:10px;color:var(--text);font-size:1.4rem;font-weight:700;margin-bottom:8px}
@@ -3166,7 +3180,6 @@ async function loadWorkerProfile() {
           </div>
           <button class="btn btn-primary wp-submit" onclick="submitKYC()" id="kycSubmitBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M12 15.5V4.5"/><path d="M8 8l4-4 4 4"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg> ${t('kyc_submit_btn')}</button>
         </div>` : ''}
-      </div>
       <div id="editProfileForm" style="display:none">
         <style>
           .wp-edit{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px}
