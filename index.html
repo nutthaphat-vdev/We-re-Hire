@@ -3074,7 +3074,8 @@ async function loadWorkerProfile() {
           ? '<div style="margin-top:6px;font-size:12px;color:var(--danger)">❌ Work permit หมดอายุแล้ว กรุณาอัปเดตเอกสาร</div>' : ''}
       </div>` : '';
     const kycBadge = p.background_check_status === 'approved' ? '<span class="badge badge-green" style="font-size:10px">✓ KYC Verified</span>' : '';
-    const availStr = p.is_available !== false ? t('profile_avail') : t('profile_unavail');
+    const _noIco = s => (s||'').replace(/^[^฀-๿a-zA-Z]+/,'');
+    const availStr = _noIco(p.is_available !== false ? t('profile_avail') : t('profile_unavail'));
     const skillsHtml = p.skills.length ? p.skills.map(s=>'<span class="tag tag-match">' + esc(s) + '</span>').join('') : `<span style="font-size:13px;color:var(--muted)">${t('profile_no_skills')}</span>`;
     const avatarInner = p.profile_photo_url
       ? '<img src="' + esc(p.profile_photo_url) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display=\'none\'">'
@@ -3115,17 +3116,17 @@ async function loadWorkerProfile() {
               <div class="hero-loc"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#F43F5E;flex-shrink:0"><path d="M20 10c0 5-8 12-8 12s-8-7-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.6"/></svg> ${esc(p.location_name||t('profile_no_loc'))}</div>
               <div class="hero-badges">
                 <span class="bdg ${p.background_check_status==='approved'||p.background_check_status==='verified'?'bdg-green':'bdg-pending'}">${p.background_check_status}</span>
-                ${p.background_check_status !== 'verified' ? `<span class="bdg bdg-verify" onclick="requestBackgroundCheck(this)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><line x1="15.8" y1="15.8" x2="21" y2="21"/></svg> ${t('profile_verify_btn')}</span>` : ''}
+                ${p.background_check_status !== 'verified' ? `<span class="bdg bdg-verify" onclick="requestBackgroundCheck(this)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><line x1="15.8" y1="15.8" x2="21" y2="21"/></svg> ${_noIco(t('profile_verify_btn'))}</span>` : ''}
               </div>
               <div id="workerReviewSummary" style="margin-top:10px"></div>
             </div>
           </div>
-          <button class="btn-edit" onclick="showEditProfile()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 5.5l3 3"/><path d="M4 20l1-4L16.5 4.5a1.5 1.5 0 0 1 2 0l1 1a1.5 1.5 0 0 1 0 2L8 19l-4 1z"/></svg> ${t('profile_edit_btn')}</button>
+          <button class="btn-edit" onclick="showEditProfile()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 5.5l3 3"/><path d="M4 20l1-4L16.5 4.5a1.5 1.5 0 0 1 2 0l1 1a1.5 1.5 0 0 1 0 2L8 19l-4 1z"/></svg> ${_noIco(t('profile_edit_btn'))}</button>
         </div>
         <div class="stats">
           <div class="stat"><div class="s-l">${t('profile_exp')}</div><div class="s-v">${p.experience_years} ${t('profile_exp_unit')}</div></div>
           <div class="stat"><div class="s-l">${t('profile_rate_day')}</div><div class="s-v hl">฿${p.daily_rate_expected||'-'}</div></div>
-          <div class="stat"><div class="s-l">${t('profile_status_lbl')}</div><div class="s-v"><span class="dot"></span>${availStr}</div></div>
+          <div class="stat"><div class="s-l">${t('profile_status_lbl')}</div><div class="s-v"><span class="dot" style="background:${p.is_available!==false?'var(--accent)':'var(--danger)'};box-shadow:0 0 8px ${p.is_available!==false?'rgba(0,229,160,.5)':'rgba(255,71,87,.5)'}"></span>${availStr}</div></div>
         </div>
         <div class="sk-l">${t('profile_skills_lbl')}</div>
         <div class="tags" style="flex-wrap:wrap;gap:6px">${skillsHtml}</div>
@@ -3178,7 +3179,7 @@ async function loadWorkerProfile() {
             <input type="checkbox" id="kycConsentCheck" style="width:20px;height:20px;flex:0 0 auto;margin-top:2px;accent-color:var(--accent);cursor:pointer">
             <span class="txt">ข้าพเจ้ายินยอมให้ WeHire เก็บ ใช้ และประมวลผลข้อมูลส่วนบุคคล รวมถึงรูปบัตรประชาชน/Passport/Work Permit, Selfie และตำแหน่งที่ตั้ง เพื่อวัตถุประสงค์การยืนยันตัวตนและการให้บริการจับคู่งาน ตาม<a href="#" onclick="openPolicyModal('privacy');return false" style="color:var(--accent)">นโยบายความเป็นส่วนตัว</a> (PDPA) <span style="color:var(--danger)">*</span></span>
           </div>
-          <button class="btn btn-primary wp-submit" onclick="submitKYC()" id="kycSubmitBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M12 15.5V4.5"/><path d="M8 8l4-4 4 4"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg> ${t('kyc_submit_btn')}</button>
+          <button class="btn btn-primary wp-submit" onclick="submitKYC()" id="kycSubmitBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M12 15.5V4.5"/><path d="M8 8l4-4 4 4"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg> ${_noIco(t('kyc_submit_btn'))}</button>
         </div>` : ''}
       <div id="editProfileForm" style="display:none">
         <style>
