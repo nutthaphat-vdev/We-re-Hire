@@ -3118,24 +3118,43 @@ async function loadWorkerProfile() {
         ${wpSection}
         ${p.background_check_status === 'pending' ? `
         <div class="divider"></div>
-        <div style="background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.25);border-radius:10px;padding:16px">
-          <div style="font-weight:600;margin-bottom:12px;color:var(--warn)">${t('kyc_title')}</div>
-          <div class="form-group">
-            <label>${t('kyc_face_lbl')}</label>
-            <input type="file" id="kycFacePhoto" accept="image/jpeg,image/png,image/webp" onchange="previewKYCImg(this,'kycFacePreview')" style="font-size:13px">
-            <img id="kycFacePreview" style="display:none;max-width:120px;margin-top:8px;border-radius:6px;border:1px solid var(--border)">
-          </div>
-          <div class="form-group">
-            <label>${t('kyc_id_lbl')}</label>
-            <input type="file" id="kycIDPhoto" accept="image/jpeg,image/png,image/webp" onchange="previewKYCImg(this,'kycIDPreview')" style="font-size:13px">
-            <img id="kycIDPreview" style="display:none;max-width:120px;margin-top:8px;border-radius:6px;border:1px solid var(--border)">
-          </div>
-          <div style="margin:10px 0 8px">
-            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:11px;line-height:1.5;color:var(--muted)">
-              <input type="checkbox" id="kycConsentCheck" style="margin-top:2px;flex-shrink:0;accent-color:var(--accent)">
-              <span>ข้าพเจ้ายินยอมให้ WeHire เก็บ ใช้ และประมวลผลข้อมูลส่วนบุคคล รวมถึงรูปบัตรประชาชน/Passport/Work Permit, Selfie และตำแหน่งที่ตั้ง เพื่อวัตถุประสงค์การยืนยันตัวตนและการให้บริการจับคู่งาน ตาม<a href="#" onclick="openPolicyModal('privacy');return false" style="color:var(--accent)">นโยบายความเป็นส่วนตัว</a> (PDPA) <span style="color:var(--danger)">*</span></span>
+        <style>
+          .wp-kyc{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:22px}
+          .wp-kyc .wp-kyc-head{font-size:1.05rem;font-weight:700;margin-bottom:4px;color:var(--text)}
+          .wp-kyc .wp-kyc-sub{color:var(--muted);font-size:.85rem;margin-bottom:16px}
+          .wp-kyc .wp-up-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+          @media(max-width:640px){.wp-kyc{padding:16px}.wp-kyc .wp-up-row{grid-template-columns:1fr}}
+          .wp-kyc .wp-up{border:2px dashed var(--border);border-radius:12px;padding:22px 14px;text-align:center;cursor:pointer;background:var(--bg);transition:border-color .15s,background .15s;display:block}
+          .wp-kyc .wp-up:hover{border-color:var(--accent);background:rgba(0,229,160,.05)}
+          .wp-kyc .wp-up .ic{font-size:2rem;display:block;margin-bottom:8px}
+          .wp-kyc .wp-up .t1{font-weight:600;font-size:.9rem;color:var(--text);display:block;margin-bottom:3px}
+          .wp-kyc .wp-up .t2{color:var(--muted);font-size:.78rem}
+          .wp-kyc .wp-up img{max-width:100px;margin-top:10px;border-radius:8px;border:1px solid var(--border)}
+          .wp-kyc .wp-consent{display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:11px;line-height:1.5;color:var(--muted);margin:16px 0 12px}
+        </style>
+        <div class="wp-kyc">
+          <div class="wp-kyc-head">${t('kyc_title')} <span style="color:var(--accent)">🛡️</span></div>
+          <div class="wp-kyc-sub">อัปโหลดเอกสารยืนยันตัวตนเพื่อเพิ่มความน่าเชื่อถือ</div>
+          <div class="wp-up-row">
+            <label class="wp-up">
+              <input type="file" id="kycIDPhoto" accept="image/jpeg,image/png,image/webp" onchange="previewKYCImg(this,'kycIDPreview')" style="display:none">
+              <span class="ic">🪪</span>
+              <span class="t1">${t('kyc_id_lbl')}</span>
+              <span class="t2">ด้านหน้าบัตรชัดเจน</span>
+              <img id="kycIDPreview" style="display:none">
+            </label>
+            <label class="wp-up">
+              <input type="file" id="kycFacePhoto" accept="image/jpeg,image/png,image/webp" onchange="previewKYCImg(this,'kycFacePreview')" style="display:none">
+              <span class="ic">🤳</span>
+              <span class="t1">${t('kyc_face_lbl')}</span>
+              <span class="t2">เห็นใบหน้าชัดเจน ไม่มีอะไรบดบัง</span>
+              <img id="kycFacePreview" style="display:none">
             </label>
           </div>
+          <label class="wp-consent">
+            <input type="checkbox" id="kycConsentCheck" style="margin-top:2px;flex-shrink:0;accent-color:var(--accent)">
+            <span>ข้าพเจ้ายินยอมให้ WeHire เก็บ ใช้ และประมวลผลข้อมูลส่วนบุคคล รวมถึงรูปบัตรประชาชน/Passport/Work Permit, Selfie และตำแหน่งที่ตั้ง เพื่อวัตถุประสงค์การยืนยันตัวตนและการให้บริการจับคู่งาน ตาม<a href="#" onclick="openPolicyModal('privacy');return false" style="color:var(--accent)">นโยบายความเป็นส่วนตัว</a> (PDPA) <span style="color:var(--danger)">*</span></span>
+          </label>
           <button class="btn btn-primary btn-sm" onclick="submitKYC()" id="kycSubmitBtn">${t('kyc_submit_btn')}</button>
         </div>` : ''}
       </div>
