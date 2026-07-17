@@ -1463,30 +1463,15 @@ html, body { margin:0; padding:0; background:#0d0f12; }
             </div>
             <input type="hidden" id="jobSkills" value="">
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label data-i18n="profile_loc_lbl">ชื่อสถานที่</label>
-              <input type="text" id="jobLocation" placeholder="เช่น โรงงาน A อ่อนนุช">
-            </div>
-            <div class="form-group">
-              <label>Zone</label>
-              <select id="jobZone">
-                <option value="">กำลังโหลด...</option>
-              </select>
-            </div>
-          </div>
           <div class="form-group">
-            <label data-i18n="postjob_map_lbl">ที่ตั้งงาน</label>
-            <div id="lastLocationHint" style="display:none;margin-bottom:8px;padding:10px 12px;background:rgba(0,229,160,.07);border:1px solid rgba(0,229,160,.2);border-radius:8px;display:flex;align-items:center;gap:10px">
-              <input type="checkbox" id="useLastLocation" onchange="toggleLastLocation(this)" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
-              <label for="useLastLocation" style="font-size:12px;color:var(--accent);cursor:pointer;margin:0">ใช้สถานที่เดิม: <span id="lastLocationName" style="font-weight:600"></span></label>
+            <label>สถานที่ทำงาน <span style="color:var(--danger)">*</span></label>
+            <div id="jobLocInheritBox" style="background:rgba(0,229,160,.05);border:1px solid rgba(0,229,160,.25);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <input type="checkbox" id="useProfileLocation" checked onchange="toggleProfileLocation(this)" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
+              <label for="useProfileLocation" style="margin:0;font-size:13px;color:var(--accent);font-weight:600;cursor:pointer">ใช้ที่ตั้งเดิม (ดึงจาก Profile บริษัท)</label>
             </div>
-            <div style="display:flex;gap:8px">
-              <input type="text" id="jobPlaceInput" placeholder="พิมพ์ที่อยู่หรือชื่อสถานที่..." style="flex:1">
-              <button class="btn btn-secondary btn-sm" onclick="useMyLocationForJob()" style="white-space:nowrap">📍 GPS</button>
-            </div>
-            <div id="jobLocationDisplay" style="font-size:12px;color:var(--accent);margin-top:6px;font-family:'IBM Plex Mono',monospace;min-height:18px"></div>
-            <div id="jobMapPreview" style="display:none;border-radius:8px;overflow:hidden;margin-top:8px;height:160px;"></div>
+            <input type="text" id="jobProfileLocDisplay" readonly placeholder="— ยังไม่ได้ตั้งที่อยู่ในโปรไฟล์บริษัท —" style="cursor:default;opacity:.9">
+            <div id="jobProfileMapPreview" style="display:none;border-radius:8px;overflow:hidden;margin-top:8px;height:160px"></div>
+            <div id="jobNoLocationWarn" style="display:none;margin-top:8px;font-size:12px;color:var(--warn)">⚠️ ยังไม่ได้ตั้งที่อยู่หน้างานในโปรไฟล์บริษัท — <span style="text-decoration:underline;cursor:pointer;font-weight:600" onclick="showPage('employerprofile')">ไปตั้งที่โปรไฟล์บริษัท</span> ก่อนโพสต์งาน</div>
           </div>
           <input type="hidden" id="jobLat" value="">
           <input type="hidden" id="jobLng" value="">
@@ -2484,7 +2469,7 @@ function showPage(name) {
   if (name === 'myapps')          loadMyApps();
   if (name === 'myjobs')          loadMyJobs();
   if (name === 'workerprofile')   loadWorkerProfile();
-  if (name === 'postjob')         { checkEmployerProfile(); loadLastLocation(); }
+  if (name === 'postjob')         { checkEmployerProfile(); }
   if (name === 'employerprofile') loadEmployerProfile();
   if (name === 'myreviews')       loadMyReviews();
   if (name === 'nearby')          { initNearbyMap(); }
@@ -3894,6 +3879,7 @@ async function checkEmployerProfile() {
         <div id="employerReviewSummary"></div>
       </div>`;
     loadReviewSummary(emp.user_id, 'employer', 'employerReviewSummary');
+    applyProfileLocationToPostJob(emp);
     form.style.display = 'block';
   } catch(e) {
     form.style.display = 'none';
@@ -3984,7 +3970,9 @@ async function doPostJob() {
       const hrs = calcWorkHours(workStart, workEnd);
       if (hrs > 8) throw new Error('ช่วงเวลาทำงานต้องไม่เกิน 8 ชั่วโมง');
     }
-    if (!document.getElementById('jobLat').value || !document.getElementById('jobLng').value) throw new Error(t('no_pin_error'));
+    // สถานที่: inherit จากโปรไฟล์บริษัท (checkbox "ใช้ที่ตั้งเดิม") — ไม่ส่ง lat/lng, backend ดึงจาก profile เอง
+    if (!document.getElementById('jobLat').value || !document.getElementById('jobLng').value)
+      throw new Error('กรุณาตั้งที่อยู่หน้างานในโปรไฟล์บริษัทก่อนโพสต์งาน');
     const body = {
       title:           document.getElementById('jobTitle').value.trim(),
       description:     document.getElementById('jobDesc').value.trim() || undefined,
@@ -3992,10 +3980,6 @@ async function doPostJob() {
       daily_wage_rate: wage,
       duration_days:   days,
       slots_available: parseInt(document.getElementById('jobSlots').value) || 1,
-      lat:             parseFloat(document.getElementById('jobLat').value),
-      lng:             parseFloat(document.getElementById('jobLng').value),
-      location_name:   document.getElementById('jobLocation').value.trim() || undefined,
-      zone_name:       document.getElementById('jobZone').value || undefined,
       pay_method:      payMethod,
       contact_info:    document.getElementById('jobContact').value.trim() || undefined,
       dress_code:      document.getElementById('jobDressCode').value || undefined,
@@ -4389,48 +4373,70 @@ function setLocationFromGPS(latId, lngId, displayId, mapPreviewId, inputId) {
 }
 
 function useMyLocation()           { setLocationFromGPS('searchLat','searchLng','searchLocationDisplay','searchMapPreview','searchPlaceInput'); }
-function useMyLocationForJob()     { setLocationFromGPS('jobLat','jobLng','jobLocationDisplay','jobMapPreview','jobPlaceInput'); }
-
-let _lastLocation = null;
-
-async function loadLastLocation() {
-  try {
-    const data = await api('GET', '/employers/last-location');
-    const hint = document.getElementById('lastLocationHint');
-    if (!hint) return;
-    if (data && data.location_name && data.lat && data.lng) {
-      _lastLocation = data;
-      document.getElementById('lastLocationName').textContent = data.location_name;
-      hint.style.display = 'flex';
-      // uncheck on each open
-      document.getElementById('useLastLocation').checked = false;
-    } else {
-      hint.style.display = 'none';
-    }
-  } catch(e) {
-    // ไม่มี job เก่า — ซ่อน hint ปกติ
+// ─── POST-JOB: inherit ที่อยู่หน้างานจากโปรไฟล์บริษัท ─────────
+function applyProfileLocationToPostJob(emp) {
+  const disp  = document.getElementById('jobProfileLocDisplay');
+  const warn  = document.getElementById('jobNoLocationWarn');
+  const latEl = document.getElementById('jobLat');
+  const lngEl = document.getElementById('jobLng');
+  const mapEl = document.getElementById('jobProfileMapPreview');
+  if (!disp) return;
+  const hasLoc = emp && emp.lat != null && emp.lng != null;
+  if (hasLoc) {
+    const label = emp.location_name || emp.address_text || `${(+emp.lat).toFixed(5)}, ${(+emp.lng).toFixed(5)}`;
+    disp.value  = label;
+    latEl.value = emp.lat;
+    lngEl.value = emp.lng;
+    if (warn) warn.style.display = 'none';
+    showStaticMap('jobProfileMapPreview', +emp.lat, +emp.lng, label);
+  } else {
+    disp.value  = '';
+    latEl.value = '';
+    lngEl.value = '';
+    if (warn) warn.style.display = 'block';
+    if (mapEl) mapEl.style.display = 'none';
   }
 }
 
-function toggleLastLocation(cb) {
-  if (!_lastLocation) return;
-  if (cb.checked) {
-    document.getElementById('jobPlaceInput').value = _lastLocation.location_name;
-    document.getElementById('jobLat').value = _lastLocation.lat;
-    document.getElementById('jobLng').value = _lastLocation.lng;
-    document.getElementById('jobLocationDisplay').textContent = _lastLocation.location_name;
-  } else {
-    document.getElementById('jobPlaceInput').value = '';
-    document.getElementById('jobLat').value = '13.7018';
-    document.getElementById('jobLng').value = '100.6011';
-    document.getElementById('jobLocationDisplay').textContent = '';
+// override ที่อยู่ต่องาน = เฟสหลัง — ตอนนี้ inherit จากโปรไฟล์อย่างเดียว
+function toggleProfileLocation(cb) {
+  if (!cb.checked) {
+    cb.checked = true;
+    showAlert('alertPostJob', 'ตอนนี้ใช้ที่อยู่จากโปรไฟล์บริษัทอัตโนมัติ — การกำหนดที่อยู่เองต่องานจะเปิดในเวอร์ชันถัดไป', 'info');
   }
+}
+
+// แผนที่แบบ read-only (ไม่ลากหมุด) สำหรับยืนยันที่อยู่จากโปรไฟล์
+function showStaticMap(containerId, lat, lng, label) {
+  const el = document.getElementById(containerId);
+  if (!el || !window.google) return;
+  el.style.display = 'block';
+  const map = new google.maps.Map(el, {
+    center: { lat, lng }, zoom: 15, disableDefaultUI: true,
+    gestureHandling: 'none', clickableIcons: false, keyboardShortcuts: false,
+    styles: [
+      { elementType: 'geometry', stylers: [{ color: '#1e232b' }] },
+      { elementType: 'labels.text.fill', stylers: [{ color: '#6b7a94' }] },
+      { elementType: 'labels.text.stroke', stylers: [{ color: '#161a20' }] },
+      { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2a3040' }] },
+      { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca3af' }] },
+      { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+      { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0d1117' }] },
+    ],
+  });
+  new google.maps.Marker({
+    position: { lat, lng }, map, title: label,
+    icon: {
+      path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z',
+      fillColor: '#e53935', fillOpacity: 1, strokeColor: '#8c1d18', strokeWeight: 1,
+      scale: 1.8, anchor: new google.maps.Point(12, 22),
+    },
+  });
 }
 // init autocomplete เมื่อ Google Maps โหลดเสร็จ
 function initAllAutocompletes() {
   if (!window.google) { setTimeout(initAllAutocompletes, 500); return; }
   initPlacesAutocomplete('searchPlaceInput','searchLat','searchLng','searchLocationDisplay','searchMapPreview');
-  initPlacesAutocomplete('jobPlaceInput','jobLat','jobLng','jobLocationDisplay','jobMapPreview');
   log('info', '✓ Google Maps Places ready');
 }
 initAllAutocompletes();
