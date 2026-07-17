@@ -1223,13 +1223,13 @@ html, body { margin:0; padding:0; background:#0d0f12; }
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
         <span data-i18n="nav_my_jobs">งานของฉัน</span>
       </div>
-      <div class="nav-item" onclick="showPage('myreviews')" id="nav-myreviews-employer">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
-        <span data-i18n="nav_my_reviews">รีวิวของฉัน</span>
-      </div>
       <div class="nav-item" onclick="showPage('roster')" id="nav-roster">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         <span>Live Roster</span>
+      </div>
+      <div class="nav-item" onclick="showPage('myreviews')" id="nav-myreviews-employer">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+        <span data-i18n="nav_my_reviews">รีวิวของฉัน</span>
       </div>
       <div class="nav-item" onclick="showPage('employerprofile')" id="nav-employerprofile">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
@@ -2532,26 +2532,21 @@ async function loadEmployerProfile() {
         <div><label>จังหวัด</label><input id="epProvince" value="${esc(val(p&&p.province))}" placeholder="กรุงเทพมหานคร"></div>
         <div><label>รหัสไปรษณีย์</label><input id="epPostal" value="${esc(val(p&&p.postal_code))}" maxlength="5" placeholder="10110"></div>
       </div>
-      <label style="font-size:.85rem;color:var(--muted);font-weight:500;display:block;margin-bottom:7px">พิกัดหน้างาน (GPS) — โพสต์งานใช้พิกัดนี้หา worker ใกล้ๆ</label>
+      <label style="font-size:.85rem;color:var(--muted);font-weight:500;display:block;margin-bottom:7px">พิกัดหน้างาน (GPS) — โพสต์งานใช้พิกัดนี้หา worker ใกล้ๆ · กดดึงตำแหน่งแล้ว "ลากหมุด" ปรับได้</label>
       <div class="ep-gps">
-        <div><div style="font-size:11px;color:var(--muted)">พิกัด (Lat, Lng)</div><div id="epCoord" style="font-weight:600;color:var(--text)">${coordTxt}</div></div>
-        <button class="btn btn-secondary btn-sm" onclick="empGetLocation()">📍 ดึงตำแหน่งปัจจุบัน</button>
+        <div style="flex:1;min-width:0"><div style="font-size:11px;color:var(--muted)">ตำแหน่ง</div><div id="empLocationDisplay" style="font-weight:600;color:var(--text)">${p&&p.lat!=null?esc(val(p.location_name)||coordTxt):'ยังไม่ได้ตั้ง'}</div></div>
+        <button class="btn btn-secondary btn-sm" onclick="setLocationFromGPS('epLat','epLng','empLocationDisplay','empMapPreview','epAddress')">📍 ดึงตำแหน่งปัจจุบัน</button>
       </div>
+      <div id="empMapPreview" style="display:none;height:280px;border-radius:12px;border:1px solid var(--border);margin-bottom:18px;overflow:hidden"></div>
       <input type="hidden" id="epLat" value="${p&&p.lat!=null?p.lat:''}">
       <input type="hidden" id="epLng" value="${p&&p.lng!=null?p.lng:''}">
       <div id="alertEmployerProfile"></div>
       <button class="btn btn-primary" onclick="doSaveEmployerProfile(${isNew})">${isNew?'✅ สร้างโปรไฟล์บริษัท':'💾 บันทึก'}</button>
     </div>`;
-}
-
-function empGetLocation() {
-  if (!navigator.geolocation) { showAlert('alertEmployerProfile','อุปกรณ์ไม่รองรับ GPS'); return; }
-  navigator.geolocation.getCurrentPosition(pos => {
-    const lat = pos.coords.latitude, lng = pos.coords.longitude;
-    document.getElementById('epLat').value = lat;
-    document.getElementById('epLng').value = lng;
-    document.getElementById('epCoord').textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
-  }, () => showAlert('alertEmployerProfile','ดึงตำแหน่งไม่ได้ — เปิด GPS + อนุญาตให้เข้าถึงตำแหน่ง'));
+  // ถ้ามีพิกัดเดิม → เรนเดอร์แผนที่ + หมุดลากได้ (reuse showMapPreview จาก post-job)
+  if (p && p.lat != null && p.lng != null && window.google) {
+    showMapPreview('empMapPreview', +p.lat, +p.lng, 'ที่ตั้งบริษัท', 'epLat', 'epLng', 'empLocationDisplay', 'epAddress');
+  }
 }
 
 async function doSaveEmployerProfile(isNew) {
