@@ -1,3 +1,4 @@
 name            = "wearehiredmvp"
 compatibility_date = "2024-09-23"
 main            = "worker.js"
+# deploy trigger: landing.html polish (rocket emoji removed, anchor offset, spacing) 2026-07-17
