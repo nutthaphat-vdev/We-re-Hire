@@ -1262,6 +1262,8 @@ class EmployerProfileCreate(BaseModel):
     lng:                 Optional[float] = Field(None, ge=-180, le=180)
     location_name:       Optional[str]   = Field(None, max_length=255)
     address_text:        Optional[str]   = Field(None, max_length=500)
+    province:            Optional[str]   = Field(None, max_length=50)
+    postal_code:         Optional[str]   = Field(None, max_length=10)
     workplace_photo_url: Optional[str]   = Field(None, max_length=1000)
 
 class EmployerProfileUpdate(BaseModel):
@@ -1272,6 +1274,8 @@ class EmployerProfileUpdate(BaseModel):
     lng:                 Optional[float] = Field(None, ge=-180, le=180)
     location_name:       Optional[str]   = Field(None, max_length=255)
     address_text:        Optional[str]   = Field(None, max_length=500)
+    province:            Optional[str]   = Field(None, max_length=50)
+    postal_code:         Optional[str]   = Field(None, max_length=10)
     workplace_photo_url: Optional[str]   = Field(None, max_length=1000)
 
 @app.get("/employers/profile/me", tags=["Employer"])
@@ -1282,7 +1286,7 @@ async def get_employer_profile(
     row = await db.fetchrow(
         """
         SELECT id, user_id, company_name, business_type, contact_person, verified_status, created_at,
-               location_name, address_text, workplace_photo_url,
+               location_name, address_text, province, postal_code, workplace_photo_url,
                ST_Y(location::geometry) AS lat,
                ST_X(location::geometry) AS lng
         FROM   employer_profiles
@@ -1314,16 +1318,17 @@ async def create_employer_profile(
         """
         INSERT INTO employer_profiles
             (user_id, company_name, business_type, contact_person,
-             location, location_name, address_text, workplace_photo_url)
+             location, location_name, address_text, province, postal_code, workplace_photo_url)
         VALUES
             ($1, $2, $3, $4,
              CASE WHEN $5::float8 IS NOT NULL AND $6::float8 IS NOT NULL
                   THEN ST_MakePoint($6, $5)::geography ELSE NULL END,
-             $7, $8, $9)
+             $7, $8, $9, $10, $11)
         RETURNING id, company_name, business_type, contact_person, verified_status
         """,
         UUID(user["sub"]), body.company_name, body.business_type, body.contact_person,
-        body.lat, body.lng, body.location_name, body.address_text, body.workplace_photo_url,
+        body.lat, body.lng, body.location_name, body.address_text,
+        body.province, body.postal_code, body.workplace_photo_url,
     )
     return dict(row)
 
