@@ -3995,7 +3995,7 @@ async function doPostJob() {
       lat:             parseFloat(document.getElementById('jobLat').value),
       lng:             parseFloat(document.getElementById('jobLng').value),
       location_name:   document.getElementById('jobLocation').value.trim() || undefined,
-      zone_name:       document.getElementById('jobZone').value,
+      zone_name:       document.getElementById('jobZone').value || undefined,
       pay_method:      payMethod,
       contact_info:    document.getElementById('jobContact').value.trim() || undefined,
       dress_code:      document.getElementById('jobDressCode').value || undefined,

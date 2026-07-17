@@ -1511,7 +1511,7 @@ async def post_job(
         """,
         emp_id, body.title, body.description, clean_skills,
         body.daily_wage_rate, body.duration_days, body.slots_available,
-        lng, lat, loc_name, body.zone_name, start_date,
+        lng, lat, loc_name, (body.zone_name or None), start_date,
         work_start_t, work_end_t, body.ot_rate, auto_close_at,
         body.pay_method, body.contact_info, body.dress_code,
     )
