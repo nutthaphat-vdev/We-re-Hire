@@ -1227,6 +1227,14 @@ html, body { margin:0; padding:0; background:#0d0f12; }
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
         <span data-i18n="nav_my_reviews">รีวิวของฉัน</span>
       </div>
+      <div class="nav-item" onclick="showPage('roster')" id="nav-roster">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span>Live Roster</span>
+      </div>
+      <div class="nav-item" onclick="showPage('employerprofile')" id="nav-employerprofile">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        <span>โปรไฟล์บริษัท</span>
+      </div>
       <!-- ADMIN NAV -->
       <div class="nav-section" id="navAdminSection">ADMIN</div>
       <div class="nav-item" onclick="showPage('admin-stats')" id="nav-admin-stats">
@@ -1493,6 +1501,28 @@ html, body { margin:0; padding:0; background:#0d0f12; }
         <div class="page-title" data-i18n="myjobs_title">งานของฉัน</div>
         <div class="page-sub" data-i18n="myjobs_sub">จัดการงานที่โพสต์ไว้</div>
         <div id="myJobsContent"></div>
+      </div>
+    </div>
+
+    <!-- LIVE ROSTER (stub) -->
+    <div class="page" id="page-roster">
+      <div style="padding:32px">
+        <div class="page-title">Live Roster</div>
+        <div class="page-sub">ดูคนที่กำลังทำงานอยู่แบบเรียลไทม์</div>
+        <div class="card" style="text-align:center;padding:48px 24px;color:var(--muted)">
+          <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="opacity:.5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <div style="font-weight:600;margin-top:14px;color:var(--text)">กำลังพัฒนา — เร็วๆ นี้</div>
+          <div style="font-size:13px;margin-top:6px">หน้านี้จะโชว์ worker ที่เช็คอิน/กำลังทำงานในแต่ละกะแบบสด</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMPLOYER PROFILE -->
+    <div class="page" id="page-employerprofile">
+      <div style="padding:32px">
+        <div class="page-title">โปรไฟล์บริษัท</div>
+        <div class="page-sub">ข้อมูลบริษัทและสถานที่ทำงาน — โพสต์งานจะใช้ที่อยู่/พิกัดนี้อัตโนมัติ ไม่ต้องกรอกซ้ำ</div>
+        <div id="employerProfileContent"></div>
       </div>
     </div>
 
@@ -2424,8 +2454,8 @@ function initApp() {
   });
   ['navWorkerSection','nav-nearby','nav-myapps','nav-workerprofile','nav-myreviews-worker','nav-earnings']
     .forEach(id => document.getElementById(id).style.display = isWorker ? (id.startsWith('nav-') ? 'flex' : 'block') : 'none');
-  ['navEmployerSection','nav-postjob','nav-myjobs','nav-myreviews-employer']
-    .forEach(id => document.getElementById(id).style.display = isEmployer ? (id.startsWith('nav-') ? 'flex' : 'block') : 'none');
+  ['navEmployerSection','nav-postjob','nav-myjobs','nav-roster','nav-employerprofile','nav-myreviews-employer']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = isEmployer ? (id.startsWith('nav-') ? 'flex' : 'block') : 'none'; });
   ['navAdminSection','nav-admin-stats','nav-admin-users','nav-admin-kyc','nav-admin-disputes','nav-admin-jobs','nav-admin-payments']
     .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = isAdmin ? (id.startsWith('nav-') ? 'flex' : 'block') : 'none'; });
 
@@ -2455,6 +2485,7 @@ function showPage(name) {
   if (name === 'myjobs')          loadMyJobs();
   if (name === 'workerprofile')   loadWorkerProfile();
   if (name === 'postjob')         { checkEmployerProfile(); loadLastLocation(); }
+  if (name === 'employerprofile') loadEmployerProfile();
   if (name === 'myreviews')       loadMyReviews();
   if (name === 'nearby')          { initNearbyMap(); }
   if (name === 'notifications')   { _notifFilter = 'all'; setNotifFilter('all'); }
@@ -2464,6 +2495,91 @@ function showPage(name) {
   if (name === 'admin-disputes')  loadAdminDisputes();
   if (name === 'admin-jobs')      loadAdminJobs();
   if (name === 'admin-payments')  loadAdminPayments();
+}
+
+// ─── EMPLOYER PROFILE (company + workplace location) ─────────
+async function loadEmployerProfile() {
+  const el = document.getElementById('employerProfileContent');
+  el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
+  let myPhone = '';
+  try { const _me = await api('GET','/auth/me'); myPhone = _me.phone || ''; } catch(_e) {}
+  let p = null;
+  try { p = await api('GET','/employers/profile/me'); } catch(_e) { p = null; }
+  const isNew = !p;
+  const val = (x) => x == null ? '' : String(x);
+  const coordTxt = (p && p.lat != null) ? `${(+p.lat).toFixed(6)}, ${(+p.lng).toFixed(6)}` : 'ยังไม่ได้ตั้ง';
+  el.innerHTML = `
+    <style>
+      .ep-form{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:760px}
+      .ep-form .ep-grp{display:flex;flex-direction:column;gap:7px;margin-bottom:18px}
+      .ep-form .ep-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+      @media(max-width:640px){.ep-form{padding:20px}.ep-form .ep-row{grid-template-columns:1fr}}
+      .ep-form label{font-size:.85rem;color:var(--muted);font-weight:500}
+      .ep-form input{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:12px 14px;border-radius:9px;font-size:.95rem;outline:none;width:100%;transition:border-color .15s}
+      .ep-form input:focus{border-color:var(--accent)}
+      .ep-gps{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:18px;flex-wrap:wrap}
+    </style>
+    <div class="ep-form">
+      ${isNew ? '<div class="alert alert-info" style="margin-bottom:18px">ยังไม่มีโปรไฟล์บริษัท — กรอกข้อมูลด้านล่างก่อนโพสต์งาน</div>' : ''}
+      <div class="ep-grp"><label>ชื่อบริษัท/ร้าน *</label><input id="epCompany" value="${esc(val(p&&p.company_name))}" placeholder="บริษัท ABC จำกัด"></div>
+      <div class="ep-grp"><label>ประเภทธุรกิจ</label><input id="epBiz" value="${esc(val(p&&p.business_type))}" placeholder="เช่น ร้านอาหาร, โรงแรม, ขนส่ง"></div>
+      <div class="ep-row">
+        <div><label>ชื่อผู้ติดต่อ *</label><input id="epContact" value="${esc(val(p&&p.contact_person))}" placeholder="คุณสมชาย ใจดี"></div>
+        <div><label>เบอร์โทรศัพท์ *</label><input id="epPhone" type="tel" value="${esc(myPhone)}" placeholder="08x-xxx-xxxx"></div>
+      </div>
+      <div class="ep-grp"><label>ที่อยู่หน้างาน</label><input id="epAddress" value="${esc(val(p&&p.address_text))}" placeholder="เลขที่ ซอย ถนน แขวง/ตำบล"></div>
+      <div class="ep-row">
+        <div><label>จังหวัด</label><input id="epProvince" value="${esc(val(p&&p.province))}" placeholder="กรุงเทพมหานคร"></div>
+        <div><label>รหัสไปรษณีย์</label><input id="epPostal" value="${esc(val(p&&p.postal_code))}" maxlength="5" placeholder="10110"></div>
+      </div>
+      <label style="font-size:.85rem;color:var(--muted);font-weight:500;display:block;margin-bottom:7px">พิกัดหน้างาน (GPS) — โพสต์งานใช้พิกัดนี้หา worker ใกล้ๆ</label>
+      <div class="ep-gps">
+        <div><div style="font-size:11px;color:var(--muted)">พิกัด (Lat, Lng)</div><div id="epCoord" style="font-weight:600;color:var(--text)">${coordTxt}</div></div>
+        <button class="btn btn-secondary btn-sm" onclick="empGetLocation()">📍 ดึงตำแหน่งปัจจุบัน</button>
+      </div>
+      <input type="hidden" id="epLat" value="${p&&p.lat!=null?p.lat:''}">
+      <input type="hidden" id="epLng" value="${p&&p.lng!=null?p.lng:''}">
+      <div id="alertEmployerProfile"></div>
+      <button class="btn btn-primary" onclick="doSaveEmployerProfile(${isNew})">${isNew?'✅ สร้างโปรไฟล์บริษัท':'💾 บันทึก'}</button>
+    </div>`;
+}
+
+function empGetLocation() {
+  if (!navigator.geolocation) { showAlert('alertEmployerProfile','อุปกรณ์ไม่รองรับ GPS'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+    document.getElementById('epLat').value = lat;
+    document.getElementById('epLng').value = lng;
+    document.getElementById('epCoord').textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
+  }, () => showAlert('alertEmployerProfile','ดึงตำแหน่งไม่ได้ — เปิด GPS + อนุญาตให้เข้าถึงตำแหน่ง'));
+}
+
+async function doSaveEmployerProfile(isNew) {
+  try {
+    const latV = document.getElementById('epLat').value;
+    const lngV = document.getElementById('epLng').value;
+    const body = {
+      company_name:   document.getElementById('epCompany').value.trim(),
+      business_type:  document.getElementById('epBiz').value.trim() || undefined,
+      contact_person: document.getElementById('epContact').value.trim(),
+      address_text:   document.getElementById('epAddress').value.trim() || undefined,
+      province:       document.getElementById('epProvince').value.trim() || undefined,
+      postal_code:    document.getElementById('epPostal').value.trim() || undefined,
+      lat: latV ? parseFloat(latV) : undefined,
+      lng: lngV ? parseFloat(lngV) : undefined,
+    };
+    if (!body.company_name || !body.contact_person) throw new Error('กรุณากรอกชื่อบริษัทและชื่อผู้ติดต่อ');
+    const phone = document.getElementById('epPhone').value.trim();
+    if (isNew) {
+      if (phone) body.phone = phone;
+      await api('POST', '/employers/profile', body);
+    } else {
+      await api('PATCH', '/employers/profile', body);
+      if (phone) await api('PATCH', '/auth/phone', { phone });
+    }
+    showAlert('alertEmployerProfile', '✅ บันทึกโปรไฟล์บริษัทสำเร็จ!', 'success');
+    setTimeout(loadEmployerProfile, 1000);
+  } catch(e) { showAlert('alertEmployerProfile', e.message); }
 }
 
 // ─── KYC UPLOAD ────────────────────────────────────────────
