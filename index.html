@@ -4013,6 +4013,11 @@ function ico(n) {
     pin:'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
     users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
     cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    star:'<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor" stroke="none"/>',
+    starO:'<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>',
+    thumb:'<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>',
+    phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
+    eyeoff:'<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>',
   };
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="${st}">${d[n]||''}</svg>`;
 }
@@ -4180,9 +4185,9 @@ async function loadCandidates(jobId, jobTitle) {
             </div>
             ${c.review_summary ? `
             <div style="display:flex;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap">
-              <span style="font-size:13px">${'⭐'.repeat(Math.round(c.review_summary.avg_score))}${'☆'.repeat(5-Math.round(c.review_summary.avg_score))}</span>
+              <span style="display:inline-flex;align-items:center;gap:1px">${Array.from({length:5},(_,i)=>`<span style="color:${i<Math.round(c.review_summary.avg_score)?'#f5b301':'var(--muted)'};display:inline-flex">${ico(i<Math.round(c.review_summary.avg_score)?'star':'starO')}</span>`).join('')}</span>
               <span style="font-size:11px;color:var(--muted)">${c.review_summary.avg_score.toFixed(1)} (${c.review_summary.total_reviews} ${t('unit_reviews')})</span>
-              ${c.review_summary.would_rehire_pct != null ? `<span style="font-size:11px;color:var(--accent)">👍 ${Math.round(c.review_summary.would_rehire_pct)}% rehire</span>` : ''}
+              ${c.review_summary.would_rehire_pct != null ? `<span style="font-size:11px;color:var(--accent);display:inline-flex;align-items:center;gap:4px">${ico('thumb')} ${Math.round(c.review_summary.would_rehire_pct)}% rehire</span>` : ''}
             </div>` : ''}
             <div class="tags" style="margin-top:6px">
               ${c.matched_skills.map(s=>`<span class="tag tag-match" style="font-size:10px">✓ ${esc(s)}</span>`).join('')}
@@ -4251,7 +4256,7 @@ async function decide(appId, decision, btn) {
         const contactHtml = c ? `
           <div style="margin-top:4px;padding:8px 10px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:6px;font-size:11px;text-align:right">
             <div style="font-weight:600">${esc(c.contact_name||'')}</div>
-            ${c.phone ? `<div><a href="tel:${c.phone}" style="color:var(--accent);text-decoration:none;font-family:'IBM Plex Mono',monospace">📱 ${esc(c.phone)}</a></div>` : ''}
+            ${c.phone ? `<div><a href="tel:${c.phone}" style="color:var(--accent);text-decoration:none;font-family:'IBM Plex Mono',monospace;display:inline-flex;align-items:center;gap:5px">${ico('phone')} ${esc(c.phone)}</a></div>` : ''}
             <div style="color:var(--muted)">${esc(c.email||'')}</div>
           </div>` : '';
         actionsEl.innerHTML = `
@@ -4463,7 +4468,7 @@ async function showContact(appId, btn) {
   if (!el) return;
   if (el.style.display !== 'none') {
     el.style.display = 'none';
-    btn.textContent = userRole === 'worker' ? '📞 ดูเบอร์ติดต่อ' : '📞 ดูเบอร์';
+    btn.innerHTML = (userRole === 'worker' ? ico('phone')+' ดูเบอร์ติดต่อ' : ico('phone')+' ดูเบอร์');
     return;
   }
   btn.disabled = true;
@@ -4472,18 +4477,18 @@ async function showContact(appId, btn) {
     const c = await api('GET', `/applications/${appId}/contact`);
     el.innerHTML = `
       <div style="background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:8px;padding:10px 14px;margin-top:8px">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">📞 ข้อมูลติดต่อ</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;display:inline-flex;align-items:center;gap:5px">${ico('phone')} ข้อมูลติดต่อ</div>
         <div style="font-weight:600">${esc(c.contact_name)}${c.company_name ? ' · ' + esc(c.company_name) : ''}</div>
-        ${c.phone ? `<div style="margin-top:4px"><a href="tel:${esc(c.phone)}" style="color:var(--accent);text-decoration:none;font-family:'IBM Plex Mono',monospace">📱 ${esc(c.phone)}</a></div>` : ''}
+        ${c.phone ? `<div style="margin-top:4px"><a href="tel:${esc(c.phone)}" style="color:var(--accent);text-decoration:none;font-family:'IBM Plex Mono',monospace;display:inline-flex;align-items:center;gap:5px">${ico('phone')} ${esc(c.phone)}</a></div>` : ''}
         <div style="margin-top:2px;font-size:12px;color:var(--muted)">${esc(c.email)}</div>
       </div>`;
     el.style.display = 'block';
-    btn.innerHTML = '🙈 ซ่อน';
+    btn.innerHTML = ico('eyeoff')+' ซ่อน';
     btn.disabled = false;
   } catch(e) {
     el.innerHTML = `<div class="alert alert-error" style="margin-top:8px">${e.message}</div>`;
     el.style.display = 'block';
-    btn.innerHTML = userRole === 'worker' ? '📞 ดูเบอร์ติดต่อ' : '📞 ดูเบอร์';
+    btn.innerHTML = (userRole === 'worker' ? ico('phone')+' ดูเบอร์ติดต่อ' : ico('phone')+' ดูเบอร์');
     btn.disabled = false;
   }
 }
