@@ -1257,11 +1257,22 @@ class EmployerProfileCreate(BaseModel):
     business_type:  Optional[str] = Field(None, max_length=100)
     contact_person: str = Field(..., min_length=1, max_length=100)
     phone:          Optional[str] = Field(None, max_length=20)   # จำเป็นถ้า users.phone ว่าง (Google user)
+    # ที่อยู่/พิกัดหน้างาน (กรอกครั้งเดียว → job inherit ไม่ต้องกรอกซ้ำ)
+    lat:                 Optional[float] = Field(None, ge=-90,  le=90)
+    lng:                 Optional[float] = Field(None, ge=-180, le=180)
+    location_name:       Optional[str]   = Field(None, max_length=255)
+    address_text:        Optional[str]   = Field(None, max_length=500)
+    workplace_photo_url: Optional[str]   = Field(None, max_length=1000)
 
 class EmployerProfileUpdate(BaseModel):
     company_name:   Optional[str] = Field(None, min_length=1, max_length=200)
     business_type:  Optional[str] = Field(None, max_length=100)
     contact_person: Optional[str] = Field(None, min_length=1, max_length=100)
+    lat:                 Optional[float] = Field(None, ge=-90,  le=90)
+    lng:                 Optional[float] = Field(None, ge=-180, le=180)
+    location_name:       Optional[str]   = Field(None, max_length=255)
+    address_text:        Optional[str]   = Field(None, max_length=500)
+    workplace_photo_url: Optional[str]   = Field(None, max_length=1000)
 
 @app.get("/employers/profile/me", tags=["Employer"])
 async def get_employer_profile(
@@ -1270,7 +1281,10 @@ async def get_employer_profile(
 ):
     row = await db.fetchrow(
         """
-        SELECT id, user_id, company_name, business_type, contact_person, verified_status, created_at
+        SELECT id, user_id, company_name, business_type, contact_person, verified_status, created_at,
+               location_name, address_text, workplace_photo_url,
+               ST_Y(location::geometry) AS lat,
+               ST_X(location::geometry) AS lng
         FROM   employer_profiles
         WHERE  user_id = $1
         """,
@@ -1298,11 +1312,18 @@ async def create_employer_profile(
 
     row = await db.fetchrow(
         """
-        INSERT INTO employer_profiles (user_id, company_name, business_type, contact_person)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO employer_profiles
+            (user_id, company_name, business_type, contact_person,
+             location, location_name, address_text, workplace_photo_url)
+        VALUES
+            ($1, $2, $3, $4,
+             CASE WHEN $5::float8 IS NOT NULL AND $6::float8 IS NOT NULL
+                  THEN ST_MakePoint($6, $5)::geography ELSE NULL END,
+             $7, $8, $9)
         RETURNING id, company_name, business_type, contact_person, verified_status
         """,
         UUID(user["sub"]), body.company_name, body.business_type, body.contact_person,
+        body.lat, body.lng, body.location_name, body.address_text, body.workplace_photo_url,
     )
     return dict(row)
 
@@ -1312,21 +1333,31 @@ async def update_employer_profile(
     user: dict = Depends(require_employer),
     db:   asyncpg.Connection = Depends(get_db),
 ):
-    updates = {k: v for k, v in body.model_dump().items() if v is not None}
-    if not updates:
-        raise HTTPException(status_code=400, detail="ไม่มีข้อมูลที่ต้องอัปเดต")
+    data = body.model_dump()
+    lat  = data.pop('lat', None)
+    lng  = data.pop('lng', None)
+    updates = {k: v for k, v in data.items() if v is not None}
 
     set_parts = []
     params    = []
-    for idx, (key, val) in enumerate(updates.items(), start=1):
+    idx = 1
+    for key, val in updates.items():
         set_parts.append(f"{key} = ${idx}")
         params.append(val)
-    params.append(UUID(user["sub"]))
+        idx += 1
+    if lat is not None and lng is not None:      # lat/lng → location (ST_MakePoint(lng,lat))
+        set_parts.append(f"location = ST_MakePoint(${idx}, ${idx+1})::geography")
+        params.extend([lng, lat])
+        idx += 2
 
+    if not set_parts:
+        raise HTTPException(status_code=400, detail="ไม่มีข้อมูลที่ต้องอัปเดต")
+
+    params.append(UUID(user["sub"]))
     query = f"""
         UPDATE employer_profiles
         SET    {', '.join(set_parts)}
-        WHERE  user_id = ${len(params)}
+        WHERE  user_id = ${idx}
         RETURNING id, company_name, business_type, contact_person, verified_status
     """
     row = await db.fetchrow(query, *params)
@@ -1346,8 +1377,8 @@ class JobCreate(BaseModel):
     daily_wage_rate: float          = Field(..., gt=0)
     duration_days:   int            = Field(..., gt=0)
     slots_available: int            = Field(default=1, gt=0, le=500)
-    lat:             float          = Field(..., ge=-90,  le=90)
-    lng:             float          = Field(..., ge=-180, le=180)
+    lat:             Optional[float] = Field(None, ge=-90,  le=90)   # ไม่ต้องกรอก — inherit จาก employer profile
+    lng:             Optional[float] = Field(None, ge=-180, le=180)
     location_name:   Optional[str] = Field(None, max_length=255)
     zone_name:       Optional[str] = Field(None, max_length=30)
     start_date:      Optional[str] = None   # ISO date string
@@ -1426,6 +1457,20 @@ async def post_job(
         if (end_min - start_min) > 8 * 60:
             raise HTTPException(status_code=400, detail="ช่วงเวลาทำงานต้องไม่เกิน 8 ชั่วโมง")
 
+    # ── Location: ถ้าฟอร์มไม่ส่ง lat/lng → inherit จากที่อยู่หน้างานใน employer profile ──
+    lat, lng, loc_name = body.lat, body.lng, body.location_name
+    if lat is None or lng is None:
+        emp_loc = await db.fetchrow(
+            """SELECT ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng, location_name
+               FROM   employer_profiles WHERE id=$1 AND location IS NOT NULL""",
+            emp_id,
+        )
+        if not emp_loc:
+            raise HTTPException(status_code=400, detail="กรุณาตั้งที่อยู่/พิกัดหน้างานในโปรไฟล์ก่อนโพสต์งาน")
+        lat, lng = emp_loc["lat"], emp_loc["lng"]
+        if not loc_name:
+            loc_name = emp_loc["location_name"]
+
     row = await db.fetchrow(
         """
         INSERT INTO job_postings
@@ -1441,7 +1486,7 @@ async def post_job(
         """,
         emp_id, body.title, body.description, clean_skills,
         body.daily_wage_rate, body.duration_days, body.slots_available,
-        body.lng, body.lat, body.location_name, body.zone_name, start_date,
+        lng, lat, loc_name, body.zone_name, start_date,
         work_start_t, work_end_t, body.ot_rate, auto_close_at,
         body.pay_method, body.contact_info, body.dress_code,
     )
