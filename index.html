@@ -3672,7 +3672,7 @@ async function searchNearby() {
 
     if (!data.jobs.length) {
       if (_nbc) _nbc.textContent = `${t('found_prefix')} 0 ${t('found_suffix')}`;
-      el.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">${t('no_jobs_found')}<br><small style="color:var(--muted)">${t('no_jobs_tip')}</small></div></div>`;
+      el.innerHTML = `<div class="empty"><div class="empty-icon" style="color:var(--muted)">${ico('search',46)}</div><div class="empty-text">${t('no_jobs_found')}<br><small style="color:var(--muted)">${t('no_jobs_tip')}</small></div></div>`;
       return;
     }
     if (_nbc) _nbc.textContent = `${t('found_prefix')} ${data.count} ${t('found_suffix')}`;
@@ -3701,16 +3701,16 @@ async function searchNearby() {
           <div style="color:var(--accent);font-weight:700;font-size:15px;white-space:nowrap;flex-shrink:0">฿${Number(j.daily_wage_rate).toLocaleString()}${t('per_day')}</div>
         </div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:10px;display:flex;flex-wrap:wrap;gap:4px 12px">
-          <span>📍 ${esc(j.location_name||j.zone_name||'-')}</span>
-          <span>📏 ${j.distance_km} ${t('km_unit')}</span>
-          <span style="color:var(--accent)">👥 ${t('slots_pre')}${j.slots_remaining}${t('slots_suf')}</span>
+          <span style="display:inline-flex;align-items:center;gap:4px">${ico('pin')} ${esc(j.location_name||j.zone_name||'-')}</span>
+          <span style="display:inline-flex;align-items:center;gap:4px">${ico('ruler')} ${j.distance_km} ${t('km_unit')}</span>
+          <span style="color:var(--accent);display:inline-flex;align-items:center;gap:4px">${ico('users')} ${t('slots_pre')}${j.slots_remaining}${t('slots_suf')}</span>
         </div>
         <div class="tags" style="gap:6px;margin-bottom:12px">
-          ${j.work_start && j.work_end ? '<span class="tag">⏰ ' + esc(j.work_start) + '–' + esc(j.work_end) + '</span>' : ''}
-          ${j.start_date ? '<span class="tag">🗓 ' + esc(j.start_date) + '</span>' : ''}
-          ${j.pay_method ? '<span class="tag" style="color:var(--accent)">💵 ' + esc(PAY_METHOD_LABEL[j.pay_method]||j.pay_method) + '</span>' : ''}
-          <span class="tag ${mClass}">⭐ Match ${m}%</span>
-          ${j.adjacent ? '<span class="tag nb-tag-adjacent">🔗 ' + t('nearby_adjacent_tag') + '</span>' : ''}
+          ${j.work_start && j.work_end ? '<span class="tag" style="display:inline-flex;align-items:center;gap:4px">' + ico('clock') + ' ' + esc(j.work_start) + '–' + esc(j.work_end) + '</span>' : ''}
+          ${j.start_date ? '<span class="tag" style="display:inline-flex;align-items:center;gap:4px">' + ico('cal') + ' ' + esc(j.start_date) + '</span>' : ''}
+          ${j.pay_method ? '<span class="tag" style="color:var(--accent);display:inline-flex;align-items:center;gap:4px">' + ico('money') + ' ' + esc(PAY_METHOD_LABEL[j.pay_method]||j.pay_method) + '</span>' : ''}
+          <span class="tag ${mClass}" style="display:inline-flex;align-items:center;gap:4px">${ico('star')} Match ${m}%</span>
+          ${j.adjacent ? '<span class="tag nb-tag-adjacent" style="display:inline-flex;align-items:center;gap:4px">' + ico('link') + ' ' + t('nearby_adjacent_tag') + '</span>' : ''}
         </div>
         <button class="btn btn-primary" style="width:100%;padding:10px;font-size:14px" onclick="applyJob('${j.job_id}',${lat},${lng},this)">${t('apply_btn')}</button>
       </div>`;
@@ -3743,7 +3743,7 @@ async function loadMyApps() {
   try {
     const data = await api('GET', '/workers/applications');
     if (!data.length) {
-      el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">${t('no_apps')}</div></div>`;
+      el.innerHTML = `<div class="empty"><div class="empty-icon" style="color:var(--muted)">${ico('doc',46)}</div><div class="empty-text">${t('no_apps')}</div></div>`;
       return;
     }
     const sColor = {
@@ -3770,12 +3770,12 @@ async function loadMyApps() {
       const scoreCircle = '<span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:rgba(0,229,160,.12);font-size:12px;font-weight:700;color:var(--accent)">' + a.match_score + '</span>';
       const statusBadge = '<span class="badge ' + (sColor[a.status]||'badge-gray') + '">' + (t(stKey[a.status])||a.status) + '</span>';
       const jobMeta = esc(a.job.location_name||'-') + ' • ฿' + a.job.daily_wage_rate + t('per_day') + ' • ' + a.job.duration_days + ' ' + t('days_unit')
-        + (a.job.work_start ? ' • ⏰ ' + esc(a.job.work_start) + '–' + esc(a.job.work_end) : '')
-        + (a.job.ot_rate ? ' • 💰 OT ' + a.job.ot_rate + '฿/ชม.' : '')
-        + (a.job.pay_method ? ' • 💵 ' + esc(PAY_METHOD_LABEL[a.job.pay_method]||a.job.pay_method) : '')
-        + (a.job.dress_code ? ' • 👔 ' + esc(DRESS_CODE_LABEL[a.job.dress_code]||a.job.dress_code) : '');
+        + (a.job.work_start ? ' • ' + ico('clock') + ' ' + esc(a.job.work_start) + '–' + esc(a.job.work_end) : '')
+        + (a.job.ot_rate ? ' • ' + ico('money') + ' OT ' + a.job.ot_rate + '฿/ชม.' : '')
+        + (a.job.pay_method ? ' • ' + ico('money') + ' ' + esc(PAY_METHOD_LABEL[a.job.pay_method]||a.job.pay_method) : '')
+        + (a.job.dress_code ? ' • ' + ico('shirt') + ' ' + esc(DRESS_CODE_LABEL[a.job.dress_code]||a.job.dress_code) : '');
       const contactBlock = (a.job.contact_info && ['hired','checked_in','working','completed','verified'].includes(a.status))
-        ? '<div style="margin-top:10px;padding:10px 12px;background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.2);border-radius:8px;font-size:12px"><span style="font-weight:600;color:var(--accent)">📞 ผู้ติดต่อหน้างาน:</span> ' + esc(a.job.contact_info) + '</div>'
+        ? '<div style="margin-top:10px;padding:10px 12px;background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.2);border-radius:8px;font-size:12px"><span style="font-weight:600;color:var(--accent);display:inline-flex;align-items:center;gap:4px">' + ico('phone') + ' ผู้ติดต่อหน้างาน:</span> ' + esc(a.job.contact_info) + '</div>'
         : '';
       return '<div class="card" id="appcard-' + a.id + '" style="border-left:3px solid ' + bc + ';margin-bottom:12px">'
         + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:10px">'
@@ -3788,7 +3788,7 @@ async function loadMyApps() {
           + '</div>'
         + '</div>'
         + '<div style="display:flex;gap:16px;font-size:12px;color:var(--muted);margin-bottom:6px">'
-          + '<span>📏 ' + a.distance_km + ' ' + t('km_unit') + '</span>'
+          + '<span style="display:inline-flex;align-items:center;gap:4px">' + ico('ruler') + ' ' + a.distance_km + ' ' + t('km_unit') + '</span>'
           + '<span>' + t('applied_on') + ' ' + new Date(a.applied_at).toLocaleDateString(_lang==='en'?'en-GB':'th-TH') + '</span>'
         + '</div>'
         + (a.employer_note ? '<div style="margin-top:8px;font-size:13px;color:var(--muted);font-style:italic;padding:8px 10px;background:var(--surface2);border-radius:6px">"' + esc(a.employer_note) + '"</div>' : '')
@@ -4006,8 +4006,9 @@ async function doPostJob() {
 }
 
 // ─── inline SVG icons (แทน emoji — เรนเดอร์เหมือนกันทุกเครื่อง) ─
-function ico(n) {
-  const st = 'width:15px;height:15px;flex-shrink:0;vertical-align:-2px';
+function ico(n, sz) {
+  sz = sz || 15;
+  const st = 'width:'+sz+'px;height:'+sz+'px;flex-shrink:0;vertical-align:-2px';
   const d = {
     box:'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
     pin:'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
@@ -4018,6 +4019,14 @@ function ico(n) {
     thumb:'<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>',
     phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
     eyeoff:'<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>',
+    ruler:'<path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0z"/><path d="M14.5 12.5l2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2"/>',
+    clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    money:'<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>',
+    shirt:'<path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/>',
+    link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+    doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+    search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
   };
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="${st}">${d[n]||''}</svg>`;
 }
@@ -4038,7 +4047,7 @@ async function loadMyJobs() {
   try {
     const data = await api('GET', '/jobs/mine');
     if (!data.length) {
-      el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">${t('jobs_empty')}<br><button class="btn btn-primary btn-sm" onclick="showPage('postjob')" style="margin-top:12px">${t('jobs_post_first')}</button></div></div>`;
+      el.innerHTML = `<div class="empty"><div class="empty-icon" style="color:var(--muted)">${ico('doc',46)}</div><div class="empty-text">${t('jobs_empty')}<br><button class="btn btn-primary btn-sm" onclick="showPage('postjob')" style="margin-top:12px">${t('jobs_post_first')}</button></div></div>`;
       return;
     }
     const sColor = { open:'badge-green', closed:'badge-gray', filled:'badge-blue', draft:'badge-warn', expired:'badge-danger' };
@@ -4090,7 +4099,7 @@ async function loadEarnings() {
     const d = await api('GET', '/workers/earnings');
     if (!d.transactions || d.transactions.length === 0) {
       el.innerHTML = `<div style="text-align:center;padding:48px 0;color:var(--muted)">
-        <div style="font-size:40px;margin-bottom:12px">💰</div>
+        <div style="margin-bottom:12px;color:var(--muted)">${ico('money',44)}</div>
         <div>${t('earnings_empty')}</div>
       </div>`;
       return;
@@ -4156,7 +4165,7 @@ async function loadCandidates(jobId, jobTitle) {
     const data = await api('GET', `/jobs/${jobId}/candidates`);
     const back = `<button class="btn btn-secondary btn-sm" onclick="loadMyJobs()" style="margin-bottom:16px">${t('cand_back')}</button>`;
     if (!data.length) {
-      el.innerHTML = back + `<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">${t('cand_no_candidates')}</div></div>`;
+      el.innerHTML = back + `<div class="empty"><div class="empty-icon" style="color:var(--muted)">${ico('users',46)}</div><div class="empty-text">${t('cand_no_candidates')}</div></div>`;
       return;
     }
     const bgColor = { pending:'badge-warn', verified:'badge-green', failed:'badge-danger' };
@@ -4941,7 +4950,7 @@ async function loadNotifications() {
 
     if (!data.length) {
       const msg = _notifFilter === 'unread' ? t('notif_empty_unread') : t('notif_empty_all');
-      el.innerHTML = `<div class="empty"><div class="empty-icon">🔔</div><div class="empty-text">${msg}</div></div>`;
+      el.innerHTML = `<div class="empty"><div class="empty-icon" style="color:var(--muted)">${ico('bell',46)}</div><div class="empty-text">${msg}</div></div>`;
       return;
     }
 
@@ -5222,7 +5231,7 @@ async function loadMyReviews() {
     }
 
     if (!pending.length && !received.length) {
-      html = `<div class="empty"><div class="empty-icon">⭐</div><div class="empty-text">${t('rev_empty')}<br><small style="color:var(--muted)">${t('rev_empty_note')}</small></div></div>`;
+      html = `<div class="empty"><div class="empty-icon" style="color:#f5b301">${ico('star',46)}</div><div class="empty-text">${t('rev_empty')}<br><small style="color:var(--muted)">${t('rev_empty_note')}</small></div></div>`;
     }
 
     el.innerHTML = html;
