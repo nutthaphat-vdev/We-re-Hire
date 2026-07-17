@@ -17,7 +17,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
     --text:#e8edf5; --muted:#6b7a94; --danger:#ff4757; --success:#00e5a0;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
-  body{background:var(--bg);color:var(--text);font-family:'Prompt','Sarabun',sans-serif;font-size:15px;line-height:1.6;min-height:100vh;}
+  body{background:var(--bg);color:var(--text);font-family:'Prompt','Inter','Sarabun',sans-serif;font-size:15px;line-height:1.6;min-height:100vh;}
   .app{display:flex;min-height:100vh;}
   .sidebar{width:236px;background:linear-gradient(180deg,#12161d 0%,#0e1118 100%);border-right:1px solid rgba(42,48,64,.6);display:flex;flex-direction:column;flex-shrink:0;box-shadow:4px 0 24px rgba(0,0,0,.35);}
   .main{flex:1;overflow:auto;background:radial-gradient(ellipse 80% 55% at 75% 5%, rgba(0,229,160,.09) 0%, transparent 55%),radial-gradient(ellipse 60% 50% at 5% 90%, rgba(0,153,255,.08) 0%, transparent 55%),radial-gradient(ellipse 50% 40% at 90% 80%, rgba(0,229,160,.04) 0%, transparent 50%),#0d0f12;}
@@ -47,13 +47,13 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   .card{background:rgba(18,22,30,.8);border:1px solid rgba(42,48,64,.6);border-radius:14px;padding:24px;margin-bottom:16px;backdrop-filter:blur(12px);}
   .form-group{margin-bottom:16px;}
   .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-family:'Prompt','Sarabun',sans-serif;letter-spacing:.02em;}
-  input,select,textarea{width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Prompt','Sarabun',sans-serif;font-size:14px;outline:none;transition:border-color .2s;}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-family:'Prompt','Inter','Sarabun',sans-serif;letter-spacing:.02em;}
+  input,select,textarea{width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Prompt','Inter','Sarabun',sans-serif;font-size:14px;outline:none;transition:border-color .2s;}
   input:focus,select:focus,textarea:focus{border-color:var(--accent);}
   select option{background:var(--surface2);}
   textarea{resize:vertical;min-height:80px;}
   input[type=date],input[type=time]{text-align:left;-webkit-appearance:none;appearance:none;min-height:42px;}
-  .btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-family:'Prompt','Sarabun',sans-serif;font-size:14px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+  .btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-family:'Prompt','Inter','Sarabun',sans-serif;font-size:14px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
   .btn-primary{background:var(--accent);color:#0d0f12;}
   .btn-primary:hover{background:#00ffb3;transform:translateY(-1px);}
   .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
@@ -467,7 +467,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
 <!-- ===== Landing — Gemini glass restyle (Piece 1: dark) ===== -->
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  #landingPage{ font-family:'Prompt','Sarabun',sans-serif !important; }
+  #landingPage{ font-family:'Prompt','Inter','Sarabun',sans-serif !important; }
   #landingPage .lp-card, #landingPage .lp-step, #landingPage .lp-feature, #landingPage .lp-market-item{
     background: rgba(30,41,59,.38) !important;
     -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
