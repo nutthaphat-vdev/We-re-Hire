@@ -2521,6 +2521,15 @@ async function loadEmployerProfile() {
     </style>
     <div class="ep-form">
       ${isNew ? '<div class="alert alert-info" style="margin-bottom:18px">ยังไม่มีโปรไฟล์บริษัท — กรอกข้อมูลด้านล่างก่อนโพสต์งาน</div>' : ''}
+      <div class="ep-grp">
+        <label>รูปสถานที่ทำงาน (ให้ worker เห็นหน้างาน)</label>
+        <label style="display:block;border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;background:var(--surface2)">
+          <input type="file" id="epPhotoFile" accept="image/jpeg,image/png,image/webp" onchange="uploadEmpPhoto(this)" style="display:none">
+          <img id="epPhotoPreview" src="${esc(val(p&&p.workplace_photo_url))}" style="max-width:240px;border-radius:10px;margin-bottom:8px;${p&&p.workplace_photo_url?'':'display:none'}">
+          <div id="epPhotoText" style="color:var(--muted);font-size:.9rem">📷 แตะเพื่ออัปโหลด/เปลี่ยนรูปหน้างาน (JPG/PNG ≤ 5MB)</div>
+        </label>
+      </div>
+      <input type="hidden" id="epPhotoPath" value="">
       <div class="ep-grp"><label>ชื่อบริษัท/ร้าน *</label><input id="epCompany" value="${esc(val(p&&p.company_name))}" placeholder="บริษัท ABC จำกัด"></div>
       <div class="ep-grp"><label>ประเภทธุรกิจ</label><input id="epBiz" value="${esc(val(p&&p.business_type))}" placeholder="เช่น ร้านอาหาร, โรงแรม, ขนส่ง"></div>
       <div class="ep-row">
@@ -2563,6 +2572,8 @@ async function doSaveEmployerProfile(isNew) {
       lat: latV ? parseFloat(latV) : undefined,
       lng: lngV ? parseFloat(lngV) : undefined,
     };
+    const photoPath = document.getElementById('epPhotoPath').value;
+    if (photoPath) body.workplace_photo_url = photoPath;   // เฉพาะตอนอัปโหลดรูปใหม่
     if (!body.company_name || !body.contact_person) throw new Error('กรุณากรอกชื่อบริษัทและชื่อผู้ติดต่อ');
     const phone = document.getElementById('epPhone').value.trim();
     if (isNew) {
@@ -2575,6 +2586,26 @@ async function doSaveEmployerProfile(isNew) {
     showAlert('alertEmployerProfile', '✅ บันทึกโปรไฟล์บริษัทสำเร็จ!', 'success');
     setTimeout(loadEmployerProfile, 1000);
   } catch(e) { showAlert('alertEmployerProfile', e.message); }
+}
+
+async function uploadEmpPhoto(input) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  const txt = document.getElementById('epPhotoText');
+  txt.textContent = '⏳ กำลังอัปโหลด...';
+  try {
+    const form = new FormData();
+    form.append('photo', f);
+    const r = await fetch(API + '/employers/workplace-photo', {
+      method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: form,
+    });
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || 'อัปโหลดล้มเหลว'); }
+    const res = await r.json();
+    document.getElementById('epPhotoPath').value = res.path;
+    const img = document.getElementById('epPhotoPreview');
+    img.src = res.url; img.style.display = 'inline-block';
+    txt.textContent = '✅ อัปโหลดแล้ว — แตะเพื่อเปลี่ยน · กด "บันทึก" เพื่อยืนยัน';
+  } catch(e) { txt.textContent = '❌ ' + e.message; }
 }
 
 // ─── KYC UPLOAD ────────────────────────────────────────────

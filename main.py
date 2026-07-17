@@ -1296,7 +1296,27 @@ async def get_employer_profile(
     )
     if not row:
         raise HTTPException(status_code=404, detail="ไม่พบโปรไฟล์ Employer")
-    return dict(row)
+    d = dict(row)
+    if d.get("workplace_photo_url"):
+        d["workplace_photo_url"] = await _storage_signed_url(d["workplace_photo_url"])  # path → signed URL
+    return d
+
+@app.post("/employers/workplace-photo", tags=["Employer"])
+async def upload_workplace_photo(
+    photo: UploadFile = File(...),
+    user:  dict = Depends(require_employer),
+    db:    asyncpg.Connection = Depends(get_db),
+):
+    """อัปโหลดรูปหน้างาน → คืน path (เก็บลง workplace_photo_url ตอน save) + signed URL สำหรับ preview"""
+    data = await photo.read()
+    if photo.content_type not in _ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=400, detail="รองรับเฉพาะ JPG, PNG, WebP")
+    if len(data) > _MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="ขนาดไฟล์ต้องไม่เกิน 5MB")
+    path = f"employer/{UUID(user['sub'])}/workplace.jpg"
+    await _storage_upload(path, data, photo.content_type)
+    signed = await _storage_signed_url(path)
+    return {"path": path, "url": signed}
 
 @app.post("/employers/profile", status_code=201, tags=["Employer"])
 async def create_employer_profile(
