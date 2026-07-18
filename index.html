@@ -141,6 +141,24 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   html[data-theme="light"] .fl input:focus{background:rgba(0,0,0,.05);box-shadow:0 0 0 3px rgba(0,229,160,.14);}
   html[data-theme="light"] #authPage .btn-secondary{background:#fff;color:#0f172a;border:1px solid var(--border);}
   html[data-theme="light"] #authPage .btn-secondary:hover{background:#f1f5f9;}
+  /* ===== LIGHT THEME — full app ===== */
+  :root[data-theme="light"]{
+    --bg:#eef2f7; --surface:#ffffff; --surface2:#f1f5f9; --border:#e2e8f0;
+    --text:#0f172a; --muted:#5b6b82; --accent:#059669; --accent2:#2563eb;
+  }
+  html[data-theme="light"] body{background:#eef2f7;}
+  html[data-theme="light"] .main{background:#eef2f7;}
+  html[data-theme="light"] .sidebar{background:#ffffff;border-right:1px solid #e2e8f0;box-shadow:2px 0 16px rgba(15,23,42,.05);}
+  html[data-theme="light"] .logo-text,html[data-theme="light"] .page-title,html[data-theme="light"] .logo-sub{color:#0f172a;}
+  html[data-theme="light"] .card{background:#ffffff;border:1px solid #e6ebf1;box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  html[data-theme="light"] input,html[data-theme="light"] select,html[data-theme="light"] textarea{background:#f8fafc;border-color:#e2e8f0;color:#0f172a;}
+  html[data-theme="light"] .nav-item:hover{background:rgba(15,23,42,.05);color:#0f172a;}
+  html[data-theme="light"] .nav-item.active{background:rgba(5,150,105,.12);border-color:rgba(5,150,105,.25);}
+  html[data-theme="light"] .token-box{background:#f8fafc;border-color:#e2e8f0;}
+  html[data-theme="light"] .btn-secondary{background:#ffffff;border-color:#e2e8f0;color:#0f172a;}
+  html[data-theme="light"] .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+  html[data-theme="light"] .badge-gray,html[data-theme="light"] .tag{background:#eef2f7;color:#5b6b82;border-color:#e2e8f0;}
+  html[data-theme="light"] .nav-section{color:#94a3b8;}
   .loading{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,229,160,.3);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .empty{text-align:center;padding:48px;color:var(--muted);}
@@ -4280,7 +4298,7 @@ async function loadSettings() {
       + item('bell', `การแจ้งเตือน ${soon}`, {right:chev, disabled:true}) + gClose;
   }
   h += gTitle('การแสดงผล') + gOpen()
-    + item('sun', `โหมดสว่าง / มืด ${soon}`, {right:chev, disabled:true})
+    + item('sun', 'โหมดสว่าง / มืด', {right:`<span style="color:var(--accent);font-weight:600;font-size:13px">${document.documentElement.getAttribute('data-theme')==='light'?'สว่าง':'มืด'}</span>`, onclick:`toggleAppTheme()`})
     + item('globe', 'เปลี่ยนภาษา (Language)', {right:`<span style="color:var(--accent);font-weight:600;font-size:13px">${langLabel}</span>`, onclick:`toggleLangSetting()`}) + gClose;
   h += gTitle('ความช่วยเหลือ & นโยบาย') + gOpen()
     + item('doc', 'ข้อตกลงและเงื่อนไข (Terms)', {right:chev, onclick:`alert('หน้านี้กำลังจัดทำ')`})
@@ -4294,6 +4312,14 @@ async function loadSettings() {
 }
 
 function toggleLangSetting() { setLang(_lang === 'en' ? 'th' : 'en'); loadSettings(); }
+
+function toggleAppTheme() {
+  const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  if (typeof renderAuthThemeIcon === 'function') renderAuthThemeIcon();
+  loadSettings();
+}
 
 async function toggleAvailable(elm) {
   const next = elm.dataset.on !== 'true';
