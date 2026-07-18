@@ -4046,7 +4046,10 @@ function ico(n, sz) {
 }
 
 // ─── LIVE ROSTER ───────────────────────────────────────────
-let _rosterPoll = null, _rosterTick = null;
+let _rosterPoll = null, _rosterTick = null, _rosterSig = null;
+
+function _elapsedSec(iso) { return iso ? Math.max(0, Math.floor((Date.now() - new Date(iso).getTime())/1000)) : 0; }
+function _hhmmss(s) { return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
 
 function stopRosterPolling() {
   if (_rosterPoll) { clearInterval(_rosterPoll); _rosterPoll = null; }
@@ -4109,11 +4112,14 @@ async function loadRoster() {
         rows.push({ ...c, job_title: j.title, job_id: j.id, pay: j.daily_wage_rate, kind });
       }
     }
-    if (!rows.length) {
-      el.innerHTML = `<div class="empty"><div class="empty-icon" style="color:var(--muted)">${ico('users',46)}</div><div class="empty-text">ยังไม่มีพนักงานในบอร์ดวันนี้<br><small style="color:var(--muted)">คนที่ถูกจ้างสำหรับงานวันนี้จะแสดงที่นี่</small></div></div>`;
-    } else {
-      rows.sort((a,b) => _rosterRank(a.kind) - _rosterRank(b.kind));
-      el.innerHTML = `<div style="display:flex;flex-direction:column;gap:16px">${rows.map(renderRosterRow).join('')}</div>`;
+    rows.sort((a,b) => _rosterRank(a.kind) - _rosterRank(b.kind));
+    // re-render เฉพาะตอนสถานะเปลี่ยนจริง — ไม่งั้นปล่อย timer เดินบน DOM เดิม (สมูท)
+    const sig = rows.map(r => r.application_id + ':' + r.kind + ':' + (r.payment_status||'')).join('|');
+    if (firstLoad || sig !== _rosterSig) {
+      _rosterSig = sig;
+      el.innerHTML = rows.length
+        ? `<div style="display:flex;flex-direction:column;gap:16px">${rows.map(renderRosterRow).join('')}</div>`
+        : `<div class="empty"><div class="empty-icon" style="color:var(--muted)">${ico('users',46)}</div><div class="empty-text">ยังไม่มีพนักงานในบอร์ดวันนี้<br><small style="color:var(--muted)">คนที่ถูกจ้างสำหรับงานวันนี้จะแสดงที่นี่</small></div></div>`;
     }
   } catch(e) {
     el.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
@@ -4152,14 +4158,14 @@ function renderRosterRow(r) {
         <button class="btn btn-primary btn-sm" onclick="doStart('${r.application_id}',this)" style="display:inline-flex;align-items:center;gap:6px">${ico('play')} เริ่มงาน</button>
       </div></div>`;
 
-  if (r.kind === 'working') { const total = _shiftSeconds(r.work_start, r.work_end);
+  if (r.kind === 'working') { const total = _shiftSeconds(r.work_start, r.work_end); const sec0 = _elapsedSec(r.work_started_at); const pct0 = total > 0 ? Math.min(100, sec0/total*100) : 0;
     return `<div class="card" style="background:rgba(0,229,160,.07);border-color:rgba(0,229,160,.3);position:relative;overflow:hidden">
-      <div style="position:absolute;top:0;left:0;height:4px;width:100%;background:rgba(255,255,255,.06)"><div class="roster-progress" data-total="${total}" style="height:100%;width:0;background:var(--accent);box-shadow:0 0 10px var(--accent);transition:width 1s linear"></div></div>
+      <div style="position:absolute;top:0;left:0;height:4px;width:100%;background:rgba(255,255,255,.06)"><div class="roster-progress" data-total="${total}" style="height:100%;width:${pct0}%;background:var(--accent);box-shadow:0 0 10px var(--accent);transition:width 1s linear"></div></div>
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:6px">
         <div style="flex:1;min-width:240px">
           <div style="font-weight:600;font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">${name} ${pill('rgba(0,229,160,.2)','var(--accent)','Working',true)}</div>
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <div style="font-size:30px;font-weight:700;color:var(--accent);font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;gap:8px;line-height:1">${ico('timer',26)}<span class="roster-timer" data-started="${r.work_started_at||''}">00:00:00</span></div>
+            <div style="font-size:30px;font-weight:700;color:var(--accent);font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;gap:8px;line-height:1">${ico('timer',26)}<span class="roster-timer" data-started="${r.work_started_at||''}">${_hhmmss(sec0)}</span></div>
             <div style="font-size:12px;color:var(--muted);background:rgba(0,0,0,.2);padding:6px 10px;border-radius:6px;line-height:1.5">เริ่ม: ${r.work_start||'—'} น.<br>จบ: ${r.work_end||'—'} น.</div>
           </div>
         </div>
@@ -4194,7 +4200,7 @@ function tickRosterTimers() {
     const st = elm.dataset.started; if (!st) return;
     const started = new Date(st).getTime(); if (isNaN(started)) return;
     let s = Math.max(0, Math.floor((now - started) / 1000));
-    elm.textContent = `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+    elm.textContent = _hhmmss(s);
     const bar = elm.closest('.card')?.querySelector('.roster-progress');
     if (bar && Number(bar.dataset.total) > 0) bar.style.width = Math.min(100, (s / Number(bar.dataset.total)) * 100) + '%';
   });
