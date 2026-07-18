@@ -34,6 +34,5 @@ Thumbs.db
 *.zip
 
 # DB maintenance temp scripts + deleted-data backups (contain user PII / password hashes — never commit)
-_db*.py
-_dbcheck.py
+_*.py
 _deleted_backup_*.json
