@@ -1643,7 +1643,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
 <!-- PAYMENT MODAL -->
 <div id="payModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9998;align-items:center;justify-content:center">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:360px;max-width:90vw">
-    <div style="font-weight:700;font-size:16px;margin-bottom:16px">💰 แจ้งการชำระเงิน</div>
+    <div style="font-weight:700;font-size:16px;margin-bottom:16px;display:flex;align-items:center;gap:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);flex-shrink:0"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z"/></svg> แจ้งการชำระเงิน</div>
     <input type="hidden" id="payAppId">
     <input type="hidden" id="payJobId">
     <input type="hidden" id="payJobTitle">
@@ -1656,10 +1656,10 @@ html, body { margin:0; padding:0; background:#0d0f12; }
       <label>วิธีชำระเงิน</label>
       <div style="display:flex;gap:20px;margin-top:8px">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px">
-          <input type="radio" name="payMethod" value="cash" checked onchange="payMethodChanged()"> 💵 เงินสด
+          <input type="radio" name="payMethod" value="cash" checked onchange="payMethodChanged()"> <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg> เงินสด
         </label>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px">
-          <input type="radio" name="payMethod" value="transfer" onchange="payMethodChanged()"> 📱 โอนเงิน
+          <input type="radio" name="payMethod" value="transfer" onchange="payMethodChanged()"> <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> โอนเงิน
         </label>
       </div>
     </div>
