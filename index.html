@@ -4288,7 +4288,7 @@ async function loadSettings() {
     + item('info', 'เกี่ยวกับเรา (About Us)', {right:chev, onclick:`alert('We\\'re Hired · BKK MVP')`}) + gClose;
   h += gTitle('ตั้งค่าขั้นสูง') + gOpen(true)
     + item('logout', 'ออกจากระบบ', {onclick:`doLogout()`, danger:true})
-    + item('trash', `ลบบัญชีผู้ใช้ ${soon}`, {disabled:true, danger:true}) + gClose;
+    + item('trash', 'ลบบัญชีผู้ใช้', {onclick:`openDeleteAccountModal()`, danger:true}) + gClose;
   h += `<div style="text-align:center;color:var(--muted);font-size:12px;margin:24px 0">We're Hired · BKK MVP · v1.0.0-beta</div>`;
   el.innerHTML = h;
 }
