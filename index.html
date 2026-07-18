@@ -265,6 +265,11 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   html[data-theme="light"] .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
   html[data-theme="light"] .badge-gray,html[data-theme="light"] .tag{background:#eef2f7;color:#5b6b82;border-color:#e2e8f0;}
   html[data-theme="light"] .nav-section{color:#94a3b8;}
+  /* light: nearby jobs panel (พื้นมืดตายตัว → สว่าง) */
+  html[data-theme="light"] .nb-panel{background:rgba(255,255,255,.94);border-color:#e2e8f0;box-shadow:0 20px 60px rgba(15,23,42,.15);}
+  html[data-theme="light"] .nb-locpill{background:rgba(255,255,255,.9);border-color:#e2e8f0;}
+  html[data-theme="light"] .nb-controls{border-bottom-color:#e2e8f0;}
+  html[data-theme="light"] .nb-prompt{background:rgba(255,255,255,.85);}
   .loading{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,229,160,.3);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .empty{text-align:center;padding:48px;color:var(--muted);}
