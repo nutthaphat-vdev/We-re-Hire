@@ -42,6 +42,9 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   .role-employer{background:rgba(0,153,255,.15);color:var(--accent2);}
   .page{display:none;padding:36px 40px;max-width:920px;margin-left:auto;margin-right:auto;}
   .page.active{display:block;}
+  #page-dashboard{max-width:1200px;}
+  .dash-cols{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:start;}
+  @media(max-width:820px){ .dash-cols{grid-template-columns:1fr;} }
   .page-title{font-size:24px;font-weight:700;margin-bottom:4px;}
   .page-sub{color:var(--muted);font-size:14px;margin-bottom:28px;}
   .card{background:rgba(18,22,30,.8);border:1px solid rgba(42,48,64,.6);border-radius:14px;padding:24px;margin-bottom:16px;backdrop-filter:blur(12px);}
@@ -150,7 +153,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   html[data-theme="light"] .main{background:#eef2f7;}
   html[data-theme="light"] .sidebar{background:#ffffff;border-right:1px solid #e2e8f0;box-shadow:2px 0 16px rgba(15,23,42,.05);}
   html[data-theme="light"] .logo-text,html[data-theme="light"] .page-title,html[data-theme="light"] .logo-sub{color:#0f172a;}
-  html[data-theme="light"] .card{background:#ffffff;border:1px solid #e6ebf1;box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  html[data-theme="light"] .card,html[data-theme="light"] .stat{background:#ffffff;border:1px solid #e6ebf1;box-shadow:0 1px 3px rgba(15,23,42,.06);}
   html[data-theme="light"] input,html[data-theme="light"] select,html[data-theme="light"] textarea{background:#f8fafc;border-color:#e2e8f0;color:#0f172a;}
   html[data-theme="light"] .nav-item:hover{background:rgba(15,23,42,.05);color:#0f172a;}
   html[data-theme="light"] .nav-item.active{background:rgba(5,150,105,.12);border-color:rgba(5,150,105,.25);}
@@ -3123,29 +3126,19 @@ async function loadDashboard() {
       </div>`;
 
     const openJobs = (jobs||[]).filter(j => j.status === 'open').length;
-
-    statsEl.innerHTML = `
-      <div class="stat" style="border-left:3px solid var(--accent2)">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div class="stat-num">${openJobs}</div>
-          <span style="color:var(--accent2);display:inline-flex">${ico('doc',18)}</span>
+    const urgentCount = (jobs||[]).filter(j => j.status === 'open' && (j.slots_available - j.slots_filled) > 0).length;
+    const mCard = (tileBg, tileColor, iconName, label, valueHtml) => `
+      <div class="stat" style="display:flex;align-items:center;gap:14px">
+        <div style="width:48px;height:48px;border-radius:12px;background:${tileBg};color:${tileColor};display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico(iconName,22)}</div>
+        <div style="min-width:0">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:3px">${label}</div>
+          <div style="display:flex;align-items:center;gap:8px">${valueHtml}</div>
         </div>
-        <div class="stat-label">งานที่เปิดรับ (Active Posts)</div>
-      </div>
-      <div class="stat" style="border-left:3px solid var(--accent)">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div class="stat-num">${totalHired}</div>
-          <span style="color:var(--accent);display:inline-flex">${ico('users',18)}</span>
-        </div>
-        <div class="stat-label">จ้างทั้งหมด (Total Hired)</div>
-      </div>
-      <div class="stat" style="border-left:3px solid var(--warn)">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div class="stat-num" style="font-size:22px">฿${totalSpent.toLocaleString()}</div>
-          <span style="color:var(--warn);display:inline-flex">${ico('money',18)}</span>
-        </div>
-        <div class="stat-label">จ่ายไปแล้ว (Total Spent)</div>
       </div>`;
+    statsEl.innerHTML =
+      mCard('rgba(0,153,255,.12)','var(--accent2)','doc','Active Posts', `<span class="stat-num" style="font-size:26px;color:var(--text)">${openJobs}</span>${urgentCount?`<span class="badge badge-warn" style="font-size:10px">งานด่วน</span>`:''}`)
+      + mCard('rgba(0,229,160,.12)','var(--accent)','users','Total Hired', `<span class="stat-num" style="font-size:26px;color:var(--text)">${totalHired}</span>`)
+      + mCard('rgba(255,107,53,.14)','var(--warn)','money','Total Spent', `<span class="stat-num" style="font-size:24px;color:var(--text)">฿${totalSpent.toLocaleString()}</span>`);
 
     // ── LEFT: งานด่วน + AI Ranked Candidates ──
     const urgentJobs = jobCands.filter(({job}) => job.status === 'open' && (job.slots_available - job.slots_filled) > 0).slice(0,3);
@@ -3208,7 +3201,7 @@ async function loadDashboard() {
 
     contentEl.innerHTML = `
       ${verifyNudge}
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;margin-top:4px">
+      <div class="dash-cols" style="margin-top:4px">
         <div>${urgentHtml}</div>
         <div>${quickRoster}</div>
       </div>`;
