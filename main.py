@@ -2677,6 +2677,16 @@ async def employer_pay(
     if row["status"] not in ("completed", "verified"):
         raise HTTPException(status_code=409, detail=f"งานต้องเสร็จก่อนจึงจะจ่ายได้ (สถานะ: {row['status']}) — ต้องเป็น completed หรือ verified")
 
+    # ── amount = server คำนวณจากค่าจ้างที่ตกลง (ไม่เชื่อค่าจาก client กันจ่ายต่ำ) ──
+    # happy path: จ่ายเต็ม = daily_wage_rate × duration_days
+    # (pro-rata กรณีทำไม่ครบ + OT top-up = Phase escrow, ยังไม่ทำ)
+    wage_row = await db.fetchrow(
+        "SELECT daily_wage_rate, duration_days FROM job_postings WHERE id=$1", row["job_id"]
+    )
+    if not wage_row or wage_row["daily_wage_rate"] is None:
+        raise HTTPException(status_code=400, detail="ไม่พบค่าจ้างของงานนี้")
+    amount = float(wage_row["daily_wage_rate"]) * int(wage_row["duration_days"] or 1)  # override client
+
     existing = await db.fetchval(
         "SELECT payment_status FROM job_applications WHERE id=$1", app_id
     )
