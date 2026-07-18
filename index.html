@@ -3097,76 +3097,104 @@ async function loadDashboard() {
       api('GET', '/employers/profile/me').catch(() => null),
       api('GET', '/jobs/mine').catch(() => []),
     ]);
+    // ดึง candidates ทุกงาน (ใช้กับ AI candidates, Total Hired, Total Spent, Quick Roster)
+    const jobCands = await Promise.all((jobs||[]).map(j =>
+      api('GET', `/jobs/${j.id}/candidates`).then(cs => ({ job:j, cands:cs||[] })).catch(() => ({ job:j, cands:[] }))
+    ));
+    const HIRED_STATES = ['hired','checked_in','working','completed','verified'];
+    let totalHired = 0, totalSpent = 0;
+    jobCands.forEach(({cands}) => cands.forEach(c => {
+      if (HIRED_STATES.includes(c.status)) totalHired++;
+      if (c.paid_amount) totalSpent += Number(c.paid_amount);
+    }));
 
     const companyName = empProfile?.company_name || 'Employer';
     greetEl.innerHTML = `${t('hello_prefix')} <strong>${esc(companyName)}</strong> 👋`;
 
     const empVerified = empProfile?.verified_status === 'verified';
     headerEl.innerHTML = `
-      <div style="display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px">
+      <div style="display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;flex-wrap:wrap">
         <div class="avatar" style="width:52px;height:52px;font-size:18px">${esc(dashInitials(companyName))}</div>
-        <div style="flex:1;min-width:0">
+        <div style="flex:1;min-width:150px">
           <div style="font-size:17px;font-weight:700">${t('hello_prefix')} ${esc(companyName)} 👋</div>
-          ${empVerified ? `<div style="margin-top:6px"><span class="badge badge-green" style="font-size:10px">✅ Verified Employer</span></div>` : ''}
+          <div style="margin-top:6px">${empVerified ? `<span class="badge badge-green" style="font-size:10px">✓ Verified Employer</span>` : `<span class="badge badge-warn" style="font-size:10px">ยังไม่ Verified</span>`}</div>
         </div>
+        <button class="btn btn-primary" onclick="showPage('postjob')" style="white-space:nowrap">+ โพสต์งานใหม่</button>
       </div>`;
 
-    const openJobs   = (jobs||[]).filter(j => j.status === 'open').length;
-    const filledJobs = (jobs||[]).filter(j => j.status === 'filled').length;
-    const totalSlotsFilled = (jobs||[]).reduce((s,j) => s + (j.slots_filled||0), 0);
+    const openJobs = (jobs||[]).filter(j => j.status === 'open').length;
 
     statsEl.innerHTML = `
       <div class="stat" style="border-left:3px solid var(--accent2)">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div class="stat-num">${openJobs}</div>
-          <span style="font-size:18px">📋</span>
+          <span style="color:var(--accent2);display:inline-flex">${ico('doc',18)}</span>
         </div>
-        <div class="stat-label">${t('stat_open_jobs')}</div>
+        <div class="stat-label">งานที่เปิดรับ (Active Posts)</div>
       </div>
       <div class="stat" style="border-left:3px solid var(--accent)">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div class="stat-num">${totalSlotsFilled}</div>
-          <span style="font-size:18px">🤝</span>
+          <div class="stat-num">${totalHired}</div>
+          <span style="color:var(--accent);display:inline-flex">${ico('users',18)}</span>
         </div>
-        <div class="stat-label">${t('stat_total_hired')}</div>
+        <div class="stat-label">จ้างทั้งหมด (Total Hired)</div>
       </div>
-      <div class="stat" style="border-left:3px solid var(--accent)">
+      <div class="stat" style="border-left:3px solid var(--warn)">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div class="stat-num">${filledJobs}</div>
-          <span style="font-size:18px">📁</span>
+          <div class="stat-num" style="font-size:22px">฿${totalSpent.toLocaleString()}</div>
+          <span style="color:var(--warn);display:inline-flex">${ico('money',18)}</span>
         </div>
-        <div class="stat-label">${t('stat_filled_jobs')}</div>
+        <div class="stat-label">จ่ายไปแล้ว (Total Spent)</div>
       </div>`;
 
-    // jobs with pending applicants
-    const activeJobsWithApps = (jobs||[])
-      .filter(j => j.status === 'open' && (j.slots_available - j.slots_filled) > 0)
-      .slice(0, 3);
-
-    const jobsHtml = activeJobsWithApps.length ? `
-      <div class="card" style="border-color:rgba(0,153,255,.25)">
-        <div style="font-size:11px;color:var(--accent2);font-family:'IBM Plex Mono',monospace;margin-bottom:10px;letter-spacing:.06em">🔵 ${t('open_jobs_section')} (${openJobs})</div>
-        ${activeJobsWithApps.map(j => {
-          const pct = j.slots_available > 0 ? Math.round((j.slots_filled / j.slots_available) * 100) : 0;
-          return `
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer"
-               onclick="loadCandidates('${j.id}','${esc(j.title)}')">
-            <div style="min-width:0">
-              <div style="font-weight:600;font-size:14px">${esc(j.title)}</div>
-              <div style="font-size:12px;color:var(--muted);margin-top:2px">฿${j.daily_wage_rate}/วัน · ${esc(j.location_name||'')}</div>
-            </div>
-            <div style="text-align:right;min-width:80px;flex-shrink:0">
-              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${j.slots_filled}/${j.slots_available} ${t('people_unit')}</div>
-              <div style="height:5px;background:var(--surface2);border-radius:3px;overflow:hidden">
-                <div style="height:100%;width:${pct}%;background:var(--accent2)"></div>
+    // ── LEFT: งานด่วน + AI Ranked Candidates ──
+    const urgentJobs = jobCands.filter(({job}) => job.status === 'open' && (job.slots_available - job.slots_filled) > 0).slice(0,3);
+    const urgentHtml = urgentJobs.length ? urgentJobs.map(({job, cands}) => {
+      const pend = cands.filter(c => ['applied','shortlisted'].includes(c.status)).sort((a,b)=>b.match_score-a.match_score).slice(0,3);
+      return `<div class="card" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px">
+          <div style="min-width:0"><div style="font-weight:700;font-size:15px">${esc(job.title)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:5px">${ico('pin')} ${esc(job.location_name||'-')} · ฿${job.daily_wage_rate}${t('per_day')}</div></div>
+          <span class="badge badge-warn" style="flex-shrink:0">กำลังหาคน</span>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:10px">
+          <div style="font-size:11px;color:var(--accent2);font-weight:600;margin-bottom:6px">AI Ranked Candidates (${pend.length})</div>
+          ${pend.length ? pend.map(c => `
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 0">
+              <div class="avatar" style="width:34px;height:34px;font-size:13px;flex-shrink:0">${esc((c.full_name||'?').charAt(0))}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.full_name)}</div>
+                <div style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px">${c.review_summary?`<span style="color:#f5b301;display:inline-flex">${ico('star',11)}</span>${c.review_summary.avg_score.toFixed(1)} · `:''}ห่าง ${c.distance_km} กม.</div>
               </div>
-            </div>
-          </div>`;}).join('')}
-        <button class="btn btn-secondary btn-sm" onclick="showPage('myjobs')" style="margin-top:12px">${t('manage_all_jobs')}</button>
-      </div>` : `
-      <div class="alert alert-info">
-        💡 ${t('jobs_empty')} — <span style="cursor:pointer;text-decoration:underline" onclick="showPage('postjob')">${t('jobs_post_first')}</span>
+              <div style="text-align:right;flex-shrink:0">
+                <div style="font-size:11px;font-weight:700;color:${c.match_score>=80?'var(--accent)':'var(--warn)'}">${Math.round(c.match_score)}% Match</div>
+                <button class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 12px;margin-top:4px" onclick="dashHire('${c.application_id}',this)">จ้างทันที</button>
+              </div>
+            </div>`).join('') : `<div style="font-size:12px;color:var(--muted);padding:4px 0">ยังไม่มีผู้สมัคร</div>`}
+        </div>
       </div>`;
+    }).join('') : `<div class="alert alert-info">💡 ${t('jobs_empty')} — <span style="cursor:pointer;text-decoration:underline" onclick="showPage('postjob')">${t('jobs_post_first')}</span></div>`;
+
+    // ── RIGHT: Quick Live Roster (reuse roster kind) ──
+    const rosterRows = [];
+    jobCands.forEach(({job, cands}) => cands.forEach(c => { const k = _rosterKind(c); if (k) rosterRows.push({...c, job_title:job.title, kind:k}); }));
+    rosterRows.sort((a,b)=>_rosterRank(a.kind)-_rosterRank(b.kind));
+    const KIND_META = { ghosting:['#ff4757','ยังไม่มา'], working:['#00e5a0','ทำงาน'], checked_in:['#0099ff','เช็คอิน'], upcoming:['#6b7a94','รอ'], completed:['#00e5a0','เสร็จ'], unpaid:['#f59e0b','ค้างจ่าย'] };
+    const kc = k => rosterRows.filter(r=>r.kind===k).length;
+    const quickRoster = `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-weight:700;font-size:15px;display:flex;align-items:center;gap:6px">${ico('users')} Quick Live Roster</div>
+        <span style="font-size:12px;color:var(--accent2);cursor:pointer" onclick="showPage('roster')">ดูทั้งหมด →</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:${rosterRows.length?'12px':'0'}">
+        ${['ghosting','working','checked_in','upcoming'].map(k=>{const m=KIND_META[k];const n=kc(k);return n?`<span style="background:${m[0]}1a;color:${m[0]};padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600">${m[1]} ${n}</span>`:''}).join('')}
+      </div>
+      ${rosterRows.length ? rosterRows.slice(0,4).map(r=>{const m=KIND_META[r.kind]||['#6b7a94',r.kind];return `
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border)">
+          <div style="min-width:0"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.full_name)}</div><div style="font-size:11px;color:var(--muted)">${esc(r.job_title)}</div></div>
+          <span style="background:${m[0]}1a;color:${m[0]};padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;flex-shrink:0">${m[1]}</span>
+        </div>`;}).join('') : `<div style="font-size:12px;color:var(--muted);text-align:center;padding:14px 0">ยังไม่มีพนักงานในบอร์ดวันนี้</div>`}
+    </div>`;
 
     // employer verification status bar (verified แสดงไว้ใน header bar แล้ว ไม่ต้องซ้ำ)
     const verifyStatus = empProfile ? (
@@ -3180,18 +3208,9 @@ async function loadDashboard() {
 
     contentEl.innerHTML = `
       ${verifyNudge}
-      ${jobsHtml}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="card" style="cursor:pointer;border-color:rgba(0,153,255,.3);padding:20px" onclick="showPage('postjob')">
-          <div style="font-size:28px;margin-bottom:8px">➕</div>
-          <div style="font-weight:700;font-size:15px">${t('dash_post_job')}</div>
-          <div style="color:var(--muted);font-size:12px;margin-top:4px">${t('card_post_sub')}</div>
-        </div>
-        <div class="card" style="cursor:pointer;padding:20px" onclick="showPage('myjobs')">
-          <div style="font-size:28px;margin-bottom:8px">📁</div>
-          <div style="font-weight:700;font-size:15px">${t('card_manage_title')}</div>
-          <div style="color:var(--muted);font-size:12px;margin-top:4px">${(jobs||[]).length} ${t('unit_jobs_total')}</div>
-        </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;margin-top:4px">
+        <div>${urgentHtml}</div>
+        <div>${quickRoster}</div>
       </div>`;
 
     if (!(jobs && jobs.length)) showOnboardModal('employer');
@@ -4309,6 +4328,13 @@ function toggleAppTheme() {
   localStorage.setItem('theme', next);
   if (typeof renderAuthThemeIcon === 'function') renderAuthThemeIcon();
   loadSettings();
+}
+
+// จ้างจาก dashboard (AI candidate) → hire + reload dashboard
+async function dashHire(appId, btn) {
+  btn.disabled = true; btn.textContent = '...';
+  try { await api('PATCH', `/applications/${appId}/decide`, { decision:'hired', note:'ยินดีต้อนรับ!' }); loadDashboard(); }
+  catch(e) { btn.disabled = false; btn.textContent = 'จ้างทันที'; alert(e.message); }
 }
 
 async function toggleAvailable(elm) {
