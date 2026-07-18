@@ -1648,7 +1648,7 @@ html, body { margin:0; padding:0; background:#0d0f12; }
     <input type="hidden" id="payJobId">
     <input type="hidden" id="payJobTitle">
     <div class="form-group">
-      <label>จำนวนเงิน (บาท)</label>
+      <label>จำนวนเงิน (บาท) <span style="font-size:11px;color:var(--muted);font-weight:400">— ตามค่าจ้างที่ตกลง (แก้ไม่ได้)</span></label>
       <input type="number" id="payAmount" placeholder="เช่น 600" min="1" step="1"
         style="width:100%;box-sizing:border-box;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;margin-top:4px">
     </div>
@@ -4176,7 +4176,7 @@ function renderRosterRow(r) {
     return `<div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px">
         <div style="font-weight:600;font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${name} ${pill('var(--accent)','#0d0f12','Completed',false)}</div>
-        <button class="btn btn-primary btn-sm" onclick="rosterVerifyPay('${r.application_id}','${r.job_id}','${esc(r.job_title)}',this)" style="display:inline-flex;align-items:center;gap:6px">${ico('wallet')} ยืนยันจบ & จ่าย (฿${r.pay||0})</button>
+        <button class="btn btn-primary btn-sm" onclick="rosterVerifyPay('${r.application_id}','${r.job_id}','${esc(r.job_title)}',${r.pay||0},this)" style="display:inline-flex;align-items:center;gap:6px">${ico('wallet')} ยืนยันจบ & จ่าย (฿${r.pay||0})</button>
       </div>
       <div style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px">${ico('checkcircle')} ทำงาน ${hrs} ชม. (เสร็จ ${_fmtHM(r.work_ended_at)} น.)</div></div>`; }
 
@@ -4188,7 +4188,7 @@ function renderRosterRow(r) {
         </div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           ${pill('rgba(245,158,11,.15)','#f59e0b', ico('warn')+' ค้างจ่าย (฿'+(r.pay||0)+')', false)}
-          <button class="btn btn-secondary btn-sm" onclick="openPayModal('${r.application_id}','${r.job_id}','${esc(r.job_title)}')" style="color:#f59e0b;border-color:#f59e0b">จ่ายเลย</button>
+          <button class="btn btn-secondary btn-sm" onclick="openPayModal('${r.application_id}','${r.job_id}','${esc(r.job_title)}',${r.pay||0})" style="color:#f59e0b;border-color:#f59e0b">จ่ายเลย</button>
         </div>
       </div></div>`;
   return '';
@@ -4213,9 +4213,9 @@ async function markNoShow(appId, btn) {
   catch(e) { btn.disabled = false; alert(e.message); }
 }
 
-async function rosterVerifyPay(appId, jobId, jobTitle, btn) {  // verify + เปิด modal จ่ายทันที
+async function rosterVerifyPay(appId, jobId, jobTitle, amount, btn) {  // verify + เปิด modal จ่ายทันที
   btn.disabled = true; btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>';
-  try { await api('POST', `/applications/${appId}/verify`); openPayModal(appId, jobId, jobTitle); loadRoster(); }
+  try { await api('POST', `/applications/${appId}/verify`); openPayModal(appId, jobId, jobTitle, amount); loadRoster(); }
   catch(e) { btn.disabled = false; alert(e.message); }
 }
 
@@ -4270,7 +4270,7 @@ async function loadMyJobs() {
           </button>
         </div>` : ''}
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
-          <button class="btn btn-primary btn-sm" data-jid="${esc(j.id)}" data-jtitle="${esc(j.title)}" onclick="loadCandidates(this.dataset.jid,this.dataset.jtitle)" style="display:inline-flex;align-items:center;gap:6px">${ico('users')} ${t('jobs_view_cands')}</button>
+          <button class="btn btn-primary btn-sm" data-jid="${esc(j.id)}" data-jtitle="${esc(j.title)}" data-jwage="${j.daily_wage_rate||0}" onclick="loadCandidates(this.dataset.jid,this.dataset.jtitle,this.dataset.jwage)" style="display:inline-flex;align-items:center;gap:6px">${ico('users')} ${t('jobs_view_cands')}</button>
           ${j.status==='open' ? `<button class="btn btn-danger btn-sm" onclick="closeJob('${j.id}')">${t('jobs_close')}</button>` : ''}
           ${j.status==='closed' ? `<button class="btn btn-secondary btn-sm" onclick="reopenJob('${j.id}')">${t('jobs_reopen')}</button>` : ''}
         </div>
@@ -4346,7 +4346,7 @@ async function reopenJob(jobId) {
   } catch(e) { alert(e.message); }
 }
 
-async function loadCandidates(jobId, jobTitle) {
+async function loadCandidates(jobId, jobTitle, jobWage) {
   const el = document.getElementById('myJobsContent');
   el.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
   try {
@@ -4415,13 +4415,13 @@ async function loadCandidates(jobId, jobTitle) {
             ${c.status === 'completed' ? `
               <button class="btn btn-primary btn-sm" onclick="doVerify('${c.application_id}',this)">${t('cand_verify_btn')}</button>
               <button class="btn btn-secondary btn-sm" style="font-size:11px;color:#e65100;border-color:#e65100" onclick="doDispute('${c.application_id}',this)">${t('cand_dispute_btn')}</button>
-              ${(!c.payment_status || c.payment_status === 'unpaid') ? `<button class="btn btn-secondary btn-sm" style="font-size:11px;color:var(--accent2);border-color:var(--accent2)" onclick="openPayModal('${c.application_id}','${jobId}','${esc(jobTitle)}')">${t('pay_btn')}</button>` : ''}
+              ${(!c.payment_status || c.payment_status === 'unpaid') ? `<button class="btn btn-secondary btn-sm" style="font-size:11px;color:var(--accent2);border-color:var(--accent2)" onclick="openPayModal('${c.application_id}','${jobId}','${esc(jobTitle)}',${jobWage||0})">${t('pay_btn')}</button>` : ''}
               ${c.payment_status === 'paid_pending' ? `<span class="badge badge-warn" style="font-size:10px">💸 ${t('pay_pending_badge')}</span>` : ''}
               ${c.payment_status === 'paid_confirmed' ? `<span class="badge badge-green" style="font-size:10px">${t('pay_confirmed_badge')}</span>` : ''}
               ${c.payment_status === 'payment_disputed' ? `<span class="badge badge-danger" style="font-size:10px">${t('pay_disputed_badge')}</span>` : ''}` : ''}
             ${c.status === 'verified' ? `
               <span class="badge badge-green" style="font-size:10px">${t('cand_success')}</span>
-              ${(!c.payment_status || c.payment_status === 'unpaid') ? `<button class="btn btn-secondary btn-sm" style="font-size:11px;color:var(--accent2);border-color:var(--accent2)" onclick="openPayModal('${c.application_id}','${jobId}','${esc(jobTitle)}')">${t('pay_btn')}</button>` : ''}
+              ${(!c.payment_status || c.payment_status === 'unpaid') ? `<button class="btn btn-secondary btn-sm" style="font-size:11px;color:var(--accent2);border-color:var(--accent2)" onclick="openPayModal('${c.application_id}','${jobId}','${esc(jobTitle)}',${jobWage||0})">${t('pay_btn')}</button>` : ''}
               ${c.payment_status === 'paid_pending' ? `<span class="badge badge-warn" style="font-size:10px">💸 ${t('pay_pending_badge')}</span>` : ''}
               ${c.payment_status === 'paid_confirmed' ? `<span class="badge badge-green" style="font-size:10px">${t('pay_confirmed_badge')}</span>` : ''}
               ${c.payment_status === 'payment_disputed' ? `<span class="badge badge-danger" style="font-size:10px">${t('pay_disputed_badge')}</span>` : ''}` : ''}
@@ -4849,11 +4849,24 @@ function payMethodChanged() {
   document.getElementById('paySlipGroup').style.display = method === 'transfer' ? 'block' : 'none';
 }
 
-function openPayModal(appId, jobId, jobTitle) {
+function openPayModal(appId, jobId, jobTitle, amount) {
   document.getElementById('payAppId').value   = appId;
   document.getElementById('payJobId').value   = jobId   || '';
   document.getElementById('payJobTitle').value = jobTitle || '';
-  document.getElementById('payAmount').value  = '';
+  const amtEl = document.getElementById('payAmount');
+  if (amount != null && amount !== '' && Number(amount) > 0) {
+    amtEl.value = amount;               // lock ตามค่าจ้างที่ตกลงในประกาศงาน
+    amtEl.readOnly = true;
+    amtEl.style.opacity = '.65';
+    amtEl.style.cursor = 'not-allowed';
+    amtEl.title = 'ค่าจ้างตามที่ตกลงในประกาศงาน — แก้ไขไม่ได้';
+  } else {
+    amtEl.value = '';
+    amtEl.readOnly = false;
+    amtEl.style.opacity = '';
+    amtEl.style.cursor = '';
+    amtEl.title = '';
+  }
   const cashRadio = document.querySelector('input[name="payMethod"][value="cash"]');
   if (cashRadio) cashRadio.checked = true;
   document.getElementById('paySlipGroup').style.display = 'none';
