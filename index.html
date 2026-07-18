@@ -1238,6 +1238,11 @@ html, body { margin:0; padding:0; background:#0d0f12; }
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
         <span>โปรไฟล์บริษัท</span>
       </div>
+      <!-- SETTINGS (ทั้ง 2 role — ไม่อยู่ใน role array = แสดงเสมอ) -->
+      <div class="nav-item" onclick="showPage('settings')" id="nav-settings">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>ตั้งค่า</span>
+      </div>
       <!-- ADMIN NAV -->
       <div class="nav-section" id="navAdminSection">ADMIN</div>
       <div class="nav-item" onclick="showPage('admin-stats')" id="nav-admin-stats">
@@ -1507,6 +1512,14 @@ html, body { margin:0; padding:0; background:#0d0f12; }
         <div class="page-title">โปรไฟล์บริษัท</div>
         <div class="page-sub">ข้อมูลบริษัทและสถานที่ทำงาน — โพสต์งานจะใช้ที่อยู่/พิกัดนี้อัตโนมัติ ไม่ต้องกรอกซ้ำ</div>
         <div id="employerProfileContent"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div style="padding:32px;max-width:640px;margin:0 auto">
+        <div class="page-title">การตั้งค่า</div>
+        <div id="settingsContent"></div>
       </div>
     </div>
 
@@ -2467,6 +2480,7 @@ function showPage(name) {
 
   stopRosterPolling();            // ออกจากหน้าไหนก็หยุด timer/poll ของ roster ก่อน
   if (name === 'roster')          loadRoster();
+  if (name === 'settings')        loadSettings();
   if (name === 'myapps')          loadMyApps();
   if (name === 'myjobs')          loadMyJobs();
   if (name === 'workerprofile')   loadWorkerProfile();
@@ -4035,6 +4049,14 @@ function ico(n, sz) {
     userminus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/>',
     checkcircle:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
     navigation:'<polygon points="3 11 22 2 13 21 11 13 3 11"/>',
+    chevron:'<polyline points="9 18 15 12 9 6"/>',
+    key:'<path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3"/>',
+    briefcase:'<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+    globe:'<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+    info:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+    logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+    trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+    sun:'<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>',
     user:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
     check:'<polyline points="20 6 9 17 4 12"/>',
     x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
@@ -4217,6 +4239,70 @@ async function rosterVerifyPay(appId, jobId, jobTitle, amount, btn) {  // verify
   btn.disabled = true; btn.innerHTML = '<span class="loading" style="width:12px;height:12px"></span>';
   try { await api('POST', `/applications/${appId}/verify`); openPayModal(appId, jobId, jobTitle, amount); loadRoster(); }
   catch(e) { btn.disabled = false; alert(e.message); }
+}
+
+// ─── SETTINGS (role-aware) ─────────────────────────────────
+async function loadSettings() {
+  const el = document.getElementById('settingsContent');
+  if (!el) return;
+  const isW = userRole === 'worker';
+  const langLabel = _lang === 'en' ? 'English' : 'ไทย';
+  let availOn = true;
+  if (isW) { try { const p = await api('GET','/workers/profile/me'); availOn = p.is_available !== false; } catch(_e){} }
+
+  const chev = `<span style="color:var(--muted);display:inline-flex">${ico('chevron')}</span>`;
+  const soon = `<span style="font-size:10px;background:rgba(255,255,255,.07);color:var(--muted);padding:2px 8px;border-radius:10px;margin-left:8px">เร็วๆ นี้</span>`;
+  const gTitle = tt => `<div style="font-size:12px;color:var(--muted);font-weight:600;margin:22px 0 8px">${tt}</div>`;
+  const gOpen  = danger => `<div style="background:var(--card);border:1px solid ${danger?'rgba(255,71,87,.25)':'var(--border)'};border-radius:12px;overflow:hidden">`;
+  const gClose = `</div>`;
+  const item = (ic, label, o={}) => {
+    const col = o.danger ? 'var(--danger)' : 'var(--text)';
+    const icCol = o.danger ? 'var(--danger)' : 'var(--muted)';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-top:1px solid var(--border);${o.disabled?'opacity:.5':'cursor:pointer'}"${(!o.disabled&&o.onclick)?` onclick="${o.onclick}"`:''}>
+      <div style="display:flex;align-items:center;gap:12px;font-size:14px;color:${col}"><span style="color:${icCol};display:inline-flex">${ico(ic)}</span>${label}</div>
+      <div style="display:flex;align-items:center">${o.right||''}</div></div>`;
+  };
+  const sw = `<span onclick="event.stopPropagation();toggleAvailable(this)" data-on="${availOn}" style="width:42px;height:24px;border-radius:12px;background:${availOn?'var(--accent)':'rgba(255,255,255,.15)'};position:relative;cursor:pointer;transition:.2s;flex-shrink:0;display:inline-block"><span style="position:absolute;top:3px;left:${availOn?'21px':'3px'};width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s"></span></span>`;
+
+  let h = '';
+  h += gTitle(isW?'บัญชีของฉัน':'บัญชีร้านค้า / ธุรกิจ') + gOpen()
+    + item(isW?'user':'box', isW?'โปรไฟล์ส่วนตัว':'โปรไฟล์บริษัท', {right:chev, onclick:`showPage('${isW?'workerprofile':'employerprofile'}')`})
+    + item('phone', 'ข้อมูลติดต่อ & บัญชี', {right:chev, onclick:`showPage('${isW?'workerprofile':'employerprofile'}')`})
+    + item('key', `เปลี่ยนรหัสผ่าน ${soon}`, {right:chev, disabled:true}) + gClose;
+  if (isW) {
+    h += gTitle('การทำงาน') + gOpen()
+      + item('briefcase', 'พร้อมรับงาน (Available)', {right:sw})
+      + item('clock', 'ประวัติการทำงาน', {right:chev, onclick:`showPage('myapps')`})
+      + item('bell', `การแจ้งเตือน ${soon}`, {right:chev, disabled:true}) + gClose;
+  } else {
+    h += gTitle('ประวัติการจ้างงาน') + gOpen()
+      + item('doc', 'ประกาศงานของฉัน', {right:chev, onclick:`showPage('myjobs')`})
+      + item('bell', `การแจ้งเตือน ${soon}`, {right:chev, disabled:true}) + gClose;
+  }
+  h += gTitle('การแสดงผล') + gOpen()
+    + item('sun', `โหมดสว่าง / มืด ${soon}`, {right:chev, disabled:true})
+    + item('globe', 'เปลี่ยนภาษา (Language)', {right:`<span style="color:var(--accent);font-weight:600;font-size:13px">${langLabel}</span>`, onclick:`toggleLangSetting()`}) + gClose;
+  h += gTitle('ความช่วยเหลือ & นโยบาย') + gOpen()
+    + item('doc', 'ข้อตกลงและเงื่อนไข (Terms)', {right:chev, onclick:`alert('หน้านี้กำลังจัดทำ')`})
+    + item('shield', 'นโยบายความเป็นส่วนตัว (Privacy)', {right:chev, onclick:`alert('หน้านี้กำลังจัดทำ')`})
+    + item('info', 'เกี่ยวกับเรา (About Us)', {right:chev, onclick:`alert('We\\'re Hired · BKK MVP')`}) + gClose;
+  h += gTitle('ตั้งค่าขั้นสูง') + gOpen(true)
+    + item('logout', 'ออกจากระบบ', {onclick:`doLogout()`, danger:true})
+    + item('trash', `ลบบัญชีผู้ใช้ ${soon}`, {disabled:true, danger:true}) + gClose;
+  h += `<div style="text-align:center;color:var(--muted);font-size:12px;margin:24px 0">We're Hired · BKK MVP · v1.0.0-beta</div>`;
+  el.innerHTML = h;
+}
+
+function toggleLangSetting() { setLang(_lang === 'en' ? 'th' : 'en'); loadSettings(); }
+
+async function toggleAvailable(elm) {
+  const next = elm.dataset.on !== 'true';
+  try {
+    await api('PATCH','/workers/profile',{ is_available: next });
+    elm.dataset.on = String(next);
+    elm.style.background = next ? 'var(--accent)' : 'rgba(255,255,255,.15)';
+    elm.firstElementChild.style.left = next ? '21px' : '3px';
+  } catch(e) { alert(e.message); }
 }
 
 // ─── MY JOBS ───────────────────────────────────────────────
