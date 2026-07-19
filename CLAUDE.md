@@ -37,10 +37,12 @@
 
 ## 🌐 URLs & Infrastructure
 
+> ⚠️ Backend ย้าย Railway → **Render** (`we-re-hire.onrender.com`) แล้ว (2026-06-26)
+
 | Service | URL |
 |---------|-----|
 | Frontend | https://wearehiredmvp.vi-nutthaphat.workers.dev |
-| Backend | https://web-production-1db39.up.railway.app |
+| Backend | https://we-re-hire.onrender.com |
 | GitHub | https://github.com/abc147258/We-re-Hire |
 | Supabase | wexupoegrynxbhdzioym (ap-northeast-1 Tokyo) |
 
@@ -104,6 +106,24 @@ ratio = float(worker_rate) / float(job_rate)
 # ❌ ผิด — TypeError: decimal.Decimal / float
 ratio = worker_rate / job_rate
 ```
+
+### 5. 🔴 Render free tier หลับ → cron ตายทั้งหมด (ยืนยัน 2026-07-19)
+
+**อาการที่หลอกให้ debug ผิดจุด:** "งานโพสต์แล้วค้างเกิน 48 ชม. ไม่ปิดเอง" → **โค้ด `check_expired_jobs` ถูกต้องทุกบรรทัด** ปัญหาอยู่ที่ cron ไม่เคยรัน
+
+**หลักฐาน:** Render dashboard → ค้น log `[check_expired_jobs]` ย้อน 7 วัน = **No matching logs**
+
+**สาเหตุ:** Render free tier spin down หลังไม่มี traffic ~15 นาที → process ดับ → `AsyncIOScheduler` ที่รันใน process เดียวกับ FastAPI ดับตาม → interval 30 นาทีไม่มีทางครบรอบ
+
+**กระทบ cron ทั้ง 4 ตัว (main.py ~626-630):**
+- `check_noshow_workers` (5 นาที) → **no-show detection ตาย** ← จุดขาย anti-ghosting เงียบสนิท
+- `auto_verify_completed_jobs` (30 นาที) → ไม่ auto-verify
+- `check_expired_jobs` (30 นาที) → งานค้างไม่ปิด
+- `send_d1_reminders` → ไม่เตือนล่วงหน้า
+
+**แก้:** Render Starter $7/mo (always-on, ไม่ต้องแตะโค้ด) **หรือ** keep-alive ping `/health` ทุก 5 นาที (UptimeRobot / cron-job.org — ดู `launch/REVISED_PLAN.md` Phase 0)
+
+> ⚠️ **ห้ามไปแก้โค้ด cron เพื่อ "ซ่อม" อาการนี้** — โค้ดไม่ผิด · เช็ค log ก่อนเสมอว่า cron รันจริงไหม
 
 ---
 
@@ -239,6 +259,25 @@ Worker กด complete (ชม. ไม่ครบ 90%)
 
 > ยังไม่ implement — เป็น moat หลักของ WeHire
 
+### 💵 Matching Fee 6% — โมเดลที่ใช้ (ตัดสินใจ 2026-06-22)
+
+**`fee_bearer = worker` (default, ทำเป็น config สลับได้)** — หัก 6% จากฝั่ง worker, employer จ่ายเท่าค่าจ้างที่โพสต์เสมอ
+
+**กรณี A — Worker ทำครบ (ratio = 1.0) → platform ได้ 6% (รายได้หลัก Stream 1):**
+```
+employer จ่าย     = 600  (เท่าที่โพสต์)
+matching_fee 6%   = 600 x 6% = 36       <- หักจาก worker
+worker_payout_net = 600 - 36 = 564
+platform          = 36
+employer_refund   = 0
+Balance: 564 + 36 = 600
+```
+- **Presentation:** โชว์ worker เป็นค่าจ้าง "สุทธิ" → "งานนี้ได้ 564" (อย่า anchor `600 - 36` บนการ์ดงาน = สร้าง loss-perception) · เปิดเผย fee 6% ใน T&C/โปรไฟล์ไว้เพื่อ trust
+- **`fee_bearer = employer`** (ทางเลือกไว้ A/B test): employer จ่าย 636, worker ได้เต็ม 600, platform 36 — เศรษฐกิจใกล้เคียงกัน (worker gross-up) ต่างที่ perception/acquisition
+- **ทำไม worker-side เป็น default:** เก็บ fee ชัวร์ (อยู่ใน payout) + employer จ่าย flat รู้สึก fair + worker ไม่มี anchor baseline · ตลาดจริงจะตอบว่าฝั่งไหนดีกว่า → switch ได้ 1 บรรทัด
+
+**กรณี B — Worker ไม่ครบ (dispute) → platform ได้แค่ penalty 10% (ไม่เก็บ 6% เพราะงานไม่ส่งมอบ):**
+
 **Pro-rata สูตร (เมื่อ Dispute):**
 ```
 total_locked      = ค่าจ้างทั้งหมดที่ lock ไว้
@@ -253,7 +292,7 @@ employer_refund_net  = total_locked × (1 - ratio)     (180)
 ```
 
 **Edge cases:**
-- ratio = 1.0 → Worker ได้เต็ม, employer คืน 0, platform_fee = 0
+- ratio = 1.0 → ไม่ dispute = กรณี A: penalty = 0 แต่ **matching fee 6% ยังเก็บอยู่** (worker 564, platform 36)
 - ratio = 0.0 → Worker ได้ 0, employer คืนเต็ม, platform_fee = 0
 - Worker ออกเพราะ employer (สั่งหยุด/อันตราย) → admin กำหนด ratio = 1.0
 
@@ -378,7 +417,7 @@ CORS_ORIGINS  = ...,https://[old-url],https://[new-url]   ← เพิ่ม �
 
 ### 7. Verify ด้วย curl
 ```bash
-curl -I -X OPTIONS "https://web-production-1db39.up.railway.app/auth/google/url" \
+curl -I -X OPTIONS "https://we-re-hire.onrender.com/auth/google/url" \
   -H "Origin: https://[new-url]" \
   -H "Access-Control-Request-Method: GET"
 ```
@@ -750,7 +789,7 @@ Push      : expo-notifications (FCM/APNs)
 
 **Environment:**
 ```
-API_URL = https://web-production-1db39.up.railway.app
+API_URL = https://we-re-hire.onrender.com
 (เหมือนกับ frontend ปัจจุบัน)
 ```
 
@@ -763,6 +802,33 @@ API_URL = https://web-production-1db39.up.railway.app
 - Security และ Cost-optimization ต้องคิดทุกครั้ง
 - ถ้าไม่แน่ใจ **ถามก่อน อย่า assume**
 - Founder ชื่อ **พี่** — เรียกแบบนี้เสมอ
+
+### 🔒 Working Agreements (ตกลงกัน 2026-07-19 — บังคับทุก session)
+
+**1. Production DB write — แบ่งตามความย้อนกลับได้**
+| ประเภท | ใครรัน |
+|---|---|
+| **เพิ่มของ** — INSERT reference data (categories, titles, zones) | Claude รันได้ · ถอนง่าย |
+| **DELETE / UPDATE ข้อมูลจริง / ALTER TYPE / DROP** | ❌ **Claude ห้ามรัน** → เขียน SQL ส่งให้พี่ไปรันใน Supabase เอง |
+
+> pattern เดิมของพี่คือ "Claude เขียน SQL → พี่รันเอง" — ให้กลับไป default แบบนั้นเมื่อไม่แน่ใจ
+
+**2. ถ้าพี่ทำงานคู่ขนาน (เช่นทำ mockup ไปด้วย) → ยื่น SQL ให้พี่รันเอง**
+อย่าเสนอรันให้ · bandwidth พี่แบ่งอยู่ = review ไม่ทัน · Claude ต้องยกการ์ดเอง ไม่ต้องรอพี่นึกออก
+
+**3. หลัง context compaction → ต้อง state-check ก่อนทำงานต่อ**
+สรุป **ตัวเลข / สถานะ / นิยามสำคัญ** ออกมาให้พี่ตรวจสั้นๆ ก่อน
+> เหตุผล: context เสื่อมไม่เท่ากัน — **รายละเอียด/ตัวเลขเสื่อมก่อน หลักการอยู่ทน** · เคสจริง: หลัง compact เขียน "20-30 pairs" ทั้งที่นิยามคือ "20-30 โรงแรมที่ repeat" แล้วมันฝังอยู่ในเอกสารหลาย turn
+
+**4. แยก "รู้จริง" กับ "เดา" ให้ชัดเสมอ**
+ห้ามพูดการเดาด้วยน้ำเสียงมั่นใจจนดูเหมือน insight · ถ้าไม่มีข้อมูลรองรับให้บอกตรงๆ ว่าเป็นสมมติฐาน
+> เคสจริง: Claude เคยฟันธงว่า "คนทำงานโรงแรมรายวันไม่ค่อยอยู่ในกลุ่มหางาน FB ไทย" — **นั่นคือการเดา ไม่มีข้อมูลรองรับ**
+
+**5. ของสำคัญ → เสนอ 2-3 ทางเลือก + tradeoff ไม่ใช่คำตอบเดียว**
+กันพี่ติดโหมด "อนุมัติสิ่งที่ Claude เสนอ" แทนที่จะได้ "เลือกจากทางที่มีจริง" · และบอกด้วยว่าตัดทางไหนทิ้งเพราะอะไร
+
+**6. เอกสารที่แก้หลายรอบ → อ่านทวนทั้งไฟล์ก่อนบอกว่าเสร็จ**
+AI-edited docs drift เงียบๆ ยิ่งแก้ยิ่ง drift
 
 ---
 
