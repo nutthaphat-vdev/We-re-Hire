@@ -1,9 +1,15 @@
-# Environment
+# ═══════════════════════════════════════════════════════════
+#  WeHire .gitignore
+#  แก้ล่าสุด 2026-07-19 — เพิ่ม local config / temp / log
+#  บรรทัดที่ comment ไว้ = "รอพี่ตัดสินใจ" ยังไม่มีผล · ลบ # ถ้าตกลง
+# ═══════════════════════════════════════════════════════════
+
+# ─── Secrets ────────────────────────────────────────────────
 .env
 *.env
 *.bak
 
-# Python
+# ─── Python ─────────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
@@ -16,23 +22,69 @@ venv/
 dist/
 build/
 
-# IDE
+# ─── IDE / OS ───────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# OS
 .DS_Store
 Thumbs.db
 
-# Wrangler build cache
-.wrangler/
+# ─── DB maintenance temp scripts + deleted-data backups ─────
+#     (มี user PII / password hash — ห้าม commit เด็ดขาด)
+_*.py
+_deleted_backup_*.json
 
-# Large binary files (not needed in repo)
+# ═══ เพิ่ม 2026-07-19 ═══════════════════════════════════════
+
+# ─── Claude / Cowork local state ────────────────────────────
+#     ⚠️ ตั้งใจ track ต่อ: CLAUDE.md · .claude/settings.json · .claude/hooks/
+#        ignore เฉพาะของเฉพาะเครื่อง
+.claude/settings.local.json
+.claude/*.lock
+
+# ─── Build cache / log ──────────────────────────────────────
+#     ⚠️ worker.js **ห้าม ignore** — เป็นไฟล์ Cloudflare Worker ที่ track อยู่ (1.5KB)
+.wrangler/
+*.log
+
+# ─── Temp / scratch ─────────────────────────────────────────
+temp/
+tmp/
+scratch/
+mcp_task.json
+mcp_watcher.py
+
+# ─── Binary ใหญ่ ────────────────────────────────────────────
 *.exe
 *.zip
 
-# DB maintenance temp scripts + deleted-data backups (contain user PII / password hashes — never commit)
-_*.py
-_deleted_backup_*.json
+# ═══ 🤔 รอตัดสินใจ — ลบ # ถ้าตกลง ══════════════════════════
+
+# [1] Mockup PNG ใน GeminiDesign (~1.8MB, 4 ไฟล์)
+#     ignore = repo เบา · แต่ไม่มี backup ภาพ mockup บน GitHub
+#     ผมเอียงไปทาง "ไม่ ignore" — 1.8MB ไม่หนักสำหรับ git และภาพ mockup หายแล้วทำใหม่ยาก
+# GeminiDesign/*.png
+
+# [2] GeminiDesign/Modularize_plan/ — ผลทดลองที่ตกลงว่าไม่ใช้ (สำเนา index.html 387KB)
+#     ผมเอียงไปทาง "ignore" — เป็นสำเนา index.html เวอร์ชันเก่าที่ regenerate ได้
+# GeminiDesign/Modularize_plan/
+
+# [3] index2.html (218KB) — สำเนา index.html ไม่ทราบที่มา
+#     แนะนำ: เปิดดูก่อนว่าคืออะไร แล้ว **ลบทิ้ง** ดีกว่า ignore
+#     (ignore ไว้ = ไฟล์ค้างในเครื่องตลอดไปโดยไม่มีใครรู้ว่าคืออะไร)
+# index2.html
+
+# [4] QA / test scripts — test_*.py, qa_*.py, debug_test.py
+#     ตรวจแล้ว **ไม่มี secret จริง** · มีแค่ test password ใช้แล้วทิ้ง "TestPass123!"
+#     และ API ชี้ production URL (we-re-hire.onrender.com) ไม่ใช่ credential
+#     ผมเอียงไปทาง "COMMIT ไว้" — มีค่าตอน regression test ก่อน pilot
+#     ⚠️ แต่ test_dispute.py + debug_test.py ยังชี้ Railway URL เก่า (web-production-03c5a...) ควรแก้ก่อน
+# test_*.py
+# qa_*.py
+# debug_test.py
+
+# [5] INDEX_MAP.md — generate ได้จาก `python tools/gen_map.py`
+#     ผมเอียงไปทาง "COMMIT ไว้" — session ใหม่จะได้อ่านแผนที่ทันทีโดยไม่ต้องรันสคริปต์
+#     ใช้ `python tools/gen_map.py --check` กันไฟล์เก่าค้างแทน
+# INDEX_MAP.md
