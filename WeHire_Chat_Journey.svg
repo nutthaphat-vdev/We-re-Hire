@@ -1,0 +1,99 @@
+<svg viewBox="0 0 900 632" xmlns="http://www.w3.org/2000/svg" font-family="Loma, 'DejaVu Sans', 'Noto Sans Thai', sans-serif">
+  <rect x="0" y="0" width="900" height="632" fill="#FFFFFF"/>
+
+  <text x="24" y="40" font-size="20" font-weight="700" fill="#14181c">WeHire · แชท (Chat) — User Journey</text>
+  <text x="24" y="64" font-size="13" fill="#6b7280">แชทเปิดเฉพาะ “คู่ที่จ้างกันแล้ว” — ล้อตาม Contact Lock เดิม</text>
+
+  <!-- ===== diagram ===== -->
+  <!-- box1 -->
+  <rect x="24" y="86" width="150" height="92" rx="10" fill="#F1F3F5" stroke="#DEE2E6"/>
+  <circle cx="46" cy="86" r="13" fill="#E9ECEF" stroke="#ADB5BD"/>
+  <text x="46" y="90" font-size="12" font-weight="700" text-anchor="middle" fill="#495057">1</text>
+  <text x="99" y="126" font-size="14" font-weight="700" text-anchor="middle" fill="#14181c">สมัครงาน</text>
+  <text x="99" y="148" font-size="11" text-anchor="middle" fill="#868E96">ยังไม่มีแชท</text>
+
+  <!-- box2 KEY -->
+  <rect x="194" y="86" width="150" height="92" rx="10" fill="#E6F7F1" stroke="#0CA678" stroke-width="2"/>
+  <circle cx="216" cy="86" r="13" fill="#0CA678" stroke="#0CA678"/>
+  <text x="216" y="90" font-size="12" font-weight="700" text-anchor="middle" fill="#FFFFFF">2</text>
+  <text x="269" y="126" font-size="14" font-weight="700" text-anchor="middle" fill="#14181c">จ้างแล้ว</text>
+  <text x="269" y="148" font-size="11" font-weight="700" text-anchor="middle" fill="#0A8F63">แชทเปิด + เบอร์โผล่</text>
+
+  <!-- box3 -->
+  <rect x="364" y="86" width="150" height="92" rx="10" fill="#F1F3F5" stroke="#DEE2E6"/>
+  <circle cx="386" cy="86" r="13" fill="#E9ECEF" stroke="#ADB5BD"/>
+  <text x="386" y="90" font-size="12" font-weight="700" text-anchor="middle" fill="#495057">3</text>
+  <text x="439" y="126" font-size="14" font-weight="700" text-anchor="middle" fill="#14181c">นัดแนะ</text>
+  <text x="439" y="148" font-size="11" text-anchor="middle" fill="#868E96">แต่งกาย · จุดนัด · ของ</text>
+
+  <!-- box4 -->
+  <rect x="534" y="86" width="150" height="92" rx="10" fill="#F1F3F5" stroke="#DEE2E6"/>
+  <circle cx="556" cy="86" r="13" fill="#E9ECEF" stroke="#ADB5BD"/>
+  <text x="556" y="90" font-size="12" font-weight="700" text-anchor="middle" fill="#495057">4</text>
+  <text x="609" y="126" font-size="14" font-weight="700" text-anchor="middle" fill="#14181c">วันงาน</text>
+  <text x="609" y="148" font-size="11" text-anchor="middle" fill="#868E96">เช็คอิน · ถึงแล้ว</text>
+
+  <!-- box5 -->
+  <rect x="704" y="86" width="150" height="92" rx="10" fill="#F1F3F5" stroke="#DEE2E6"/>
+  <circle cx="726" cy="86" r="13" fill="#E9ECEF" stroke="#ADB5BD"/>
+  <text x="726" y="90" font-size="12" font-weight="700" text-anchor="middle" fill="#495057">5</text>
+  <text x="779" y="126" font-size="14" font-weight="700" text-anchor="middle" fill="#14181c">จบงาน · รีวิว</text>
+  <text x="779" y="148" font-size="11" text-anchor="middle" fill="#868E96">แชท read-only</text>
+
+  <!-- arrows -->
+  <g stroke="#495057" stroke-width="2.2">
+    <line x1="176" y1="132" x2="189" y2="132"/><polygon points="192,132 185,128 185,136" fill="#495057" stroke="none"/>
+    <line x1="346" y1="132" x2="359" y2="132"/><polygon points="362,132 355,128 355,136" fill="#495057" stroke="none"/>
+    <line x1="516" y1="132" x2="529" y2="132"/><polygon points="532,132 525,128 525,136" fill="#495057" stroke="none"/>
+    <line x1="686" y1="132" x2="699" y2="132"/><polygon points="702,132 695,128 695,136" fill="#495057" stroke="none"/>
+  </g>
+
+  <!-- unlock note above box2 -->
+  <polygon points="269,74 263,66 275,66" fill="#0CA678"/>
+  <text x="285" y="80" font-size="11" font-weight="700" fill="#0A8F63">จ้าง = ปลดล็อกแชท</text>
+
+  <!-- chat lane -->
+  <text x="24" y="200" font-size="12" font-weight="700" fill="#495057">สถานะห้องแชท</text>
+  <rect x="24" y="208" width="150" height="32" rx="8" fill="#F1F3F5" stroke="#DEE2E6"/>
+  <circle cx="70" cy="224" r="4" fill="#ADB5BD"/>
+  <text x="104" y="228" font-size="11" text-anchor="middle" fill="#868E96">ปิด</text>
+
+  <rect x="194" y="208" width="490" height="32" rx="8" fill="#E6F7F1" stroke="#0CA678" stroke-width="1.6"/>
+  <text x="439" y="228" font-size="11.5" font-weight="700" text-anchor="middle" fill="#0A8F63">แชทเปิด — คุยได้เฉพาะคู่ที่จ้างกัน (+ admin ตอน dispute)</text>
+
+  <rect x="704" y="208" width="150" height="32" rx="8" fill="#F1F3F5" stroke="#DEE2E6"/>
+  <text x="779" y="228" font-size="11" text-anchor="middle" fill="#868E96">read-only</text>
+
+  <!-- legend -->
+  <rect x="24" y="252" width="12" height="12" rx="3" fill="#E6F7F1" stroke="#0CA678" stroke-width="1.6"/>
+  <text x="42" y="262" font-size="11" fill="#6b7280">แชทใช้งานได้ (คู่ที่จ้าง)</text>
+  <rect x="240" y="252" width="12" height="12" rx="3" fill="#F1F3F5" stroke="#DEE2E6"/>
+  <text x="258" y="262" font-size="11" fill="#6b7280">ปิด / เก็บเป็นหลักฐาน (read-only)</text>
+
+  <line x1="24" y1="284" x2="876" y2="284" stroke="#E9ECEF" stroke-width="1"/>
+
+  <!-- ===== gotchas ===== -->
+  <text x="24" y="312" font-size="16" font-weight="700" fill="#14181c">สิ่งที่ต้องระวัง (สำหรับ SA)</text>
+
+  <circle cx="30" cy="335" r="4" fill="#0CA678"/>
+  <text x="42" y="339" font-size="12.5" font-weight="700" fill="#0A8F63">เฉพาะ WeHire — บริบทที่ต้องรู้</text>
+
+  <text x="24" y="361" font-size="13" font-weight="700" fill="#14181c">1. ขอบเขตแชทผูกกับ “การจ้าง”</text>
+  <text x="24" y="379" font-size="12" fill="#495057">1 ห้อง = 1 คู่ที่จ้างกัน (ผูก job_application) · เปิดตอน hired เท่านั้น · read-only หลัง verified · ไม่ใช่ open DM</text>
+
+  <text x="24" y="405" font-size="13" font-weight="700" fill="#14181c">2. แชท = หลักฐานตอน dispute</text>
+  <text x="24" y="423" font-size="12" fill="#495057">เก็บ log ไว้ · ห้าม hard-delete ตอนมี dispute · admin เข้าถึงเฉพาะตอนตัดสิน (+ log ว่าใครเปิดดู)</text>
+
+  <text x="24" y="449" font-size="13" font-weight="700" fill="#14181c">3. Platform bypass (ความเสี่ยงเชิงธุรกิจ)</text>
+  <text x="24" y="467" font-size="12" fill="#495057">อาจแลก LINE/เบอร์ในแชทแล้วหนีนอกแอป = เสีย fee 6% · MVP อย่าเพิ่ง police หนัก แต่ต้องรู้ว่ามีความเสี่ยงนี้</text>
+
+  <text x="24" y="493" font-size="13" font-weight="700" fill="#14181c">4. ต่อของเดิม ไม่สร้างใหม่</text>
+  <text x="24" y="511" font-size="12" fill="#495057">user_reports · user_blocks · notifications มีอยู่แล้ว → เคารพ block + ปุ่ม “รายงานข้อความ” + ยิง noti เข้าระบบเดิม</text>
+
+  <circle cx="30" cy="543" r="4" fill="#868E96"/>
+  <text x="42" y="547" font-size="12.5" font-weight="700" fill="#6b7280">ทั่วไป — แต่ผูกกับ stack เรา</text>
+
+  <text x="24" y="569" font-size="12" fill="#495057">Real-time: อยู่บน Supabase แล้ว → ใช้ Supabase Realtime (messages table + subscribe) ไม่ต้องตั้ง WebSocket เอง</text>
+  <text x="24" y="589" font-size="12" fill="#495057">PDPA: ข้อความ = ข้อมูลส่วนบุคคล ต้องมี retention + ระบุใน ToS · authz ราย row กันข้อความหลุดข้ามงาน</text>
+  <text x="24" y="609" font-size="12" fill="#495057">อย่า over-engineer: text-only ก่อน · ยังไม่ต้อง typing/presence/read-receipt · Realtime free tier พอ</text>
+</svg>

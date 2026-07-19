@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WeHire · Chat — User Journey</title>
+<style>
+  :root{
+    --ink:#14181c; --sec:#495057; --mut:#868e96; --line:#dee2e6;
+    --acc:#0ca678; --accInk:#0a7f5b; --accBg:#e6f7f1; --box:#f1f3f5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#fff;color:var(--ink);
+    font-family:"Leelawadee UI","Sarabun","Segoe UI",Tahoma,"Noto Sans Thai",sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  .sheet{max-width:900px;margin:0 auto;padding:32px 28px 40px;}
+  h1{font-size:24px;margin:0 0 4px;}
+  .sub{color:var(--mut);font-size:14px;margin:0 0 22px;}
+  svg{width:100%;height:auto;display:block;margin-bottom:8px;}
+  hr{border:0;border-top:1px solid #e9ecef;margin:24px 0 20px;}
+  h2{font-size:18px;margin:0 0 14px;}
+  .grp{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;margin:20px 0 10px;}
+  .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;}
+  .g1{color:var(--accInk)} .g1 .dot{background:var(--acc)}
+  .g2{color:var(--sec)} .g2 .dot{background:var(--mut)}
+  .item{margin:0 0 12px;}
+  .item .t{font-weight:700;font-size:14.5px;color:var(--ink);margin:0 0 2px;}
+  .item .d{font-size:13.5px;color:var(--sec);line-height:1.55;margin:0;}
+  code{background:var(--box);padding:1px 5px;border-radius:4px;font-size:12.5px;
+    font-family:"Cascadia Mono",Consolas,monospace;color:var(--accInk);}
+  .gen p{font-size:13.5px;color:var(--sec);line-height:1.6;margin:0 0 7px;}
+  .gen b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <h1>WeHire · แชท (Chat) — User Journey</h1>
+  <p class="sub">แชทเปิดเฉพาะ “คู่ที่จ้างกันแล้ว” — ล้อตาม Contact Lock เดิม</p>
+
+  <svg viewBox="0 0 900 268" xmlns="http://www.w3.org/2000/svg">
+    <!-- box1 -->
+    <rect x="4" y="30" width="150" height="92" rx="10" fill="#F1F3F5" stroke="#DEE2E6"/>
+    <circle cx="26" cy="30" r="13" fill="#E9ECEF" stroke="#ADB5BD"/>
+    <text x="26" y="34" font-size="12" font-weight="700" text-anchor="middle" fill="#495057">1</text>
+    <text x="79" y="70" font-size="14" font-weight="700" text-anchor="middle" fill="#14181c">สมัครงาน</text>
+    <text x="79" y="92" font-size="11" text-anchor="middle" fill="#868E96">ยังไม่มีแชท</text>
+    <!-- box2 KEY -->
+    <rect x="174" y="30" width="150" height="92" rx="10" fill="#E6F7F1" stroke="#0CA678" stroke-width="2"/>
+    <circle cx="196" cy="30" r="13" fill="#0CA678"/>
+    <text x="196" y="34" font-size="12" font-weight="700" text-anchor="middle" fill="#FFFFFF">2</text>
+    <text x="249" y="70" font-size="14" font-weight="700" text-anchor="middle" fill="#14181c">จ้างแล้ว</text>
+    <text x="249" y="92" font-size="11" font-weight="700" text-anchor="middle" fill="#0A8F63">แชทเปิด + เบอร์โผล่</text>
+    <!-- box3 -->
+    <rect x="344" y="30" width="150" height="92" rx="10" fill="#F1F3F5" stroke="#DEE2E6"/>
+    <circle cx="366" cy="30" r="13" fill="#E9ECEF" stroke="#ADB5BD"/>
+    <text x="366" y="34" font-size="12" font-weight="700" text-anchor="middle" fill="#495057">3</text>
+    <text x="419" y="70" font-size="14" font-weight="700" text-anchor="middle" fill="#14181c">นัดแนะ</text>
+    <text x="419" y="92" font-size="11" text-anchor="middle" fill="#868E96">แต่งกาย · จุดนัด · ของ</text>
+    <!-- box4 -->
+    <rect x="514" y="30" width="150" height="92" rx="10" fill="#F1F3F5" stroke="#DEE2E6"/>
+    <circle cx="536" cy="30" r="13" fill="#E9ECEF" stroke="#ADB5BD"/>
+    <text x="536" y="34" font-size="12" font-weight="700" text-anchor="middle" fill="#495057">4</text>
+    <text x="589" y="70" font-size="14" font-weight="700" text-anchor="middle" fill="#14181c">วันงาน</text>
+    <text x="589" y="92" font-size="11" text-anchor="middle" fill="#868E96">เช็คอิน · ถึงแล้ว</text>
+    <!-- box5 -->
+    <rect x="684" y="30" width="150" height="92" rx="10" fill="#F1F3F5" stroke="#DEE2E6"/>
+    <circle cx="706" cy="30" r="13" fill="#E9ECEF" stroke="#ADB5BD"/>
+    <text x="706" y="34" font-size="12" font-weight="700" text-anchor="middle" fill="#495057">5</text>
+    <text x="759" y="70" font-size="14" font-weight="700" text-anchor="middle" fill="#14181c">จบงาน · รีวิว</text>
+    <text x="759" y="92" font-size="11" text-anchor="middle" fill="#868E96">แชท read-only</text>
+    <!-- arrows -->
+    <g stroke="#495057" stroke-width="2.2">
+      <line x1="156" y1="76" x2="169" y2="76"/><polygon points="172,76 165,72 165,80" fill="#495057" stroke="none"/>
+      <line x1="326" y1="76" x2="339" y2="76"/><polygon points="342,76 335,72 335,80" fill="#495057" stroke="none"/>
+      <line x1="496" y1="76" x2="509" y2="76"/><polygon points="512,76 505,72 505,80" fill="#495057" stroke="none"/>
+      <line x1="666" y1="76" x2="679" y2="76"/><polygon points="682,76 675,72 675,80" fill="#495057" stroke="none"/>
+    </g>
+    <polygon points="249,20 243,12 255,12" fill="#0CA678"/>
+    <text x="265" y="18" font-size="11" font-weight="700" fill="#0A8F63">จ้าง = ปลดล็อกแชท</text>
+    <!-- lane -->
+    <text x="4" y="158" font-size="12" font-weight="700" fill="#495057">สถานะห้องแชท</text>
+    <rect x="4" y="166" width="150" height="32" rx="8" fill="#F1F3F5" stroke="#DEE2E6"/>
+    <circle cx="50" cy="182" r="4" fill="#ADB5BD"/>
+    <text x="88" y="186" font-size="11" text-anchor="middle" fill="#868E96">ปิด</text>
+    <rect x="174" y="166" width="490" height="32" rx="8" fill="#E6F7F1" stroke="#0CA678" stroke-width="1.6"/>
+    <text x="419" y="186" font-size="11.5" font-weight="700" text-anchor="middle" fill="#0A8F63">แชทเปิด — คุยได้เฉพาะคู่ที่จ้างกัน (+ admin ตอน dispute)</text>
+    <rect x="684" y="166" width="150" height="32" rx="8" fill="#F1F3F5" stroke="#DEE2E6"/>
+    <text x="759" y="186" font-size="11" text-anchor="middle" fill="#868E96">read-only</text>
+    <!-- legend -->
+    <rect x="4" y="214" width="12" height="12" rx="3" fill="#E6F7F1" stroke="#0CA678" stroke-width="1.6"/>
+    <text x="22" y="224" font-size="11" fill="#6b7280">แชทใช้งานได้ (คู่ที่จ้าง)</text>
+    <rect x="220" y="214" width="12" height="12" rx="3" fill="#F1F3F5" stroke="#DEE2E6"/>
+    <text x="238" y="224" font-size="11" fill="#6b7280">ปิด / เก็บเป็นหลักฐาน (read-only)</text>
+  </svg>
+
+  <hr>
+
+  <h2>สิ่งที่ต้องระวัง (สำหรับ SA)</h2>
+
+  <div class="grp g1"><span class="dot"></span>เฉพาะ WeHire — บริบทที่ต้องรู้</div>
+
+  <div class="item">
+    <p class="t">1. ขอบเขตแชทผูกกับ “การจ้าง”</p>
+    <p class="d">1 ห้อง = 1 คู่ที่จ้างกัน (ผูกกับ <code>job_application</code>) · เปิดตอน <code>hired</code> เท่านั้น · เป็น read-only หลัง <code>verified</code> · ไม่ใช่ open DM แบบแอปแชททั่วไป (กันสแปม/คุกคาม)</p>
+  </div>
+  <div class="item">
+    <p class="t">2. แชท = หลักฐานตอน dispute</p>
+    <p class="d">เรามีระบบ anti-ghosting + pro-rata settlement · log แชทต้องเก็บ ห้าม hard-delete ตอนมี dispute · admin เข้าถึงได้เฉพาะตอนตัดสิน (+ log ว่าใครเปิดดู)</p>
+  </div>
+  <div class="item">
+    <p class="t">3. Platform bypass (ความเสี่ยงเชิงธุรกิจ)</p>
+    <p class="d">คนอาจแลก LINE/เบอร์ในแชทแล้วหนีออกนอกแอป = เสีย matching fee 6% · MVP อย่าเพิ่ง police หนัก (แชทในแอปเสริม stickiness ด้วยซ้ำ) แต่ต้องรู้ว่านี่คือความเสี่ยงเชิงธุรกิจ ไม่ใช่แค่ technical</p>
+  </div>
+  <div class="item">
+    <p class="t">4. ต่อของเดิม ไม่สร้างใหม่</p>
+    <p class="d"><code>user_reports</code> · <code>user_blocks</code> · <code>notifications</code> มีอยู่แล้ว → แชทต้องเคารพ block ที่มี + มีปุ่ม “รายงานข้อความ” + ยิง noti เข้าระบบเดิม</p>
+  </div>
+
+  <div class="grp g2"><span class="dot"></span>ทั่วไป — แต่ผูกกับ stack เรา</div>
+
+  <div class="gen">
+    <p><b>Real-time:</b> เราอยู่บน Supabase อยู่แล้ว → ใช้ <b>Supabase Realtime</b> (<code>messages</code> table + subscribe) คุ้มสุด ไม่ต้องตั้ง WebSocket server เอง · MVP จะ polling ก็ได้ (เรา poll notification อยู่แล้ว) แต่ latency สูงกว่า</p>
+    <p><b>PDPA (ไทย):</b> ข้อความ = ข้อมูลส่วนบุคคล ต้องมี retention policy + ระบุใน ToS (เรากำลังทำ policy อยู่พอดี เชื่อมกันได้)</p>
+    <p><b>Authz ราย row:</b> เช็ค server-side ทุก read/send ว่าคนขอคือ 1 ใน 2 ของห้องนั้นจริง · ห้ามข้อความหลุดข้ามงาน</p>
+    <p><b>อย่า over-engineer:</b> 3 tester = จิ๋ว · text-only ก่อน · ยังไม่ต้อง typing indicator / presence / read-receipt · Supabase Realtime free tier เหลือเฟือ</p>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WeHire — System & Feature Flows</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js"></script>
+<style>
+  :root{--bg:#0d1117;--card:#161b22;--bd:#30363d;--tx:#e6edf3;--mut:#8b949e;--acc:#58a6ff;--ok:#3fb950;--warn:#d29922;--bad:#f85149}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.6}
+  header{padding:32px 24px;border-bottom:1px solid var(--bd);background:linear-gradient(180deg,#161b22,#0d1117)}
+  h1{margin:0 0 6px;font-size:26px}
+  .sub{color:var(--mut)}
+  nav{position:sticky;top:0;background:#0d1117ee;backdrop-filter:blur(6px);border-bottom:1px solid var(--bd);padding:10px 24px;display:flex;flex-wrap:wrap;gap:8px;z-index:10}
+  nav a{color:var(--acc);text-decoration:none;font-size:13px;padding:4px 10px;border:1px solid var(--bd);border-radius:6px}
+  nav a:hover{background:#21262d}
+  main{max-width:980px;margin:0 auto;padding:24px}
+  section{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:22px;margin:0 0 22px}
+  h2{margin:0 0 4px;font-size:20px;color:var(--acc)}
+  .tag{display:inline-block;font-size:11px;color:var(--mut);border:1px solid var(--bd);border-radius:20px;padding:2px 10px;margin-bottom:12px}
+  .mermaid{background:#0d1117;border:1px solid var(--bd);border-radius:8px;padding:14px;margin:14px 0;text-align:center}
+  ul{margin:8px 0 0;padding-left:20px}
+  li{margin:4px 0}
+  code{background:#21262d;padding:1px 6px;border-radius:5px;font-size:13px}
+  .note{font-size:13px;color:var(--mut);border-left:3px solid var(--warn);padding:6px 12px;margin-top:12px;background:#1c1c0e55}
+  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+  th,td{border:1px solid var(--bd);padding:7px 10px;text-align:left}
+  th{background:#21262d}
+</style>
+</head>
+<body>
+<header>
+  <h1>WeHire — System & Feature Flows</h1>
+  <div class="sub">แพลตฟอร์มจ้างงานรายวัน BKK · อ้างอิงจาก CLAUDE.md · อัปเดต 2026-06-22</div>
+</header>
+<nav>
+  <a href="#auth">Auth</a>
+  <a href="#match">Matching</a>
+  <a href="#lifecycle">Job Lifecycle</a>
+  <a href="#ghost">Anti-Ghosting</a>
+  <a href="#kyc">KYC</a>
+  <a href="#escrow">Escrow / Pro-rata</a>
+  <a href="#score">Behavioral Score</a>
+  <a href="#ndid">NDID Tiers</a>
+  <a href="#trust">Contact Lock + Review</a>
+  <a href="#revenue">Revenue</a>
+</nav>
+<main>
+
+<section id="auth">
+  <h2>1. Authentication</h2>
+  <div class="tag">Live · main.py /auth/*</div>
+  <p>มี 2 ทาง: Email/Password (JWT ของเราเอง) และ Google OAuth (verify ผ่าน Supabase JWKS)</p>
+  <div class="mermaid">
+flowchart TD
+  A[User] -->|Email/Password| B[POST /auth/register or /login]
+  B --> C[bcrypt hash/verify]
+  C --> D[ออก JWT ของเรา sub+role+exp]
+  A -->|Google| E[GET /auth/google/url]
+  E --> F[Login กับ Google]
+  F --> G[Supabase redirect + access_token]
+  G --> H[POST /auth/google/callback]
+  H --> I[ดึง JWKS verify ES256 match kid]
+  I --> D
+  D --> Z[ใช้ token เรียก API อื่น]
+  </div>
+  <div class="note">⚠️ Supabase JWT = ES256 + JWKS เท่านั้น (ห้าม HS256/RS256) · ห้าม verify_signature:false เด็ดขาด</div>
+</section>
+
+<section id="match">
+  <h2>2. Matching Algorithm</h2>
+  <div class="tag">Live · PostGIS ST_DWithin</div>
+  <p>ให้คะแนน worker ↔ job จาก 3 ปัจจัย ถ่วงน้ำหนัก แล้วเรียงลำดับ</p>
+  <div class="mermaid">
+flowchart LR
+  J[Job posting<br/>location + skills + rate] --> Q[PostGIS ST_DWithin<br/>กรองในรัศมี]
+  W[Workers nearby] --> Q
+  Q --> S[คำนวณ match_score]
+  S --> S1[Skills overlap × 0.60]
+  S --> S2[Distance decay × 0.25]
+  S --> S3[Rate fit × 0.15]
+  S1 --> R[เรียงลำดับ candidates]
+  S2 --> R
+  S3 --> R
+  </div>
+  <ul>
+    <li><code>W_SKILLS=0.60</code> · <code>W_DISTANCE=0.25</code> · <code>W_RATE=0.15</code></li>
+    <li>ระยะใช้ PostGIS จริง (ไม่ใช่ Haversine) · ratio ต้อง <code>float()</code> กัน Decimal error</li>
+  </ul>
+</section>
+
+<section id="lifecycle">
+  <h2>3. Job Lifecycle</h2>
+  <div class="tag">Live · state machine</div>
+  <p>เส้นทางสถานะหลักของงาน 1 ครั้ง — แต่ละ step มีเงื่อนไข + คนกดต่างกัน</p>
+  <div class="mermaid">
+stateDiagram-v2
+  [*] --> hired: Employer decide (slot ว่าง)
+  hired --> checked_in: Worker checkin (GPS ≤150m)
+  checked_in --> working: Employer start (±30น จาก work_start)
+  working --> completed: Worker complete
+  completed --> verified: Employer verify
+  verified --> [*]: trigger review
+  completed --> disputed: ไม่ verify ใน 2ชม + ทำ<90%
+  working --> no_show: ไม่ checkin +60น (cron)
+  disputed --> verified: admin ตัดสิน
+  </div>
+  <table>
+    <tr><th>Step</th><th>ใคร</th><th>เงื่อนไข</th></tr>
+    <tr><td>hired</td><td>Employer</td><td>slot available</td></tr>
+    <tr><td>checked_in</td><td>Worker</td><td>GPS ≤ 150m (PostGIS)</td></tr>
+    <tr><td>working</td><td>Employer</td><td>±30 นาที จาก work_start</td></tr>
+    <tr><td>completed</td><td>Worker</td><td>status = working</td></tr>
+    <tr><td>verified</td><td>Employer</td><td>status = completed</td></tr>
+  </table>
+  <div class="note">Auto-verify (cron 30น): work_ended ≥90% + employer เงียบ 2ชม → auto verify · &lt;90% → disputed</div>
+</section>
+
+<section id="ghost">
+  <h2>4. Active Anti-Ghosting</h2>
+  <div class="tag">Live · migration 012 · APScheduler</div>
+  <p>กัน worker hired แล้วหายตัว — auto-detect + ส่ง backup ทดแทน</p>
+  <div class="mermaid">
+flowchart TD
+  H[Worker hired แต่ไม่ checkin] --> T30[+30น: cron alert employer]
+  T30 --> T60[+60น: auto no_show]
+  T60 --> F[slot_filled - 1 + แจ้งทั้งคู่]
+  F --> BL[Employer เห็น backup list<br/>top 10 by match_score]
+  BL --> SB[POST send-backup → แจ้ง worker ด่วน]
+  SB --> AC[Worker accept-backup]
+  AC --> HD[→ hired + slot filled + Maps link]
+  </div>
+  <ul>
+    <li>Cron: <code>check_noshow</code> ทุก 5 นาที · <code>send_d1_reminders</code> 18:00 BKK</li>
+    <li>status เพิ่ม <code>no_show</code> · fields: backup_priority / backup_offered_at / backup_accepted_at</li>
+  </ul>
+</section>
+
+<section id="kyc">
+  <h2>5. KYC Verification</h2>
+  <div class="tag">Phase 2 · migration 010 · manual admin</div>
+  <p>ยืนยันตัวตน worker — รองรับทั้งคนไทยและต่างด้าว เอกสารต่างกันตาม nationality_type</p>
+  <div class="mermaid">
+flowchart TD
+  W[Worker upload] --> N{nationality_type}
+  N -->|thai| TH[บัตร หน้า-หลัง + Selfie]
+  N -->|foreign| FR[Passport + Work Permit + Selfie]
+  TH --> P[background_check_status: none → pending]
+  FR --> P
+  P --> AD[Admin ดูใน Supabase Storage]
+  AD -->|Approve| AP[approved + reviewed_at/by → badge ✓ KYC]
+  AD -->|Reject| RJ[rejected + kyc_note เหตุผล]
+  AP --> NO[notify worker]
+  RJ --> NO
+  </div>
+  <div class="note">Foreign: cron เช็ค work_permit_expiry &lt;30 วัน → เตือน · หมดอายุ → auto reject</div>
+</section>
+
+<section id="escrow">
+  <h2>6. Escrow & Pro-rata Settlement</h2>
+  <div class="tag">Phase 3 · ยังไม่ implement (moat หลัก)</div>
+  <p>Employer จ่ายตามค่าจ้างที่โพสต์ (เช่น 600) · platform <b>หัก 6% จากฝั่ง worker</b> · ปลายทางมี 2 กรณี</p>
+
+  <h3 style="color:var(--ok);margin:16px 0 0;font-size:16px">กรณี A — Worker ทำครบ (เราได้ 6%)</h3>
+  <div class="mermaid">
+flowchart TD
+  L[Employer จ่าย 600] --> C[Worker complete ratio 1.0]
+  C --> F[หักค่าบริการ 6% = 36]
+  F --> W["worker รับจริง = 564 (โชว์ให้ worker เห็น)"]
+  F --> P["platform = 36 (6% matching fee)"]
+  W --> B{"564 + 36 = 600 ✓"}
+  P --> B
+  </div>
+
+  <h3 style="color:var(--warn);margin:16px 0 0;font-size:16px">กรณี B — Worker ไม่ครบ (dispute ratio 0.70 · ไม่เก็บ 6%)</h3>
+  <div class="mermaid">
+flowchart TD
+  L2[Employer lock 600] --> R[ratio 0.70 ทำไม่ครบ]
+  R --> WG["worker_gross = 600 × 0.70 = 420"]
+  WG --> PN[penalty 10% = 42]
+  WG --> WN[worker รับ = 378]
+  L2 --> ER["employer refund = 180 (เวลาที่ขาด)"]
+  PN --> PF["platform = 42 (penalty · ไม่เก็บ 6%)"]
+  WN --> B2{"378 + 180 + 42 = 600 ✓"}
+  ER --> B2
+  PF --> B2
+  </div>
+  <ul>
+    <li><b>6% matching fee:</b> หักจาก worker (employer จ่ายเท่าค่าจ้างที่โพสต์เสมอ) · worker เห็น "ค่าจ้าง 600 − ค่าบริการ 36 = รับจริง 564" โปร่งใส</li>
+    <li><b>complete → platform ได้ 6%</b> · <b>ไม่ครบ → platform ได้แค่ penalty 10%</b> (ไม่เก็บ 6% เพราะงานไม่ส่งมอบ)</li>
+    <li>ทุก transaction atomic + idempotency key · Decimal ไม่ใช่ float · ratio&gt;1.0 → reject</li>
+  </ul>
+  <div class="note">กรณี A = รายได้หลัก (Stream 1) ที่ทุกงานสำเร็จต้องได้ · กรณี B = สูตร pro-rata เดิมใน CLAUDE.md ถูกอยู่แล้ว</div>
+</section>
+
+<section id="score">
+  <h2>7. Behavioral Score</h2>
+  <div class="tag">Phase 2.5 · migration 017</div>
+  <p>วัดความน่าเชื่อถือ worker จากพฤติกรรมจริง (ไม่ใช่แค่ review) → badge</p>
+  <div class="mermaid">
+flowchart TD
+  V[status → verified] --> C1[jobs_completed +1]
+  NS[status → no_show] --> C2[jobs_noshow +1]
+  HR[decided_at set] --> C3[jobs_hired +1]
+  RV[submit review] --> C4[recompute review_avg]
+  C1 --> CALC[reliability_score 0-10]
+  C2 --> CALC
+  C3 --> CALC
+  C4 --> CALC
+  CALC --> B{badge}
+  B -->|≥9.0| TOP[🌟 Top Worker]
+  B -->|≥7.0| REL[✅ Reliable]
+  B -->|&lt;5.0| LOW[⚠️ admin only]
+  </div>
+  <div class="note">score = completion×5 + (1-noshow)×3 + review_avg×2 · MAX 10</div>
+</section>
+
+<section id="ndid">
+  <h2>8. NDID Tier System</h2>
+  <div class="tag">Phase 3.5 · migration 011_ndid</div>
+  <p>ระดับการยืนยันตัวตน → ปลดล็อกงาน high-trust (รปภ./ดูแลเด็ก/ผู้สูงอายุ)</p>
+  <div class="mermaid">
+flowchart LR
+  U[Unverified<br/>สมัครได้ ข้อมูลน้อย] --> K[KYC<br/>บัตร+Selfie admin<br/>✓ KYC Verified]
+  K --> ND[NDID<br/>ยืนยันผ่านแอพธนาคาร<br/>🏛️ NDID + ประวัติสะอาด]
+  ND --> HT[Employer กรอง 'NDID only'<br/>งาน trust สูง]
+  </div>
+  <div class="note">ดึงประวัติอาชญากรรมจาก สตช. ผ่าน NDID โดยตรง — platform ทั่วไปทำไม่ได้</div>
+</section>
+
+<section id="trust">
+  <h2>9. Contact Lock + Blind Review</h2>
+  <div class="tag">Live · business logic</div>
+  <div class="mermaid">
+flowchart TD
+  subgraph CL[Contact Lock]
+    A1[เบอร์โทรซ่อน] --> A2{status = hired?}
+    A2 -->|yes| A3[เปิดเผยเบอร์]
+    A2 -->|no| A4[ยังซ่อน กัน bypass แอพ]
+  end
+  subgraph BR[Blind Review]
+    B1[ส่ง review] --> B2{ทั้งคู่ส่ง หรือครบ 7 วัน?}
+    B2 -->|yes| B3[เปิด review ทั้งคู่]
+    B2 -->|no| B4[ซ่อนไว้ กัน bias]
+  end
+  </div>
+</section>
+
+<section id="revenue">
+  <h2>10. Revenue Streams (Ladder)</h2>
+  <div class="tag">Business roadmap</div>
+  <div class="mermaid">
+flowchart LR
+  S1[1. Matching Fee 6%<br/>margin ~90% · LIVE] --> S2[2. Work Permit<br/>10k฿/คน margin ~7.5k · Ph2]
+  S2 --> S3[3. White Collar Job Board<br/>flat fee · Ph3]
+  S3 --> S4[4. Premium Matching<br/>AI shortlist sub · Ph4]
+  S4 --> S5[5. Headhunter 15-20%<br/>ต้องใบอนุญาต · Ph5]
+  </div>
+  <div class="note">Insight: daily wage = rotation market → employer ต้องกลับมาใช้เสมอ · work permit ผูก employer แน่นกว่า contract</div>
+</section>
+
+</main>
+<script>
+  mermaid.initialize({startOnLoad:true, theme:'dark', securityLevel:'loose',
+    themeVariables:{ primaryColor:'#161b22', primaryTextColor:'#e6edf3', primaryBorderColor:'#58a6ff', lineColor:'#8b949e', fontSize:'13px'}});
+</script>
+</body>
+</html>
