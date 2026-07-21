@@ -8,11 +8,25 @@ Stack: FastAPI + asyncpg + Supabase (PostgreSQL + PostGIS) + PyJWT
 
 import os
 import re
+import sys
 import logging
 import asyncpg
 import jwt
 
 logger = logging.getLogger("wehire")
+
+# ❗ ต้องตั้ง handler เอง — ห้ามลบ
+# เดิมมีแค่ getLogger() ไม่มี handler/level ⇒ Python ตกไปใช้ logging.lastResort
+# ซึ่งออก stderr **ที่ระดับ WARNING เท่านั้น** ⇒ logger.info() ทั้ง 20 จุดถูกทิ้งเงียบๆ ไม่เคยออกไปไหน
+# นี่คือสาเหตุที่ log ของ cron ไม่โผล่ใน Render มา 7 วัน — ไม่ใช่เพราะ cron ไม่รัน
+# (ส่วน "Schedulers started" เห็นได้เพราะใช้ print() ไม่ได้ผ่าน logger)
+# propagate=False กันซ้ำ เผื่อ uvicorn ตั้ง root logger ทีหลัง
+if not logger.handlers:
+    _log_handler = logging.StreamHandler(sys.stdout)
+    _log_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", "%H:%M:%S"))
+    logger.addHandler(_log_handler)
+logger.setLevel(logging.INFO)
+logger.propagate = False
 import asyncio
 import bcrypt
 import httpx
