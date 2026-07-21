@@ -4143,7 +4143,9 @@ async def get_blocked_users(
 # HEALTH CHECK
 # ============================================================
 
-@app.get("/health", tags=["System"])
+# HEAD ด้วย — UptimeRobot (และ monitor ส่วนใหญ่) ยิง HEAD เป็น default
+# ถ้ารับแค่ GET จะได้ 405 ทุกครั้ง → dashboard ขึ้น Down ตลอดทั้งที่เซิร์ฟเวอร์ปกติ
+@app.api_route("/health", methods=["GET", "HEAD"], tags=["System"])
 async def health(db: asyncpg.Connection = Depends(get_db)):
     version = await db.fetchval("SELECT version()")
     return {
