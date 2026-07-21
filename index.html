@@ -2797,6 +2797,17 @@ async function doSaveEmployerProfile(isNew) {
       await api('PATCH', '/employers/profile', body);
       if (phone) await api('PATCH', '/auth/phone', { phone });
     }
+    // ถ้ามาจากหน้าโพสต์งาน (กดปุ่ม "สร้างโปรไฟล์บริษัท") → พากลับไปโพสต์งานต่อ
+    let backToPostJob = false;
+    try {
+      backToPostJob = isNew && !!sessionStorage.getItem('wh_pending_postjob');
+      if (backToPostJob) sessionStorage.removeItem('wh_pending_postjob');
+    } catch(_e) {}
+    if (backToPostJob) {
+      showAlert('alertEmployerProfile', '✅ สร้างโปรไฟล์สำเร็จ! กำลังพากลับไปโพสต์งาน…', 'success');
+      setTimeout(() => showPage('postjob'), 1200);
+      return;
+    }
     showAlert('alertEmployerProfile', '✅ บันทึกโปรไฟล์บริษัทสำเร็จ!', 'success');
     setTimeout(loadEmployerProfile, 1000);
   } catch(e) { showAlert('alertEmployerProfile', e.message); }
@@ -3378,20 +3389,53 @@ async function loadDashboard() {
       : `<div style="text-align:center;color:var(--muted);font-size:.85rem;padding:20px 0">ยังไม่มีพนักงานในบอร์ดวันนี้</div>`;
 
     // verify banner (เหนือ grid)
-    const verifyNudge = empProfile ? (
-      empProfile.verified_status === 'verified' ? ''
-        : empProfile.verified_status === 'pending'
-          ? `<div style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.25);border-radius:12px;margin-bottom:4px"><span class="badge badge-warn">${t('emp_verify_pending')}</span><span style="font-size:12px;color:var(--muted)">${t('emp_verify_note')}</span></div>`
-          : `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.25);border-radius:12px;margin-bottom:4px"><div style="display:flex;align-items:center;gap:8px"><span class="badge badge-danger">${t('emp_not_verified')}</span><span style="font-size:12px;color:var(--muted)">${t('emp_verify_cta')}</span></div><button class="btn btn-secondary btn-sm" onclick="requestEmployerVerify(this)" style="font-size:11px">${t('emp_verify_req_btn')}</button></div>`
-    ) : '';
+    // ── checklist ตั้งค่าบัญชี (ฝั่งนายจ้าง) — คู่กับของฝั่ง worker
+    //    แทนที่ verifyNudge เดิมที่ขึ้นเฉพาะตอน "มีโปรไฟล์แล้ว" ⇒ นายจ้างใหม่ไม่เห็นอะไรเลย
+    const _vs = empProfile?.verified_status;
+    const eChk = [
+      { done: !!empProfile, required: true, act: "goCreateEmployerProfile()",
+        label: 'สร้างโปรไฟล์บริษัท', hint: 'ชื่อบริษัท ผู้ติดต่อ และที่อยู่หน้างาน' },
+      { done: _vs === 'verified', required: false, pending: _vs === 'pending',
+        act: "showPage('employerprofile')",
+        label: 'ยืนยันตัวตนบริษัท', hint: _vs === 'pending' ? 'ทีมงานกำลังตรวจสอบ' : 'คนหางานเลือกบริษัทที่ยืนยันแล้วก่อนเสมอ' },
+      { done: (jobs || []).length > 0, required: false, act: "showPage('postjob')",
+        label: 'โพสต์งานแรก', hint: 'ระบุตำแหน่ง วันเวลา และค่าแรง' },
+    ];
+    const eDone  = eChk.filter(i => i.done).length;
+    const eBlock = !empProfile;
+    const empSetupCard = eDone === eChk.length ? '' : `
+      <section style="background:var(--card);border:1px solid ${eBlock ? 'var(--accent2)' : 'var(--border)'};border-radius:14px;padding:18px;margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div style="font-weight:800;font-size:15px">ตั้งค่าบัญชีของคุณ</div>
+          <div style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">${eDone}/${eChk.length}</div>
+        </div>
+        <div style="font-size:12.5px;color:${eBlock ? 'var(--accent2)' : 'var(--muted)'};margin-bottom:14px">${
+          eBlock ? 'สร้างโปรไฟล์บริษัทก่อนถึงจะโพสต์งานได้' : 'เกือบครบแล้ว — อีกนิดเดียวคนหางานจะเชื่อใจคุณมากขึ้น'}</div>
+        <div style="height:4px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-bottom:14px">
+          <div style="height:100%;width:${Math.round(eDone / eChk.length * 100)}%;background:var(--accent2);border-radius:3px"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">${eChk.map(i => `
+          <div onclick="${i.pending ? '' : i.act}" style="display:flex;gap:10px;align-items:center;${i.pending ? '' : 'cursor:pointer;'}opacity:${i.done ? '.5' : '1'}">
+            <div style="width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+              background:${i.done ? 'rgba(0,229,160,.15)' : (i.required ? 'var(--accent2)' : 'var(--surface2)')};
+              color:${i.done ? 'var(--accent)' : (i.required ? '#fff' : 'var(--muted)')}">${i.done ? '✓' : (i.pending ? '⏳' : '!')}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13.5px;font-weight:600;${i.done ? 'text-decoration:line-through' : ''}">${esc(i.label)}${
+                i.required ? '' : ' <span style="font-weight:400;font-size:11px;color:var(--muted)">(แนะนำ)</span>'}</div>
+              ${i.done ? '' : `<div style="font-size:11.5px;color:var(--muted);margin-top:1px">${esc(i.hint)}</div>`}
+            </div>
+            ${(i.done || i.pending) ? '' : `<span style="color:var(--muted);flex-shrink:0">${ico('chevron',14)}</span>`}
+          </div>`).join('')}
+        </div>
+      </section>`;
 
     contentEl.innerHTML = `
+      ${empSetupCard}
       <div class="metrics-row">
         <div class="metric-card"><div class="m-icon blue">${ico('doc',24)}</div><div class="m-data"><h4>Active Posts</h4><div class="val">${openJobs}${urgentCount?`<span class="trend up">งานด่วน</span>`:''}</div></div></div>
         <div class="metric-card"><div class="m-icon green">${ico('users',24)}</div><div class="m-data"><h4>Total Hired</h4><div class="val">${totalHired}</div></div></div>
         <div class="metric-card"><div class="m-icon orange">${ico('money',24)}</div><div class="m-data"><h4>Total Spent</h4><div class="val">฿${totalSpent.toLocaleString()}</div></div></div>
       </div>
-      ${verifyNudge}
       <div class="dashboard-grid">
         <div class="panel-section">
           <div class="section-header"><h2><span style="color:#F97316;display:inline-flex">${ico('warn',20)}</span> งานที่กำลังเปิดรับ (Urgent)</h2><span class="see-all" onclick="showPage('myjobs')">ดูทั้งหมด</span></div>
@@ -3403,7 +3447,12 @@ async function loadDashboard() {
         </div>
       </div>`;
 
-    if (!(jobs && jobs.length)) showOnboardModal('employer');
+    // เด้ง welcome ครั้งแรกครั้งเดียว — จากนั้นให้ empSetupCard ทำหน้าที่แทน
+    // (เดิมยิงทุกครั้งที่ loadDashboard() รันตอนยังไม่มีงาน = กวนแต่ไม่ช่วย)
+    if (!(jobs && jobs.length) && !localStorage.getItem('wh_onboarded_employer')) {
+      localStorage.setItem('wh_onboarded_employer', '1');
+      showOnboardModal('employer');
+    }
   }
 }
 
@@ -4265,40 +4314,28 @@ async function checkEmployerProfile() {
     applyProfileLocationToPostJob(emp);
     form.style.display = 'block';
   } catch(e) {
+    // ไม่มีโปรไฟล์ → ส่งไปหน้า "โปรไฟล์บริษัท" ซึ่งมีฟอร์มเต็ม (loadEmployerProfile + isNew)
+    // ⚠️ เดิมตรงนี้มีฟอร์มย่อ 3 ช่องของตัวเอง — ลบทิ้งแล้ว เพราะมันไม่เก็บ "พิกัดหน้างาน" กับ "เบอร์โทร"
+    //    ⇒ นายจ้างที่สร้างทางนั้นจะไม่มีพิกัด ทำให้ต้องกรอกที่อยู่ใหม่ทุกครั้งที่โพสต์งาน
+    //    ห้ามเอาฟอร์มย่อกลับมา · ให้มีทางสร้างโปรไฟล์ทางเดียวเสมอ (ดู COUPLING_MAP ข้อ 16)
     form.style.display = 'none';
     el.innerHTML = `
-      <div class="alert alert-info" style="margin-bottom:16px">${t('emp_no_profile_msg')}</div>
-      <div class="card">
-        <div style="font-weight:600;margin-bottom:16px">${t('emp_create_title')}</div>
-        <div class="form-group"><label>${t('emp_company_lbl')}</label><input type="text" id="empCompany" placeholder="บริษัท ABC จำกัด"></div>
-        <div class="form-group"><label>${t('emp_biz_type_lbl')}</label>
-          <select id="empBizType">
-            <option value="factory">${t('biz_factory')}</option>
-            <option value="grocery">${t('biz_grocery')}</option>
-            <option value="sme">SME</option>
-            <option value="warehouse">${t('biz_warehouse')}</option>
-            <option value="other">อื่นๆ</option>
-          </select>
+      <div class="card" style="text-align:center;padding:34px 26px;max-width:560px;margin:0 auto">
+        <div style="font-size:34px;margin-bottom:12px">🏢</div>
+        <div style="font-size:17px;font-weight:700;margin-bottom:8px">ยังไม่มีโปรไฟล์บริษัท</div>
+        <div style="color:var(--muted);font-size:13.5px;line-height:1.65;margin-bottom:24px">
+          สร้างโปรไฟล์บริษัทก่อนโพสต์งาน<br>ใส่ที่อยู่หน้างานไว้ด้วย จะได้ไม่ต้องกรอกใหม่ทุกครั้งที่โพสต์
         </div>
-        <div class="form-group"><label>${t('emp_contact_lbl')}</label><input type="text" id="empContact" placeholder="คุณสมชาย"></div>
-        <div id="alertCreateEmp"></div>
-        <button class="btn btn-primary" onclick="doCreateEmployerProfile()">${t('emp_create_btn')}</button>
+        <button class="btn btn-primary" style="min-height:46px;padding:0 30px;font-weight:700"
+          onclick="goCreateEmployerProfile()">สร้างโปรไฟล์บริษัท →</button>
       </div>`;
   }
 }
 
-async function doCreateEmployerProfile() {
-  try {
-    await api('POST', '/employers/profile', {
-      company_name:   document.getElementById('empCompany').value.trim(),
-      business_type:  document.getElementById('empBizType').value,
-      contact_person: document.getElementById('empContact').value.trim(),
-    });
-    showAlert('alertCreateEmp', t('emp_create_success'), 'success');
-    setTimeout(() => checkEmployerProfile(), 1000);
-  } catch(e) {
-    showAlert('alertCreateEmp', e.message);
-  }
+// จำว่ามาจากหน้าโพสต์งาน เพื่อพากลับหลังสร้างโปรไฟล์เสร็จ (ปิด loop เหมือนฝั่ง worker)
+function goCreateEmployerProfile() {
+  try { sessionStorage.setItem('wh_pending_postjob', '1'); } catch(_e) {}
+  showPage('employerprofile');
 }
 
 // ─── POST JOB ──────────────────────────────────────────────
