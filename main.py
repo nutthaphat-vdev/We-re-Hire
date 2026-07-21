@@ -66,6 +66,7 @@ pool: asyncpg.Pool | None = None
 async def auto_verify_completed_jobs():
     """Cron ทุก 30 นาที: auto-verify หรือ disputed งานที่ employer ไม่ยืนยันภายใน 2 ชม."""
     if pool is None:
+        logger.error("[auto_verify] SKIPPED — DB pool is None (cron ยิงแล้วแต่ออกตั้งแต่บรรทัดแรก ไม่ใช่ไม่ได้รัน)")
         return
     try:
         async with pool.acquire() as db:
@@ -175,8 +176,7 @@ async def auto_verify_completed_jobs():
                 logger.info(f"[auto_verify] disputed application {row['id']}")
 
             total = len(verified_rows) + len(disputed_rows)
-            if total:
-                logger.info(f"[auto_verify] verified={len(verified_rows)} disputed={len(disputed_rows)}")
+            logger.info(f"[auto_verify] verified={len(verified_rows)} disputed={len(disputed_rows)}")
 
     except Exception as e:
         logger.error(f"[auto_verify] cron error: {e}")
@@ -196,6 +196,7 @@ async def check_noshow_workers():
     - แยก try/except ต่อ row ไม่ให้ job หนึ่ง crash หยุดทั้ง cron
     """
     if pool is None:
+        logger.error("[noshow] SKIPPED — DB pool is None (cron ยิงแล้วแต่ออกตั้งแต่บรรทัดแรก ไม่ใช่ไม่ได้รัน)")
         return
 
     TH_TZ    = timezone(timedelta(hours=7))
@@ -406,8 +407,7 @@ async def check_noshow_workers():
                     logger.error(f"[noshow] row error app={row['id']}: {row_err}")
                     continue
 
-            if alerted_count or noshow_count:
-                logger.info(f"[noshow] done alerted={alerted_count} no_show={noshow_count}")
+            logger.info(f"[noshow] done alerted={alerted_count} no_show={noshow_count}")
 
             # ── Auto-start: checked_in + 30 นาที → auto working ──────────────
             auto_start_rows = await db.fetch(
@@ -508,6 +508,7 @@ async def check_noshow_workers():
 async def send_d1_reminders():
     """Cron ทุกวัน 18:00 Thai time (11:00 UTC): แจ้งเตือน D-1 ก่อนวันทำงาน"""
     if pool is None:
+        logger.error("[d1reminder] SKIPPED — DB pool is None (cron ยิงแล้วแต่ออกตั้งแต่บรรทัดแรก ไม่ใช่ไม่ได้รัน)")
         return
     TH_TZ       = timezone(timedelta(hours=7))
     tomorrow_th = (datetime.now(TH_TZ) + timedelta(days=1)).date()
@@ -546,8 +547,7 @@ async def send_d1_reminders():
                 )
                 logger.info(f"[d1reminder] reminder sent for application {row['id']}")
 
-            if rows:
-                logger.info(f"[d1reminder] sent {len(rows)} reminders for {tomorrow_th}")
+            logger.info(f"[d1reminder] sent {len(rows)} reminders for {tomorrow_th}")
 
     except Exception as e:
         logger.error(f"[d1reminder] cron error: {e}")
@@ -556,6 +556,7 @@ async def send_d1_reminders():
 async def check_expired_jobs():
     """Cron ทุก 30 นาที: ปิด job ที่ถึง auto_close_at แล้ว และยังไม่มี hired worker"""
     if pool is None:
+        logger.error("[check_expired_jobs] SKIPPED — DB pool is None (cron ยิงแล้วแต่ออกตั้งแต่บรรทัดแรก ไม่ใช่ไม่ได้รัน)")
         return
     try:
         async with pool.acquire() as db:
