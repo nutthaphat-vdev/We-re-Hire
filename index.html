@@ -2800,7 +2800,9 @@ async function doSaveEmployerProfile(isNew) {
     // ถ้ามาจากหน้าโพสต์งาน (กดปุ่ม "สร้างโปรไฟล์บริษัท") → พากลับไปโพสต์งานต่อ
     let backToPostJob = false;
     try {
-      backToPostJob = isNew && !!sessionStorage.getItem('wh_pending_postjob');
+      // ไม่ผูกกับ isNew — flag ตั้งได้ทางเดียวคือกดปุ่มจากหน้าโพสต์งาน = เจตนาชัดอยู่แล้ว
+      // (เคสจริง: นายจ้างมีโปรไฟล์อยู่แล้วแต่ยังไม่ครบ → กดจากหน้าโพสต์งาน → บันทึกเป็น PATCH → เดิมไม่เด้ง)
+      backToPostJob = !!sessionStorage.getItem('wh_pending_postjob');
       if (backToPostJob) sessionStorage.removeItem('wh_pending_postjob');
     } catch(_e) {}
     if (backToPostJob) {
@@ -3395,9 +3397,14 @@ async function loadDashboard() {
     const eChk = [
       { done: !!empProfile, required: true, act: "goCreateEmployerProfile()",
         label: 'สร้างโปรไฟล์บริษัท', hint: 'ชื่อบริษัท ผู้ติดต่อ และที่อยู่หน้างาน' },
-      { done: _vs === 'verified', required: false, pending: _vs === 'pending',
-        act: "showPage('employerprofile')",
-        label: 'ยืนยันตัวตนบริษัท', hint: _vs === 'pending' ? 'ทีมงานกำลังตรวจสอบ' : 'คนหางานเลือกบริษัทที่ยืนยันแล้วก่อนเสมอ' },
+      // ⚠️ ปุ่มนี้ต้องเป็น <button> จริง เพราะ requestEmployerVerify() ทำ btn.outerHTML = badge
+      //    ถ้าให้ทั้งแถวเป็นตัวกด มันจะกลืนทั้งแถวหายไป · และห้ามพาไปหน้าโปรไฟล์ เพราะที่นั่นไม่มีปุ่ม verify
+      { done: _vs === 'verified', required: false, pending: _vs === 'pending', act: '',
+        label: 'ยืนยันตัวตนบริษัท',
+        hint: _vs === 'pending' ? 'ทีมงานกำลังตรวจสอบ ใช้เวลาไม่นาน' : 'คนหางานเลือกบริษัทที่ยืนยันแล้วก่อนเสมอ',
+        btn: (empProfile && !_vs) || (empProfile && _vs !== 'verified' && _vs !== 'pending')
+          ? `<button class="btn btn-secondary btn-sm" style="flex-shrink:0;font-size:11px" onclick="event.stopPropagation();requestEmployerVerify(this)">${t('emp_verify_req_btn')}</button>`
+          : '' },
       { done: (jobs || []).length > 0, required: false, act: "showPage('postjob')",
         label: 'โพสต์งานแรก', hint: 'ระบุตำแหน่ง วันเวลา และค่าแรง' },
     ];
@@ -3424,7 +3431,9 @@ async function loadDashboard() {
                 i.required ? '' : ' <span style="font-weight:400;font-size:11px;color:var(--muted)">(แนะนำ)</span>'}</div>
               ${i.done ? '' : `<div style="font-size:11.5px;color:var(--muted);margin-top:1px">${esc(i.hint)}</div>`}
             </div>
-            ${(i.done || i.pending) ? '' : `<span style="color:var(--muted);flex-shrink:0">${ico('chevron',14)}</span>`}
+            ${i.btn ? i.btn
+              : (i.done || i.pending) ? ''
+              : `<span style="color:var(--muted);flex-shrink:0">${ico('chevron',14)}</span>`}
           </div>`).join('')}
         </div>
       </section>`;

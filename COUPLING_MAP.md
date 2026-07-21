@@ -3,7 +3,7 @@
 > ✍️ **ไฟล์นี้เขียนด้วยมือ · `gen_map.py` ไม่แตะ** — ถ้าเจอกับดักใหม่ให้เพิ่มลงที่นี่
 > คู่กับ `INDEX_MAP.md` (auto-generated) — อันนั้นบอก "อะไรอยู่ตรงไหน" · อันนี้บอก **"แก้ตรงนี้แล้วอะไรพัง"**
 >
-> อัปเดตล่าสุด: 2026-07-19 (รอบ 5 — employer profile) · อ้างอิง `index.html` 6,415 บรรทัด sha `f7c9dbabe590`
+> อัปเดตล่าสุด: 2026-07-19 (รอบ 6 — employer checklist) · อ้างอิง `index.html` 6,462 บรรทัด sha `9fcdbd3a2fd3`
 > ⚠️ เลขบรรทัดในไฟล์นี้จะเลื่อนเมื่อแก้โค้ด — ถ้าไม่ตรง ให้ค้นด้วย**ชื่อ function** แทน
 
 ---
@@ -317,6 +317,18 @@ syncSkillCode(selectId, hiddenId, containerId) // โหมดใหม่ — �
 
 > 🔴 `verifyNudge` ถูกลบทั้งตัวแปรและจุด render แล้ว — **ถ้าจะเอา nudge กลับมา ให้เพิ่มเป็นข้อใน `eChk` ไม่ใช่สร้าง banner ใหม่** ไม่งั้นจะมี UI 2 ตัวพูดเรื่องเดียวกัน
 > ตอนลบ ผมลืมเอา `${verifyNudge}` ออกจากเทมเพลตรอบแรก → **ReferenceError ทำ dashboard นายจ้างพังทั้งหน้า** · จับได้ตอน grep · เตือนไว้ว่าลบตัวแปรต้องไล่ลบจุด render ด้วยเสมอ
+
+### ⚠️ ปุ่ม "ขอ Verify บริษัท" — ต้องเป็น `<button>` จริงเท่านั้น
+
+`requestEmployerVerify(btn)` ทำ **`btn.outerHTML = badge`** ตอนสำเร็จ
+⇒ ถ้าส่ง element อื่นเข้าไป (เช่นทั้งแถวของ checklist) **ทั้งแถวจะถูกแทนที่ด้วย badge แล้วหายไป**
+
+ตอนนี้เรียกได้ **2 จุด** — ทั้งคู่ต้องคงไว้:
+1. การ์ด info บนหน้าโพสต์งาน (`checkEmployerProfile()` success branch)
+2. ปุ่มในข้อ "ยืนยันตัวตนบริษัท" ของ checklist บน dashboard (`event.stopPropagation()` กันไม่ให้ไปโดน onclick ของแถว)
+
+> 🔴 **ห้ามทำให้ข้อ verify ใน checklist เป็นแค่ลิงก์ไปหน้าโปรไฟล์** — **หน้าโปรไฟล์บริษัทไม่มีปุ่ม verify**
+> เคยพลาดมาแล้วรอบหนึ่ง: กดข้อนี้แล้วไปเจอทางตัน ทำอะไรไม่ได้
 
 **Welcome modal** — คุมด้วย localStorage คนละคีย์: `wh_onboarded_worker` / `wh_onboarded_employer`
 `doLogout()` ทำ `localStorage.clear()` ⇒ ออกแล้วเข้าใหม่จะเห็น modal อีกครั้ง (ยอมรับได้)
