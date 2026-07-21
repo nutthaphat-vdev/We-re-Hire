@@ -311,6 +311,10 @@ html, body { margin:0; padding:0; background:#0d0f12; }
   .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
   .tag{font-size:11px;padding:3px 10px;border-radius:4px;background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
   .tag-match{background:rgba(0,229,160,.1);color:var(--accent);border-color:rgba(0,229,160,.2);}
+  /* chip เลือกตำแหน่งงานในหน้าโปรไฟล์ worker — ใหญ่กว่า .tag ปกติเพราะมีปุ่มลบให้กด */
+  .skill-chip{display:inline-flex;align-items:center;gap:10px;font-size:12.5px;padding:6px 8px 6px 13px;border-radius:7px;}
+  .skill-chip .x{cursor:pointer;color:var(--danger);font-weight:700;font-size:18px;line-height:1;padding:1px 5px;border-radius:5px;transition:background .15s;}
+  .skill-chip .x:hover{background:rgba(255,71,87,.18);}
 
   /* Custom radius slider */
   .radius-slider{-webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:3px;background:linear-gradient(to right,var(--accent) 0%,var(--accent) var(--fill,31%),rgba(42,48,64,.9) var(--fill,31%),rgba(42,48,64,.9) 100%);outline:none;border:none;padding:0;cursor:pointer;}
@@ -2408,6 +2412,46 @@ function headers() {
   return h;
 }
 
+// FastAPI ตอบ 422 พร้อม detail เป็น array ของ validation error
+// ถ้าไม่แปลง ผู้ใช้จะเห็น JSON ดิบ เช่น
+//   [{"type":"string_too_short","loc":["body","full_name"],...}]
+// ⚠️ ชื่อฟิลด์ต้องตรงกับ Pydantic model ใน main.py — เพิ่มฟิลด์ใหม่ที่นั่นแล้วมาเติมที่นี่ด้วย
+const FIELD_LABEL = {
+  full_name:'ชื่อ-นามสกุล', phone:'เบอร์โทรศัพท์', email:'อีเมล', password:'รหัสผ่าน',
+  skills:'ตำแหน่งงาน', experience_years:'ประสบการณ์', daily_rate_expected:'ค่าแรงที่คาด',
+  address_text:'ที่อยู่', province:'จังหวัด', postal_code:'รหัสไปรษณีย์',
+  title:'ชื่องาน', description:'รายละเอียดงาน', required_skills:'ทักษะที่ต้องการ',
+  daily_wage_rate:'ค่าแรง/วัน', slots_available:'จำนวนคน', start_date:'วันเริ่มงาน',
+  work_start:'เวลาเริ่ม', work_end:'เวลาเลิก', duration_days:'จำนวนวัน',
+  company_name:'ชื่อบริษัท', contact_person:'ชื่อผู้ติดต่อ', business_type:'ประเภทธุรกิจ',
+  lat:'ตำแหน่ง', lng:'ตำแหน่ง', location_name:'สถานที่',
+};
+
+function humanizeValidationError(detail) {
+  if (!Array.isArray(detail)) return null;
+  const msgs = detail.map(d => {
+    const key   = Array.isArray(d.loc) ? d.loc.filter(x => typeof x === 'string' && x !== 'body').pop() : null;
+    const label = FIELD_LABEL[key] || key || 'ข้อมูล';
+    switch (d.type) {
+      case 'missing':
+      case 'string_too_short':
+      case 'value_error.missing':  return `กรุณากรอก${label}`;
+      case 'string_too_long':      return `${label} ยาวเกินกำหนด`;
+      case 'greater_than':
+      case 'greater_than_equal':
+      case 'less_than':
+      case 'less_than_equal':      return `${label} อยู่นอกช่วงที่กำหนด`;
+      case 'int_parsing':
+      case 'float_parsing':        return `${label} ต้องเป็นตัวเลข`;
+      case 'date_from_datetime_parsing':
+      case 'time_parsing':
+      case 'date_parsing':         return `${label} รูปแบบวันที่/เวลาไม่ถูกต้อง`;
+      default:                     return `${label} ไม่ถูกต้อง`;
+    }
+  });
+  return [...new Set(msgs)].join(' · ');
+}
+
 async function api(method, path, body) {
   callCount++;
   document.getElementById('debugBadge').textContent = `${callCount} calls`;
@@ -2421,8 +2465,11 @@ async function api(method, path, body) {
     });
     const data = await res.json();
     if (!res.ok) {
-      const errMsg = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
-      log('err', `✗ ${res.status} ${errMsg}`);
+      const raw = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
+      log('err', `✗ ${res.status} ${raw}`);      // debug log เก็บของดิบไว้เหมือนเดิม
+      const errMsg = typeof data.detail === 'string'
+        ? data.detail
+        : (humanizeValidationError(data.detail) || 'ข้อมูลไม่ครบหรือรูปแบบไม่ถูกต้อง');
       throw new Error(errMsg);
     }
     log('ok', `✓ ${res.status} ${path}`);
@@ -2582,6 +2629,7 @@ function saveSession(data) {
 
 function doLogout() {
   localStorage.clear();
+  try { sessionStorage.clear(); } catch(_e) {}   // กัน wh_pending_apply ค้างข้ามบัญชีในเบราว์เซอร์เดียวกัน
   token = ''; userRole = ''; userId = '';
   document.getElementById('authPage').style.display = 'flex';
   document.getElementById('mainApp').style.display  = 'none';
@@ -3123,11 +3171,54 @@ async function loadDashboard() {
   contentEl.innerHTML = '<div class="empty"><div class="loading" style="width:24px;height:24px"></div></div>';
 
   if (userRole === 'worker') {
-    const [profile, apps, earn] = await Promise.all([
+    const [profile, apps, earn, _me] = await Promise.all([
       api('GET', '/workers/profile/me').catch(() => null),
       api('GET', '/workers/applications').catch(() => []),
       api('GET', '/workers/earnings').catch(() => null),
+      api('GET', '/auth/me').catch(() => null),   // เบอร์อยู่บน users ไม่ใช่ worker_profiles
     ]);
+    // ── checklist ตั้งค่าบัญชี — อยู่บนสุดจนกว่าจะครบ แล้วหายเอง
+    const _chk      = workerChecklist(profile, _me?.phone || '');
+    const _chkDone  = _chk.filter(i => i.done).length;
+    const _chkBlock = _chk.some(i => i.required && !i.done);
+    const setupCard = _chkDone === _chk.length ? '' : `
+      <section style="background:var(--card);border:1px solid ${_chkBlock ? 'var(--accent)' : 'var(--border)'};border-radius:14px;padding:18px;margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div style="font-weight:800;font-size:15px">ตั้งค่าบัญชีของคุณ</div>
+          <div style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">${_chkDone}/${_chk.length}</div>
+        </div>
+        <div style="font-size:12.5px;color:${_chkBlock ? 'var(--accent)' : 'var(--muted)'};margin-bottom:14px">${
+          _chkBlock ? 'ทำให้ครบก่อนถึงจะสมัครงานได้' : 'เกือบครบแล้ว — อีกนิดเดียวงานจะตรงกับคุณมากขึ้น'}</div>
+        <div style="height:4px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-bottom:14px">
+          <div style="height:100%;width:${Math.round(_chkDone / _chk.length * 100)}%;background:var(--accent);border-radius:3px"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">${_chk.map(i => `
+          <div onclick="showPage('${i.page}')" style="display:flex;gap:10px;align-items:center;cursor:pointer;opacity:${i.done ? '.5' : '1'}">
+            <div style="width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+              background:${i.done ? 'rgba(0,229,160,.15)' : (i.required ? 'var(--accent)' : 'var(--surface2)')};
+              color:${i.done ? 'var(--accent)' : (i.required ? '#0d0f12' : 'var(--muted)')}">${i.done ? '✓' : '!'}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13.5px;font-weight:600;${i.done ? 'text-decoration:line-through' : ''}">${esc(i.label)}${
+                i.required ? '' : ' <span style="font-weight:400;font-size:11px;color:var(--muted)">(แนะนำ)</span>'}</div>
+              ${i.done ? '' : `<div style="font-size:11.5px;color:var(--muted);margin-top:1px">${esc(i.hint)}</div>`}
+            </div>
+            ${i.done ? '' : `<span style="color:var(--muted);flex-shrink:0">${ico('chevron',14)}</span>`}
+          </div>`).join('')}
+        </div>
+      </section>`;
+    // KYC = optional upsell (admin ต้อง approve เอง → ไม่เอาไปขวางทางเข้า)
+    const kycCard = (profile && profile.background_check_status !== 'approved' && !_chkBlock) ? `
+      <section style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:20px;display:flex;gap:12px;align-items:center">
+        <div style="font-size:22px">🪪</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:13.5px">${profile.background_check_status === 'pending' ? 'กำลังตรวจสอบเอกสาร' : 'ยืนยันตัวตน เพิ่มโอกาสได้งาน'}</div>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:1px">${profile.background_check_status === 'pending'
+            ? 'ทีมงานกำลังตรวจ ใช้เวลาไม่นาน' : 'ผู้จ้างเลือกคนที่ยืนยันตัวตนแล้วก่อนเสมอ'}</div>
+        </div>
+        ${profile.background_check_status === 'pending'
+          ? '<span class="badge badge-warn" style="flex-shrink:0">⏳ รอตรวจ</span>'
+          : `<button class="btn btn-secondary btn-sm" style="flex-shrink:0" onclick="showPage('workerprofile')">ยืนยัน</button>`}
+      </section>` : '';
     let recJobs = [];
     try { const nj = await api('GET', `/jobs/nearby?lat=13.7018&lng=100.6011&radius_km=25&scope=all`); recJobs = (nj||[]).slice(0,6); } catch(_e) {}
 
@@ -3158,6 +3249,9 @@ async function loadDashboard() {
           <span style="font-weight:500;font-size:.92rem">รับงาน</span>
         </div>
       </div>
+
+      ${setupCard}
+      ${kycCard}
 
       <section class="earnings-card">
         <div class="e-header"><span>ยอดเงินสัปดาห์นี้</span><span class="history-link" onclick="showPage('earnings')">${ico('clock',14)} ประวัติ</span></div>
@@ -3200,7 +3294,12 @@ async function loadDashboard() {
         </div>`).join('')}</div>` : `<div style="color:var(--muted);font-size:.9rem;padding:8px 0">ยังไม่มีงานแนะนำ — <span style="color:#00E5A0;cursor:pointer" onclick="showPage('nearby')">เปิด GPS หางาน</span></div>`}
     </div>`;
 
-    if (!profile?.skills?.length) showOnboardModal('worker');
+    // เด้ง welcome modal ครั้งแรกครั้งเดียว — หลังจากนั้นให้ setupCard ทำหน้าที่แทน
+    // (เดิมยิงทุกครั้งที่ loadDashboard() รัน = กวนแต่ไม่กัน)
+    if (!profile?.skills?.length && !localStorage.getItem('wh_onboarded_worker')) {
+      localStorage.setItem('wh_onboarded_worker', '1');
+      showOnboardModal('worker');
+    }
 
   } else {
     // EMPLOYER dashboard
@@ -3394,7 +3493,7 @@ async function loadWorkerProfile() {
       </div>
         ${p.background_check_status === 'pending' ? `
         <style>
-          .wp-kyc{background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.18);border-radius:20px;padding:32px}
+          .wp-kyc{background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.18);border-radius:20px;padding:32px;margin-top:20px}
           .wp-kyc .wp-kyc-head{display:flex;align-items:center;gap:10px;color:var(--text);font-size:1.4rem;font-weight:700;margin-bottom:8px}
           .wp-kyc .wp-kyc-sub{color:var(--muted);font-size:.95rem;margin-bottom:28px}
           .wp-kyc .wp-up-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
@@ -3443,7 +3542,7 @@ async function loadWorkerProfile() {
         </div>` : ''}
       <div id="editProfileForm" style="display:none">
         <style>
-          .wp-edit{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px}
+          .wp-edit{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;margin-top:20px}
           .wp-edit .wp-head{font-size:1.35rem;font-weight:700;margin-bottom:4px;color:var(--text)}
           .wp-edit .wp-sub{color:var(--muted);font-size:.9rem;margin-bottom:24px}
           .wp-edit .wp-cell{display:flex;flex-direction:column;gap:7px}
@@ -3468,11 +3567,12 @@ async function loadWorkerProfile() {
             </div>
             <div class="wp-cell">
               <label>${t('profile_jobtitle_lbl')}</label>
-              <select id="editSkillSelect" onchange="syncSkillCode('editSkillSelect','editSkills')">
-                <option value="${esc(p.skills[0]||'')}">${esc(p.skills[0]||'')||'— เลือกตำแหน่ง —'}</option>
+              <select id="editSkillSelect" onchange="syncSkillCode('editSkillSelect','editSkills','editSkillChips')">
+                <option value="">— เลือกตำแหน่ง —</option>
               </select>
             </div>
           </div>
+          <div id="editSkillChips" style="display:none;flex-wrap:wrap;gap:9px;margin:2px 0 14px"></div>
           <input type="hidden" id="editSkills" value="${esc(p.skills.join(','))}">
           <div class="wp-row">
             <div class="wp-cell"><label>${t('profile_exp_lbl')}</label><input type="number" id="editExp" value="${p.experience_years}"></div>
@@ -3506,12 +3606,13 @@ async function loadWorkerProfile() {
     loadReviewSummary(userId, 'worker', 'workerReviewSummary');
     // Re-init dropdowns เพราะ form render หลัง initApp
     initCategoryDropdowns();
+    renderSkillChips('editSkills','editSkillChips','editSkillSelect');   // โชว์ skill เดิมเป็น chip
   } catch(e) {
     // ยังไม่มีโปรไฟล์ — แสดงฟอร์มสร้าง
     if (e.message.includes('ไม่พบโปรไฟล์') || e.message.includes('404')) {
       el.innerHTML = `
         <style>
-          .wp-edit{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px}
+          .wp-edit{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;margin-top:20px}
           .wp-edit .wp-head{font-size:1.35rem;font-weight:700;margin-bottom:4px;color:var(--text)}
           .wp-edit .wp-sub{color:var(--muted);font-size:.9rem;margin-bottom:24px}
           .wp-edit .wp-cell{display:flex;flex-direction:column;gap:7px}
@@ -3539,11 +3640,12 @@ async function loadWorkerProfile() {
             </div>
             <div class="wp-cell">
               <label>ตำแหน่งงาน</label>
-              <select id="createSkillSelect" onchange="syncSkillCode('createSkillSelect','createSkills')">
+              <select id="createSkillSelect" onchange="syncSkillCode('createSkillSelect','createSkills','createSkillChips')">
                 <option value="">— เลือกตำแหน่ง —</option>
               </select>
             </div>
           </div>
+          <div id="createSkillChips" style="display:none;flex-wrap:wrap;gap:9px;margin:2px 0 14px"></div>
           <input type="hidden" id="createSkills" value="">
           <div class="wp-row">
             <div class="wp-cell"><label>ประสบการณ์ (ปี)</label><input type="number" id="createExp" value="0"></div>
@@ -3571,6 +3673,7 @@ async function loadWorkerProfile() {
         </div>`;
       // Re-init dropdowns หลัง form render
       initCategoryDropdowns();
+      renderSkillChips('createSkills','createSkillChips','createSkillSelect');
     } else {
       el.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
     }
@@ -3589,6 +3692,7 @@ async function doCreateProfile() {
     const province    = document.getElementById('createProvince').value;
     const postalCode  = document.getElementById('createPostalCode').value.trim();
     const addressText = document.getElementById('createAddressText').value.trim();
+    if (!skills.length) throw new Error('กรุณาเลือกหมวดงานและตำแหน่งงานอย่างน้อย 1 ตำแหน่ง');
     if (!province) throw new Error(t('profile_province_error'));
     if (postalCode && !/^\d{5}$/.test(postalCode)) throw new Error(t('profile_postal_error'));
     const locationName = [addressText, province, postalCode].filter(Boolean).join(' ') || undefined;
@@ -3604,6 +3708,7 @@ async function doCreateProfile() {
       location_name:       locationName,
     });
     showAlert('alertCreateProfile','✅ สร้างโปรไฟล์สำเร็จ!','success');
+    if (await returnToPendingApply('alertCreateProfile')) return;
     setTimeout(() => loadWorkerProfile(), 1000);
   } catch(e) {
     showAlert('alertCreateProfile', e.message);
@@ -3616,6 +3721,7 @@ async function doUpdateProfile() {
     const province    = document.getElementById('editProvince').value;
     const postalCode  = document.getElementById('editPostalCode').value.trim();
     const addressText = document.getElementById('editAddressText').value.trim();
+    if (!skills.length) throw new Error('กรุณาเลือกตำแหน่งงานอย่างน้อย 1 ตำแหน่ง');
     if (!province) throw new Error(t('profile_province_error'));
     if (postalCode && !/^\d{5}$/.test(postalCode)) throw new Error(t('profile_postal_error'));
     const locationName = [addressText, province, postalCode].filter(Boolean).join(' ') || undefined;
@@ -3632,10 +3738,130 @@ async function doUpdateProfile() {
     const _ph = (document.getElementById('editPhone')?.value || '').trim();
     if (_ph) await api('PATCH', '/auth/phone', { phone: _ph });
     showAlert('alertEditProfile','✅ อัปเดตสำเร็จ!','success');
+    if (await returnToPendingApply('alertEditProfile')) return;
     setTimeout(() => loadWorkerProfile(), 1000);
   } catch(e) {
     showAlert('alertEditProfile', e.message);
   }
+}
+
+// ─── PROFILE COMPLETENESS (gate ก่อนสมัครงาน) ───────────────
+// worker ที่โปรไฟล์ไม่ครบจะโดน backend ปฏิเสธตอน POST /jobs/{id}/apply
+// (404 ไม่มีโปรไฟล์ / 400 ไม่มีเบอร์ / 403 work permit) — เดิม error ไปโผล่ในปุ่ม
+// แล้วตัน ไม่มีทางไปต่อ · ตรงนี้ย้ายการเช็คมาก่อนยิง API แล้วพาไปกรอกแทน
+//
+// ⚠️ _pendingApplyJobId ถือ "งานที่ค้างไว้" ข้ามหน้า
+//    เก็บใน sessionStorage ด้วย เพราะผู้ใช้ refresh ระหว่างกรอกโปรไฟล์ได้
+//    (เจอจากการเทสจริง 19 ก.ค. — refresh แล้ว state หายจน flow ขาด)
+//    เคลียร์ทุกครั้งที่สมัครสำเร็จ / กด "ไว้ทีหลัง" (ดู COUPLING_MAP ข้อ 11)
+const _PENDING_KEY = 'wh_pending_apply';
+let _pendingApplyJobId = (() => {
+  try { return JSON.parse(sessionStorage.getItem(_PENDING_KEY) || 'null'); }
+  catch(_e) { return null; }
+})();
+
+function setPendingApply(v) {
+  _pendingApplyJobId = v;
+  try {
+    if (v) sessionStorage.setItem(_PENDING_KEY, JSON.stringify(v));
+    else   sessionStorage.removeItem(_PENDING_KEY);
+  } catch(_e) {}
+}
+
+// ดึงสถานะ worker ที่ต้องใช้ตัดสิน: profile (worker_profiles) + phone (users)
+// เบอร์ไม่ได้อยู่บน /workers/profile/me ต้องยิง /auth/me แยก
+async function fetchWorkerStatus() {
+  const [profile, me] = await Promise.all([
+    api('GET', '/workers/profile/me').catch(() => null),
+    api('GET', '/auth/me').catch(() => null),
+  ]);
+  return { profile, phone: me?.phone || '' };
+}
+
+// รายการความครบของโปรไฟล์
+//   required:true  = backend บล็อกจริง สมัครงานไม่ได้
+//   required:false = สมัครได้ แต่ matching พัง (skills = 60% ของคะแนน, distance = 25%)
+function workerChecklist(profile, phone) {
+  const foreign = profile?.nationality_type === 'foreign';
+  let permitOk = true;
+  if (foreign) {
+    const exp = profile?.work_permit_expiry ? new Date(profile.work_permit_expiry) : null;
+    const today = new Date(); today.setHours(0,0,0,0);
+    permitOk = !!profile?.work_permit_url && (!exp || exp >= today);
+  }
+  const items = [
+    { key:'profile', required:true, done:!!profile, page:'workerprofile',
+      label:'สร้างโปรไฟล์', hint:'ชื่อ-นามสกุล และข้อมูลพื้นฐาน' },
+    { key:'phone', required:true, done:!!phone, page:'workerprofile',
+      label:'เพิ่มเบอร์โทร', hint:'ผู้จ้างใช้ติดต่อคุณเมื่อรับเข้าทำงาน' },
+  ];
+  if (foreign) items.push({ key:'permit', required:true, done:permitOk, page:'workerprofile',
+    label:'อัปโหลด Work Permit', hint:'ต้องยังไม่หมดอายุ' });
+  items.push(
+    { key:'skills', required:false, done:!!(profile?.skills?.length), page:'workerprofile',
+      label:'ระบุอาชีพที่ถนัด', hint:'ช่วยให้จับคู่งานตรงขึ้นมาก' },
+  );
+  // ❌ อย่าเพิ่ม "ตั้งที่อยู่" กลับมา — WeHire จงใจไม่เก็บที่อยู่ตายตัวเป็นพิกัด
+  //    ระยะทางคิดจาก GPS ปัจจุบันตอนเปิดหาหางานเท่านั้น (คนงานรายวันย้ายที่ทั้งวัน)
+  //    ที่อยู่ในโปรไฟล์ = ข้อมูลติดต่อ ไม่ใช่พิกัดจับคู่ · ดู COUPLING_MAP ข้อ 13
+  return items;
+}
+
+const canApplyNow = items => items.filter(i => i.required).every(i => i.done);
+
+// modal กันตอนกดสมัคร — ใช้ #onboardModal ตัวเดิมซ้ำ (คนละ renderer)
+function showProfileGateModal(items) {
+  const m = document.getElementById('onboardModal');
+  if (!m) return;
+  const missing = items.filter(i => i.required && !i.done);
+  const rows = items.map(i => `
+    <div style="display:flex;gap:10px;align-items:flex-start;opacity:${i.done ? '.55' : '1'}">
+      <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;
+        background:${i.done ? 'rgba(0,229,160,.15)' : (i.required ? 'var(--accent)' : 'var(--surface2)')};
+        color:${i.done ? 'var(--accent)' : (i.required ? '#0d0f12' : 'var(--muted)')};
+        border:1px solid ${i.done ? 'rgba(0,229,160,.3)' : 'transparent'}">${i.done ? '✓' : '!'}</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:13.5px;${i.done ? 'text-decoration:line-through' : ''}">${esc(i.label)}${
+          i.required ? '' : ' <span style="font-weight:500;font-size:11px;color:var(--muted)">(แนะนำ)</span>'}</div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:1px">${esc(i.hint)}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('onboardModalContent').innerHTML = `
+    <div style="font-size:30px;margin-bottom:8px">📝</div>
+    <div style="font-size:18px;font-weight:800;margin-bottom:4px">อีก ${missing.length} ขั้นก็สมัครได้เลย</div>
+    <div style="color:var(--muted);font-size:13px;margin-bottom:18px">เราเก็บงานนี้ไว้ให้แล้ว กรอกเสร็จพากลับมาสมัครต่อ</div>
+    <div style="display:flex;flex-direction:column;gap:13px;text-align:left;margin-bottom:22px">${rows}</div>
+    <button class="btn btn-primary" style="width:100%;min-height:48px;font-size:15px;font-weight:700"
+      onclick="goCompleteProfile()">กรอกโปรไฟล์ →</button>
+    <div style="margin-top:10px">
+      <button onclick="setPendingApply(null);closeOnboardModal()"
+        style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;width:100%;padding:6px">ไว้ทีหลัง</button>
+    </div>`;
+  m.style.display = 'flex';
+}
+
+function goCompleteProfile() {
+  closeOnboardModal();
+  showPage('workerprofile');
+}
+
+// เรียกหลังบันทึกโปรไฟล์สำเร็จ — ถ้ามีงานค้างอยู่และตอนนี้สมัครได้แล้ว
+// ให้พากลับไปหน้าหางานต่อ (ปิด loop ที่ผู้ใช้ตั้งใจไว้ตั้งแต่แรก)
+// return true = พาไปแล้ว (caller ไม่ต้อง reload profile ต่อ)
+async function returnToPendingApply(alertId) {
+  if (!_pendingApplyJobId) return false;
+  try {
+    const { profile, phone } = await fetchWorkerStatus();
+    if (!canApplyNow(workerChecklist(profile, phone))) return false;   // ยังไม่ครบ อยู่หน้าเดิมต่อ
+  } catch(_e) { return false; }
+  setPendingApply(null);
+  if (alertId) showAlert(alertId, '✅ เรียบร้อย! กำลังพากลับไปสมัครงาน…', 'success');
+  setTimeout(() => {
+    showPage('nearby');
+    const _la = document.getElementById('searchLat')?.value;
+    if (_la) searchNearby();
+  }, 1200);
+  return true;
 }
 
 // ─── NEARBY MAP INIT ───────────────────────────────────────
@@ -3856,8 +4082,24 @@ async function searchNearby() {
 async function applyJob(jobId, lat, lng, btn) {
   btn.disabled = true;
   btn.innerHTML = '<span class="loading"></span>';
+
+  // ── gate: เช็คโปรไฟล์ก่อนยิง API
+  // เดิมปล่อยให้ backend ปฏิเสธแล้วเอา error ยัดใส่ปุ่ม → ผู้ใช้ตัน ไม่รู้จะไปไหน
+  try {
+    const { profile, phone } = await fetchWorkerStatus();
+    const items = workerChecklist(profile, phone);
+    if (!canApplyNow(items)) {
+      setPendingApply({ jobId, lat, lng });
+      btn.disabled = false;
+      btn.innerHTML = t('apply_btn');
+      showProfileGateModal(items);
+      return;
+    }
+  } catch(_e) { /* เช็คไม่ได้ก็ปล่อยผ่านไปให้ backend ตัดสิน */ }
+
   try {
     const data = await api('POST', `/jobs/${jobId}/apply`, { lat, lng });
+    setPendingApply(null);
     btn.innerHTML = `${t('applied_ok')} (${data.match_score}/100)`;
     btn.style.background = 'rgba(0,229,160,.15)';
     btn.style.color = 'var(--accent)';
@@ -5621,6 +5863,8 @@ async function loadJobTitles(categorySelectId, titleSelectId) {
   titleEl.innerHTML = `<option value="">${t('loading_text')}</option>`;
   try {
     const titles = await api('GET', `/job-categories/${catCode}/titles`);
+    // เก็บ label ไว้ให้ chip ใช้แสดงชื่อไทย แทนที่จะโชว์ code ดิบ
+    titles.forEach(ti => { _titleLabels[ti.code] = (_lang==='en' && ti.name_en) ? ti.name_en : ti.name_th; });
     titleEl.innerHTML = '<option value="">— เลือกตำแหน่ง —</option>' +
       titles.map(ti => `<option value="${ti.code}">${_lang==='en' && ti.name_en ? ti.name_en : ti.name_th}</option>`).join('');
   } catch(e) {
@@ -5628,10 +5872,70 @@ async function loadJobTitles(categorySelectId, titleSelectId) {
   }
 }
 
-function syncSkillCode(titleSelectId, hiddenInputId) {
-  const val = document.getElementById(titleSelectId)?.value || '';
+// ─── SKILLS แบบหลายตำแหน่ง (สูงสุด 3) ──────────────────────
+// เดิม syncSkillCode ทำ hidden.value = val คือ "ทับ" ไม่ใช่ "เพิ่ม"
+// ⇒ worker ที่มีหลาย skill เข้าไปแก้โปรไฟล์แล้วแตะ dropdown = skill เดิมหายเงียบๆ
+//
+// ดีไซน์: ไม่มีปุ่ม "เพิ่ม" — เลือกจาก dropdown แล้วกลายเป็น chip เอง
+//         แถว chip โผล่เมื่อมีอย่างน้อย 1 ตัว · ครบ 3 แล้ว dropdown ปิดตัวเอง
+// ⚠️ skill_score = len(matched)/len(required) → มี skill เยอะไม่เจือจางคะแนน มีแต่ได้
+const MAX_SKILLS = 3;
+const _titleLabels = {};   // code -> ชื่อไทย/อังกฤษ · เติมตอน loadJobTitles + ตอนผู้ใช้เลือก
+
+const skillLabel = code => _titleLabels[code] || code;
+
+function getSkillList(hiddenInputId) {
+  return (document.getElementById(hiddenInputId)?.value || '')
+    .split(',').map(s => s.trim()).filter(Boolean);
+}
+
+function renderSkillChips(hiddenInputId, containerId, selectId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const list = getSkillList(hiddenInputId);
+  el.style.display = list.length ? 'flex' : 'none';
+  el.innerHTML = list.map(code => `
+    <span class="tag tag-match skill-chip">
+      ${esc(skillLabel(code))}
+      <span class="x" title="ลบตำแหน่งนี้"
+            onclick="removeSkill('${esc(code)}','${hiddenInputId}','${containerId}','${selectId}')">×</span>
+    </span>`).join('');
+  const sel = document.getElementById(selectId);
+  if (sel) {
+    const full = list.length >= MAX_SKILLS;
+    sel.disabled = full;
+    sel.style.opacity = full ? '.5' : '';
+    if (full && sel.options.length) sel.options[0].text = `ครบ ${MAX_SKILLS} ตำแหน่งแล้ว`;
+  }
+}
+
+function syncSkillCode(titleSelectId, hiddenInputId, containerId) {
+  const sel = document.getElementById(titleSelectId);
   const hidden = document.getElementById(hiddenInputId);
-  if (hidden) hidden.value = val;
+  if (!sel || !hidden) return;
+
+  // ไม่ส่ง containerId มา = โหมดเดิม เลือกได้ตัวเดียว (ฟอร์มโพสต์งานฝั่ง employer ใช้อยู่)
+  // ⚠️ ห้ามลบ branch นี้ ไม่งั้น dropdown ฝั่งนายจ้างจะรีเซ็ตตัวเองโดยไม่มี chip มารับ
+  if (!containerId) { hidden.value = sel.value; return; }
+
+  const code = sel.value;
+  if (!code) return;
+  const opt = sel.options[sel.selectedIndex];
+  if (opt && opt.text) _titleLabels[code] = opt.text;   // จำ label ไว้โชว์บน chip
+  const list = getSkillList(hiddenInputId);
+  if (!list.includes(code) && list.length < MAX_SKILLS) list.push(code);
+  hidden.value = list.join(',');
+  sel.value = '';                                       // รีเซ็ตรอเลือกตัวถัดไป
+  renderSkillChips(hiddenInputId, containerId, titleSelectId);
+}
+
+function removeSkill(code, hiddenInputId, containerId, selectId) {
+  const hidden = document.getElementById(hiddenInputId);
+  if (!hidden) return;
+  hidden.value = getSkillList(hiddenInputId).filter(c => c !== code).join(',');
+  const sel = document.getElementById(selectId);
+  if (sel && sel.options.length) sel.options[0].text = '— เลือกตำแหน่ง —';
+  renderSkillChips(hiddenInputId, containerId, selectId);
 }
 
 // ─── REVIEWS ───────────────────────────────────────────────

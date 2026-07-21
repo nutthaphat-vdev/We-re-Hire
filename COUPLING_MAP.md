@@ -3,7 +3,7 @@
 > ✍️ **ไฟล์นี้เขียนด้วยมือ · `gen_map.py` ไม่แตะ** — ถ้าเจอกับดักใหม่ให้เพิ่มลงที่นี่
 > คู่กับ `INDEX_MAP.md` (auto-generated) — อันนั้นบอก "อะไรอยู่ตรงไหน" · อันนี้บอก **"แก้ตรงนี้แล้วอะไรพัง"**
 >
-> อัปเดตล่าสุด: 2026-07-19 · อ้างอิง `index.html` 6,085 บรรทัด sha `3a84f52cf83e`
+> อัปเดตล่าสุด: 2026-07-19 (รอบ 4 — multi-skill) · อ้างอิง `index.html` 6,389 บรรทัด sha `bbab976b6a96`
 > ⚠️ เลขบรรทัดในไฟล์นี้จะเลื่อนเมื่อแก้โค้ด — ถ้าไม่ตรง ให้ค้นด้วย**ชื่อ function** แทน
 
 ---
@@ -164,6 +164,123 @@ CSS ไม่ได้อยู่แค่ 3 ก้อนบนหัวไฟ�
 มีอีก **5 ก้อนฝังใน template literal ของ JS** — ดูตาราง Layout ใน `INDEX_MAP.md` (แถวที่ mark ว่าอยู่ใน JS)
 
 ⇒ แก้สีปุ่มใน modal แล้วไม่เปลี่ยน? ลองหาใน string ก่อนโทษ cache
+
+---
+
+## 🟠 11. `_pendingApplyJobId` — state ค้างข้ามหน้า (เพิ่ม 2026-07-19)
+
+```js
+const _PENDING_KEY = 'wh_pending_apply';        // sessionStorage
+let _pendingApplyJobId = /* อ่านจาก sessionStorage ตอน parse */;
+function setPendingApply(v) { ... }            // ← ทางเข้าออกทางเดียว
+```
+
+ใช้จำ "งานที่ worker กดสมัครแต่โปรไฟล์ไม่ครบ" เพื่อพากลับมาหลังกรอกเสร็จ
+
+> 🔴 **ห้ามเขียน `_pendingApplyJobId = ...` ตรงๆ — ต้องผ่าน `setPendingApply()` เสมอ**
+> ไม่งั้น memory กับ sessionStorage จะไม่ตรงกัน แล้ว flow จะขาดหลัง refresh
+> (เก็บใน sessionStorage เพราะเทสจริงพบว่าผู้ใช้ refresh ระหว่างกรอกโปรไฟล์แล้ว state หาย)
+
+**เส้นทางของมัน — ต้องเคลียร์ครบทุกทางออก ไม่งั้นจะเด้งไปหน้า nearby มั่ว:**
+
+| จุด | เกิดอะไร |
+|---|---|
+| `applyJob()` | **ตั้งค่า** เมื่อ `canApplyNow()` = false |
+| `applyJob()` | **เคลียร์** เมื่อสมัครสำเร็จ |
+| ปุ่ม "ไว้ทีหลัง" ใน gate modal | **เคลียร์** (inline `onclick="setPendingApply(null)"`) |
+| `returnToPendingApply()` | **เคลียร์** ก่อนพากลับไปหน้า nearby |
+| `doLogout()` | **`sessionStorage.clear()`** — กันค้างข้ามบัญชีในเบราว์เซอร์เดียวกัน |
+
+⚠️ **ไม่ถูกเคลียร์ตอน logout** — แต่ไม่เป็นไรเพราะ `doLogout()` ทำ `localStorage.clear()` และหน้าถูก reset · ถ้าอนาคตเปลี่ยน logout ให้เป็น SPA แบบไม่ reload **ต้องมาเคลียร์ตัวนี้ด้วย**
+
+**`returnToPendingApply()` ถูกเรียกใน `doCreateProfile()` + `doUpdateProfile()`**
+คืน `true` = พาไปแล้ว → caller **ต้อง `return`** ไม่ให้ `loadWorkerProfile()` รันทับ (เพราะจะดึงหน้าเดิมกลับมา)
+
+---
+
+## 🟡 12. Gate โปรไฟล์ก่อนสมัครงาน — frontend ต้องตรงกับ backend
+
+`workerChecklist()` (~3710) มี `required:true` = สิ่งที่ **backend บล็อกจริง** ที่ `POST /jobs/{id}/apply` (main.py ~1833):
+
+| checklist item | backend เช็ค |
+|---|---|
+| `profile` | 404 `"สร้าง Worker Profile ก่อน"` |
+| `phone` | 400 `"กรุณาเพิ่มเบอร์โทร..."` |
+| `permit` (ต่างด้าวเท่านั้น) | 403 work permit ไม่มี/หมดอายุ |
+
+`skills` / `location` เป็น `required:false` — **ไม่บล็อก** แต่ทำให้ `W_SKILLS 0.60` + `W_DISTANCE 0.25` เป็นศูนย์
+
+> 🔴 **ถ้าแก้เงื่อนไขฝั่ง backend ต้องมาแก้ `workerChecklist()` ด้วย** ไม่งั้น frontend จะปล่อยผ่านแล้วไปตายที่ API เหมือนเดิม
+> `applyJob()` ยังมี `try/catch` เดิมไว้เป็น safety net — แต่มันคือ UX ที่เราเพิ่งแก้ทิ้งไป อย่าให้ตกไปถึงตรงนั้น
+
+---
+
+## 🔴 13. ที่อยู่ในโปรไฟล์ **ไม่ใช่** พิกัดจับคู่งาน — เจตนาออกแบบ
+
+> เพิ่ม 2026-07-19 หลังเทสจริง · **อ่านก่อนจะ "แก้" ให้โปรไฟล์มี lat/lng**
+
+`POST/PATCH /workers/profile` ฝั่ง backend **รับ `lat`/`lng` ได้** (main.py ~1046, ~1057)
+แต่ฟอร์มโปรไฟล์ฝั่งหน้าเว็บ **จงใจไม่ส่ง** — ส่งแค่ `address_text` · `province` · `postal_code` · `location_name`
+
+**เหตุผล (การตัดสินใจของ founder):** งานรายวันคนงานย้ายที่ทั้งวัน · พิกัดบ้านที่ตั้งไว้ตายตัวจะทำให้ระยะทางผิด
+⇒ **ระยะทางคิดจาก GPS ปัจจุบันตอนเปิดหน้าหางานเท่านั้น** · ที่อยู่ในโปรไฟล์ = ข้อมูลติดต่อ ไม่ใช่พิกัด
+
+> 🚧 **ห้าม geocode ที่อยู่แล้วยัดลง `worker_profiles.location`** เพื่อ "แก้ให้ครบ" — จะทับ design เดิม
+> และห้ามเพิ่มข้อ "ตั้งที่อยู่" กลับเข้า `workerChecklist()`
+
+**ผลข้างเคียงที่ยังค้างอยู่ (ยังไม่แก้):**
+`_cascade_backup_offer()` (main.py ~2934) กรอง `AND wp.location IS NOT NULL`
+เมื่อไม่มีอะไรเขียน `wp.location` เลย ⇒ **worker ที่สมัครผ่าน UI ถูกตัดออกจากระบบ backup ทั้งหมด**
+รวมกับ cron ที่ไม่รัน = anti-ghosting พังสองชั้น
+
+**ทางแก้ที่ตกลงกันไว้ (ยังไม่ทำ):** ผูกพิกัดกับปุ่ม **"รับงาน"** — เปิด = ส่ง GPS ปัจจุบันไปกับ `PATCH /workers/profile { is_available, lat, lng }` · ปิด = หลุดจากการถูกเลือก
+ต้องทำ consent ตาม `policies/02_PRIVACY_POLICY_PDPA.md` **ข้อ 2.1 + 9.1** ก่อนเปิดใช้
+
+---
+
+## 🟡 14. `FIELD_LABEL` ต้อง sync กับ Pydantic model ใน `main.py`
+
+> เพิ่ม 2026-07-19 · หลังเจอ error ดิบหลุดถึงผู้ใช้ตอนเทส
+
+`api()` (~2411) แปลง **422 validation error** ของ FastAPI เป็นภาษาคน ผ่าน `humanizeValidationError()`
+โดยอ่านชื่อฟิลด์จาก `detail[].loc` แล้วเปิดตาราง `FIELD_LABEL`
+
+**พฤติกรรม:**
+
+| `detail` เป็น | ผลลัพธ์ |
+|---|---|
+| string (backend เขียนเอง เช่น `"งานนี้ปิดรับสมัครแล้ว"`) | ใช้ตามเดิม ไม่แตะ |
+| array (Pydantic 422) | แปลงเป็น `"กรุณากรอกชื่อ-นามสกุล"` ฯลฯ |
+| array แต่ฟิลด์ไม่มีใน `FIELD_LABEL` | fallback เป็นชื่อฟิลด์ดิบ + `" ไม่ถูกต้อง"` — **ไม่พัง แต่ผู้ใช้เห็นชื่อฟิลด์อังกฤษ** |
+
+> 🔴 **เพิ่มฟิลด์ใหม่ใน Pydantic model → ต้องมาเติม `FIELD_LABEL` ด้วย**
+> ไม่งั้นผู้ใช้จะเห็นเช่น `work_permit_expiry ไม่ถูกต้อง`
+
+ของดิบยังถูกส่งเข้า `log('err', ...)` เหมือนเดิม ⇒ เปิด debug panel ยังดีบักได้ครบ
+
+---
+
+## 🔴 15. `syncSkillCode()` มี **2 โหมด** — ดูจำนวน argument
+
+> เพิ่ม 2026-07-19 · ตอนทำ multi-skill เกือบทำฟอร์มโพสต์งานฝั่งนายจ้างพัง
+
+```js
+syncSkillCode(selectId, hiddenId)              // โหมดเดิม — เลือกได้ตัวเดียว (ทับค่า)
+syncSkillCode(selectId, hiddenId, containerId) // โหมดใหม่ — สะสมเป็น chip สูงสุด 3
+```
+
+| ผู้เรียก | โหมด | ทำไม |
+|---|---|---|
+| `jobSkillSelect` (โพสต์งาน — employer) | **เดิม** 2 args | งานหนึ่งใบระบุตำแหน่งเดียว |
+| `createSkillSelect` / `editSkillSelect` (โปรไฟล์ worker) | **ใหม่** 3 args | คนงานรายวันเป็น generalist ทำได้หลายอย่าง |
+
+> 🔴 **ห้ามลบ branch `if (!containerId) { hidden.value = sel.value; return; }`**
+> ถ้าลบ ฟอร์มโพสต์งานจะรีเซ็ต dropdown ตัวเองโดยไม่มี chip มารับ = ตัวเลือกหายต่อหน้าผู้ใช้
+
+**คู่ id ที่ต้องมาครบ 3 ตัวเสมอในโหมดใหม่:** `xxxSkills` (hidden) · `xxxSkillChips` (container) · `xxxSkillSelect` (dropdown)
+และต้องเรียก `renderSkillChips()` **หลัง form render** ทุกครั้ง (เหตุผลเดียวกับข้อ 6 — form สร้างด้วย `innerHTML` ทีหลัง)
+
+`_titleLabels` เก็บ code → ชื่อไทย เติมตอน `loadJobTitles()` · ถ้ายังไม่เคยโหลดหมวดนั้น chip จะโชว์ **code ดิบ** (เช่น `laundry_attendant`) — ยอมรับได้ ไม่ใช่บั๊ก
 
 ---
 
