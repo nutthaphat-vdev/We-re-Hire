@@ -19,6 +19,7 @@ import httpx
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.events import EVENT_JOB_MISSED, EVENT_JOB_ERROR
 from typing import Optional
 from uuid import UUID
 
@@ -624,7 +625,24 @@ async def lifespan(app: FastAPI):
     logger.info(f"[startup] CORS_ORIGINS   = {settings.cors_origins!r}")
     logger.info(f"[startup] origins list   = {origins}")
 
-    scheduler = AsyncIOScheduler()
+    # ❗ misfire_grace_time — ห้ามลบ
+    # Render free tier พัก process ตอนไม่มี traffic · ตื่นมาแล้ว APScheduler เห็นว่ารอบที่ควรยิงผ่านไปแล้ว
+    # ค่า default คือ 1 วินาที ⇒ ทุกรอบที่ตกช่วงหลับจะถูกมองว่า "misfire" แล้ว **ข้ามไปเงียบๆ**
+    # ไม่รัน ไม่ log ไม่ error — หน้าตาเหมือน cron ไม่เคยทำงานเลย (สงสัยว่าเป็นสาเหตุที่เงียบมา 7 วัน)
+    #   misfire_grace_time=3600 → ตื่นช้าแค่ไหนก็ยังรันให้
+    #   coalesce=True           → พลาดไป 10 รอบ ก็รันครั้งเดียว ไม่ยิงรัวไล่เก็บ
+    scheduler = AsyncIOScheduler(
+        job_defaults={"misfire_grace_time": 3600, "coalesce": True}
+    )
+    # ดักไว้ให้รู้ตัว: ถ้ายังมี misfire อยู่จะได้เห็นใน log แทนที่จะเงียบเหมือนเดิม
+    scheduler.add_listener(
+        lambda ev: logger.warning(f"[scheduler] MISSED job={ev.job_id} scheduled={ev.scheduled_run_time}"),
+        EVENT_JOB_MISSED,
+    )
+    scheduler.add_listener(
+        lambda ev: logger.error(f"[scheduler] ERROR job={ev.job_id}: {ev.exception!r}"),
+        EVENT_JOB_ERROR,
+    )
     scheduler.add_job(auto_verify_completed_jobs, "interval", minutes=30)
     scheduler.add_job(check_noshow_workers,       "interval", minutes=5)
     scheduler.add_job(send_d1_reminders,          "cron",     hour=11, minute=0)   # 11:00 UTC = 18:00 Bangkok
