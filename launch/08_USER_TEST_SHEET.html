@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>ใบสังเกตการณ์ — ทดสอบผู้ใช้ WeHire</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 12mm 12mm 10mm; }
+  *{box-sizing:border-box}
+  body{font-family:'Sarabun','Leelawadee UI','Tahoma',sans-serif;font-size:10.5pt;line-height:1.5;color:#000;background:#fff;margin:0;padding:14px}
+  h1{font-size:16pt;margin:0 0 2px;font-weight:700}
+  h2{font-size:12pt;margin:0 0 8px;padding:5px 9px;background:#eee;border-left:4px solid #000;font-weight:700}
+  h2 .n{font-family:monospace;margin-right:6px}
+  .sub{font-size:9pt;color:#444;margin-bottom:12px}
+  .meta{display:flex;gap:14px;flex-wrap:wrap;font-size:9.5pt;border:1px solid #000;padding:8px 10px;margin-bottom:12px}
+  .meta div{flex:1 1 30%}
+  .u{display:inline-block;border-bottom:1px solid #666;min-width:80px}
+  .rules{border:2px solid #000;padding:9px 12px;margin-bottom:14px;font-size:9.5pt}
+  .rules b{display:block;margin-bottom:4px;font-size:10.5pt}
+  .rules ol{margin:0;padding-left:18px}
+  .rules li{margin-bottom:3px}
+  .step{border:1px solid #999;padding:9px 11px;margin-bottom:9px;page-break-inside:avoid}
+  .step .q{font-weight:600;margin-bottom:6px}
+  .step .hint{font-size:8.5pt;color:#555;font-style:italic;margin-bottom:6px}
+  .marks{display:flex;gap:16px;font-size:9.5pt;margin-bottom:6px;flex-wrap:wrap}
+  .cb{display:inline-block;width:11px;height:11px;border:1.4px solid #000;margin-right:4px;vertical-align:-1px}
+  .lines{margin-top:4px}
+  .lines div{border-bottom:1px dotted #888;height:17px}
+  .time{font-size:9pt;color:#333;margin-top:5px}
+  .star{background:#000;color:#fff;padding:1px 6px;font-size:9pt;border-radius:3px;margin-left:6px}
+  .big{border:2px solid #000}
+  .pb{page-break-before:always}
+  .foot{font-size:8.5pt;color:#555;border-top:1px solid #999;padding-top:6px;margin-top:14px}
+  table{width:100%;border-collapse:collapse;font-size:9.5pt;margin-top:6px}
+  td,th{border:1px solid #999;padding:5px 7px;text-align:left}
+  th{background:#eee;font-weight:600}
+  @media print{ body{padding:0} .noprint{display:none} }
+</style>
+</head>
+<body>
+
+<h1>ใบสังเกตการณ์ — ทดสอบผู้ใช้ WeHire</h1>
+<div class="sub">ฝั่งคนหางาน (Worker) · ผู้ทดสอบไม่เคยใช้แอปมาก่อน · ห้ามสอน ห้ามช่วย</div>
+
+<div class="meta">
+  <div>วันที่ <span class="u" style="min-width:110px"></span></div>
+  <div>ผู้ทดสอบ <span class="u" style="min-width:110px"></span></div>
+  <div>อายุ <span class="u" style="min-width:40px"></span></div>
+  <div>เครื่อง <span class="cb"></span> มือถือ &nbsp; <span class="cb"></span> คอม</div>
+  <div>เวอร์ชัน <span class="cb"></span> production &nbsp; <span class="cb"></span> localhost</div>
+  <div>เริ่ม <span class="u" style="min-width:50px"></span> จบ <span class="u" style="min-width:50px"></span></div>
+</div>
+
+<div class="rules">
+  <b>กฎ 4 ข้อ — อ่านก่อนเริ่ม</b>
+  <ol>
+    <li><b>ตอนแกติด ให้เงียบ นับ 1–30 ในใจก่อนพูด</b> — ช่วงเงียบคือข้อมูล ไม่ใช่ความล้มเหลว</li>
+    <li><b>อย่าถาม “เข้าใจไหม”</b> → ให้ถาม <b>“ตอนนี้คิดว่าต้องทำอะไรต่อ”</b></li>
+    <li><b>จดสิ่งที่แกทำ ไม่ใช่สิ่งที่แกพูด</b> — แตะตรงที่ไม่ใช่ปุ่ม / เลื่อนหาของ / กดซ้ำเพราะไม่แน่ใจ</li>
+    <li><b>ห้ามอธิบายว่า “จริงๆ มันต้อง…”</b> — ถ้าต้องอธิบาย แปลว่าดีไซน์แพ้แล้ว จบตรงนั้น จดไว้</li>
+  </ol>
+</div>
+
+<h2><span class="n">1</span>สมัครสมาชิก</h2>
+
+<div class="step">
+  <div class="q">1.1 เปิดแอปครั้งแรก — แกทำอะไรเป็นอย่างแรก</div>
+  <div class="marks">
+    <span><span class="cb"></span> กดสมัครเลย</span>
+    <span><span class="cb"></span> อ่านก่อน</span>
+    <span><span class="cb"></span> ถามว่าทำอะไร</span>
+    <span><span class="cb"></span> ติด</span>
+  </div>
+  <div class="lines"><div></div></div>
+</div>
+
+<div class="step">
+  <div class="q">1.2 เลือกสมัครแบบไหน</div>
+  <div class="marks">
+    <span><span class="cb"></span> Google</span>
+    <span><span class="cb"></span> กรอกอีเมล+รหัสผ่าน</span>
+    <span><span class="cb"></span> ลังเลนาน</span>
+  </div>
+  <div class="hint">ถ้าเลือกกรอกเอง — ติดตรงไหน? รหัสผ่าน? อีเมล? เบอร์โทร?</div>
+  <div class="lines"><div></div></div>
+  <div class="time">เวลาที่ใช้ทั้งขั้นตอนสมัคร <span class="u" style="min-width:50px"></span> นาที</div>
+</div>
+
+<div class="step">
+  <div class="q">1.3 เลือกบทบาท (คนหางาน / ผู้ว่าจ้าง) — เข้าใจไหมว่าต้องเลือกอันไหน</div>
+  <div class="marks">
+    <span><span class="cb"></span> เลือกถูกทันที</span>
+    <span><span class="cb"></span> ลังเล</span>
+    <span><span class="cb"></span> เลือกผิด</span>
+  </div>
+  <div class="lines"><div></div></div>
+</div>
+
+<h2><span class="n">2</span>หน้าแรก + การ์ด “ตั้งค่าบัญชี”</h2>
+
+<div class="step">
+  <div class="q">2.1 เข้ามาหน้าแรกครั้งแรก — <b>แกรู้ไหมว่าต้องทำอะไรต่อ</b></div>
+  <div class="hint">นี่คือปัญหาหลักที่คนทดสอบคนก่อนบอกว่า “ไม่รู้จะไปไหนเริ่มยังไง”</div>
+  <div class="marks">
+    <span><span class="cb"></span> รู้ทันที</span>
+    <span><span class="cb"></span> งง 5–30 วิ</span>
+    <span><span class="cb"></span> งงเกิน 30 วิ</span>
+    <span><span class="cb"></span> ต้องช่วย</span>
+  </div>
+  <div class="lines"><div></div><div></div></div>
+</div>
+
+<div class="step">
+  <div class="q">2.2 การ์ด “ตั้งค่าบัญชีของคุณ 0/3” — แกสังเกตเห็นไหม แล้วรู้ไหมว่ากดได้</div>
+  <div class="marks">
+    <span><span class="cb"></span> เห็น+กดเอง</span>
+    <span><span class="cb"></span> เห็นแต่ไม่กด</span>
+    <span><span class="cb"></span> ไม่เห็นเลย</span>
+  </div>
+  <div class="hint">ถ้าเห็นแต่ไม่กด — ถามว่า “อันนี้คืออะไรครับ” แล้วจดคำตอบดิบๆ</div>
+  <div class="lines"><div></div><div></div></div>
+</div>
+
+<div class="step">
+  <div class="q">2.3 แกเข้าใจ “0/3” ไหม</div>
+  <div class="marks">
+    <span><span class="cb"></span> เข้าใจ</span>
+    <span><span class="cb"></span> ไม่เข้าใจ</span>
+    <span><span class="cb"></span> ไม่สังเกต</span>
+  </div>
+  <div class="lines"><div></div></div>
+</div>
+
+<div class="pb"></div>
+
+<h2><span class="n">3</span>หน้า “หางานใกล้บ้าน” — แผนที่ <span class="star">สำคัญที่สุด</span></h2>
+<div class="sub">คำถามที่ค้างอยู่: คนที่ไม่คุ้นเทคหางานเจอจากหน้าแผนที่ไหม หรือควรเป็นการ์ดเรียงกันแบบ Shopee</div>
+
+<div class="step big">
+  <div class="q">3.1 เปิดหน้านี้ครั้งแรก — <b>แกมองไปที่ตรงไหนก่อน</b></div>
+  <div class="hint">สังเกตสายตา/นิ้ว ไม่ต้องถาม</div>
+  <div class="marks">
+    <span><span class="cb"></span> แผนที่</span>
+    <span><span class="cb"></span> การ์ดงานด้านซ้าย</span>
+    <span><span class="cb"></span> แถบรัศมี</span>
+    <span><span class="cb"></span> ไม่รู้จะมองตรงไหน</span>
+  </div>
+  <div class="lines"><div></div></div>
+</div>
+
+<div class="step big">
+  <div class="q">3.2 แกรู้ไหมว่า “งาน” อยู่ตรงไหนของหน้าจอ</div>
+  <div class="marks">
+    <span><span class="cb"></span> รู้ทันที</span>
+    <span><span class="cb"></span> หาสักพัก</span>
+    <span><span class="cb"></span> หาไม่เจอ</span>
+  </div>
+  <div class="time">ใช้เวลาหาจนเจอ <span class="u" style="min-width:50px"></span> วินาที</div>
+  <div class="lines"><div></div><div></div></div>
+</div>
+
+<div class="step big">
+  <div class="q">3.3 แกลองแตะหมุดบนแผนที่ไหม</div>
+  <div class="marks">
+    <span><span class="cb"></span> แตะ</span>
+    <span><span class="cb"></span> ไม่แตะเลย</span>
+    <span><span class="cb"></span> แตะแล้วงงว่าเกิดอะไรขึ้น</span>
+  </div>
+  <div class="hint">ถ้าไม่แตะเลย = แผนที่อาจไม่ได้ทำหน้าที่อะไรกับผู้ใช้กลุ่มนี้</div>
+  <div class="lines"><div></div></div>
+</div>
+
+<div class="step big">
+  <div class="q">3.4 ถามหลังแกดูสัก 1 นาที: <b>“ถ้าจะสมัครงานสักงาน ต้องทำยังไงครับ”</b></div>
+  <div class="hint">จดคำตอบเป็นคำพูดของแกเป๊ะๆ อย่าเรียบเรียง</div>
+  <div class="lines"><div></div><div></div><div></div></div>
+</div>
+
+<div class="step big">
+  <div class="q">3.5 แกเลื่อนแถบ “รัศมีการค้นหา” ไหม / เข้าใจไหมว่ามันคืออะไร</div>
+  <div class="marks">
+    <span><span class="cb"></span> เลื่อนเอง</span>
+    <span><span class="cb"></span> ไม่แตะ</span>
+    <span><span class="cb"></span> ถามว่าคืออะไร</span>
+  </div>
+  <div class="lines"><div></div></div>
+</div>
+
+<div class="step big">
+  <div class="q">3.6 GPS — ตอนเบราว์เซอร์ขออนุญาตตำแหน่ง แกทำยังไง</div>
+  <div class="marks">
+    <span><span class="cb"></span> กดอนุญาตทันที</span>
+    <span><span class="cb"></span> ลังเลแล้วอนุญาต</span>
+    <span><span class="cb"></span> กดไม่อนุญาต</span>
+    <span><span class="cb"></span> ไม่ขึ้น</span>
+  </div>
+  <div class="hint">ถ้าลังเล — ถามว่าลังเลเพราะอะไร แล้วจดไว้ (ใช้ตัดสินเรื่องเก็บพิกัดต่อ)</div>
+  <div class="lines"><div></div></div>
+</div>
+
+<div class="step big">
+  <div class="q">3.7 <b>คำถามชี้ขาด</b> — ถามตอนจบหน้านี้: <b>“ถ้าไม่มีแผนที่ มีแต่รายการงานเรียงลงมา จะหาง่ายขึ้นหรือยากขึ้น”</b></div>
+  <div class="hint">อย่าถามก่อนแกลองเอง · อย่าบอกว่าอันไหนดีกว่า</div>
+  <div class="marks">
+    <span><span class="cb"></span> ง่ายขึ้น</span>
+    <span><span class="cb"></span> ยากขึ้น</span>
+    <span><span class="cb"></span> เหมือนกัน</span>
+    <span><span class="cb"></span> ตอบไม่ได้</span>
+  </div>
+  <div class="lines"><div></div><div></div></div>
+</div>
+
+<div class="pb"></div>
+
+<h2><span class="n">4</span>โปรไฟล์ + เลือกตำแหน่งงาน</h2>
+
+<div class="step">
+  <div class="q">4.1 หมวดงาน → ตำแหน่งงาน (2 ช่องต่อกัน) — แกเข้าใจว่าต้องเลือกหมวดก่อนไหม</div>
+  <div class="marks">
+    <span><span class="cb"></span> เข้าใจเอง</span>
+    <span><span class="cb"></span> กดตำแหน่งก่อนแล้วงงว่าว่างเปล่า</span>
+    <span><span class="cb"></span> ต้องช่วย</span>
+  </div>
+  <div class="lines"><div></div></div>
+</div>
+
+<div class="step">
+  <div class="q">4.2 แกรู้ไหมว่าเลือกได้มากกว่า 1 ตำแหน่ง (สูงสุด 3)</div>
+  <div class="marks">
+    <span><span class="cb"></span> ลองเลือกเพิ่มเอง</span>
+    <span><span class="cb"></span> เลือกอันเดียวแล้วไปต่อ</span>
+    <span><span class="cb"></span> ถาม</span>
+  </div>
+  <div class="hint">ถ้าเลือกอันเดียวแล้วไปต่อ — ทีหลังค่อยถามว่า “แม่ทำงานอะไรได้บ้าง” ถ้าตอบได้หลายอย่าง = UI ยังสื่อไม่พอ</div>
+  <div class="lines"><div></div><div></div></div>
+</div>
+
+<div class="step">
+  <div class="q">4.3 ปุ่ม × สีแดงบนป้ายตำแหน่ง — แกเห็นไหม / รู้ไหมว่าเอาไว้ลบ</div>
+  <div class="marks">
+    <span><span class="cb"></span> เห็นและใช้ถูก</span>
+    <span><span class="cb"></span> เห็นแต่ไม่กล้ากด</span>
+    <span><span class="cb"></span> ไม่เห็น</span>
+  </div>
+  <div class="lines"><div></div></div>
+</div>
+
+<div class="step">
+  <div class="q">4.4 ช่อง “ค่าแรงที่คาด” (ปล่อยว่างได้) — แกกรอกหรือข้าม</div>
+  <div class="marks">
+    <span><span class="cb"></span> กรอก</span>
+    <span><span class="cb"></span> ข้าม</span>
+    <span><span class="cb"></span> ถามว่าต้องกรอกไหม</span>
+  </div>
+  <div class="hint">ถ้ากรอก — ใส่เลขเท่าไหร่ <span class="u" style="min-width:60px"></span> บาท (เทียบกับค่าแรงงานจริงในระบบ)</div>
+  <div class="lines"><div></div></div>
+</div>
+
+<div class="step">
+  <div class="q">4.5 มีช่องไหนที่แกลังเลนานที่สุด</div>
+  <div class="lines"><div></div><div></div></div>
+</div>
+
+<h2><span class="n">5</span>กดสมัครงาน</h2>
+
+<div class="step">
+  <div class="q">5.1 ถ้าโปรไฟล์ไม่ครบแล้วกดสมัคร → มีกล่อง “อีก N ขั้นก็สมัครได้เลย” เด้ง — แกอ่านแล้วทำตามไหม</div>
+  <div class="marks">
+    <span><span class="cb"></span> กด “กรอกโปรไฟล์”</span>
+    <span><span class="cb"></span> กด “ไว้ทีหลัง”</span>
+    <span><span class="cb"></span> ปิดทิ้ง/งง</span>
+  </div>
+  <div class="lines"><div></div></div>
+</div>
+
+<div class="step">
+  <div class="q">5.2 หลังกรอกโปรไฟล์เสร็จ ระบบพากลับมาหน้าหางาน — แกรู้ตัวไหมว่ากลับมาที่เดิม</div>
+  <div class="marks">
+    <span><span class="cb"></span> รู้และสมัครต่อ</span>
+    <span><span class="cb"></span> งงว่าอยู่ไหน</span>
+    <span><span class="cb"></span> ไม่ได้กลับมา (บั๊ก)</span>
+  </div>
+  <div class="lines"><div></div></div>
+</div>
+
+<div class="step">
+  <div class="q">5.3 สมัครสำเร็จ — แกรู้ไหมว่าสมัครไปแล้ว / ต้องรออะไรต่อ</div>
+  <div class="marks">
+    <span><span class="cb"></span> รู้</span>
+    <span><span class="cb"></span> ไม่แน่ใจว่าสำเร็จไหม</span>
+    <span><span class="cb"></span> ไม่รู้ว่าต้องรออะไร</span>
+  </div>
+  <div class="lines"><div></div><div></div></div>
+</div>
+
+<h2><span class="n">6</span>ถามหลังจบ (อย่าถามระหว่างทาง)</h2>
+
+<table>
+  <tr><th style="width:47%">คำถาม</th><th>คำตอบ (จดคำพูดดิบๆ)</th></tr>
+  <tr><td>ตรงไหนงงที่สุด</td><td style="height:34px"></td></tr>
+  <tr><td>ถ้าให้ใช้เองที่บ้าน จะใช้ต่อไหม เพราะอะไร</td><td style="height:34px"></td></tr>
+  <tr><td>แอปนี้เอาไว้ทำอะไร (ทดสอบว่าสื่อสารถูกไหม)</td><td style="height:34px"></td></tr>
+  <tr><td>มีตรงไหนที่กลัว/ไม่กล้ากดไหม</td><td style="height:34px"></td></tr>
+  <tr><td>ถ้าเพื่อนถามว่าดีไหม จะบอกว่าอะไร</td><td style="height:34px"></td></tr>
+</table>
+
+<h2><span class="n">7</span>สรุป — 3 อย่างที่ต้องแก้ที่สุด</h2>
+
+<div class="step">
+  <div class="q">เรียงตามความเจ็บที่เห็นกับตา ไม่ใช่ตามที่แกบ่น</div>
+  <div class="lines"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+</div>
+
+<div class="step">
+  <div class="q">จุดที่ต้อง “อธิบายให้ฟัง” กี่ครั้งตลอดการทดสอบ <span class="u" style="min-width:40px"></span> ครั้ง</div>
+  <div class="hint">ทุกครั้งที่ต้องอธิบาย = 1 จุดที่ดีไซน์แพ้ · เลขนี้คือคะแนนรวมของแอป ยิ่งน้อยยิ่งดี</div>
+</div>
+
+<div class="foot">
+  WeHire · ใบสังเกตการณ์ทดสอบผู้ใช้ v1 · 2026-07-19 · พิมพ์จากเบราว์เซอร์ด้วย Ctrl+P
+</div>
+
+</body>
+</html>
