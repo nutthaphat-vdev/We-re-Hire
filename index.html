@@ -3339,7 +3339,13 @@ async function loadDashboard() {
     headerEl.innerHTML = `
       <div class="dashboard-header">
         <div class="header-user">
-          <div class="avatar-lg">${esc(dashInitials(companyName))}</div>
+          ${empProfile?.workplace_photo_url ? `
+          <div class="avatar-lg" style="position:relative;overflow:hidden;padding:0">
+            <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">${esc(dashInitials(companyName))}</span>
+            <img src="${esc(empProfile.workplace_photo_url)}" alt=""
+                 style="position:relative;width:100%;height:100%;object-fit:cover" onerror="this.remove()">
+          </div>`
+          : `<div class="avatar-lg">${esc(dashInitials(companyName))}</div>`}
           <div class="user-info">
             <h1>${esc(companyName)}</h1>
             ${empVerified
