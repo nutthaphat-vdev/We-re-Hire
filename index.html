@@ -3254,7 +3254,13 @@ async function loadDashboard() {
     contentEl.innerHTML = `<div class="wdash">
       <div class="dashboard-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:26px;flex-wrap:wrap;gap:20px">
         <div class="user-header">
-          <div class="avatar-lg">${esc(dashInitials(name))}</div>
+          ${profile?.profile_photo_url ? `
+          <div class="avatar-lg" style="position:relative;overflow:hidden;padding:0">
+            <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">${esc(dashInitials(name))}</span>
+            <img src="${esc(profile.profile_photo_url)}" alt=""
+                 style="position:relative;width:100%;height:100%;object-fit:cover" onerror="this.remove()">
+          </div>`
+          : `<div class="avatar-lg">${esc(dashInitials(name))}</div>`}
           <div><p style="color:var(--muted);font-size:.92rem;margin-bottom:4px">${t('hello_prefix')} 👋</p><h1>${esc(name)}</h1></div>
         </div>
         <div class="status-pill">
@@ -4690,7 +4696,13 @@ async function loadActiveShift() {
     el.innerHTML = `
       <div class="as-header">
         <div style="display:flex;align-items:center;gap:16px">
-          <div class="avatar-lg">${esc(dashInitials(name))}</div>
+          ${profile?.profile_photo_url ? `
+          <div class="avatar-lg" style="position:relative;overflow:hidden;padding:0">
+            <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">${esc(dashInitials(name))}</span>
+            <img src="${esc(profile.profile_photo_url)}" alt=""
+                 style="position:relative;width:100%;height:100%;object-fit:cover" onerror="this.remove()">
+          </div>`
+          : `<div class="avatar-lg">${esc(dashInitials(name))}</div>`}
           <div><div class="as-h1">My Active Shift ${ico('checkcircle',20)}</div><p style="color:var(--muted);font-size:.92rem;margin-top:4px">ติดตามสถานะงานปัจจุบันของคุณ</p></div>
         </div>
       </div>
