@@ -70,6 +70,13 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
+# เวอร์ชันนโยบาย (ToS + Privacy/PDPA) ที่ผลใช้จริงตอนนี้ — single source of truth
+# บันทึกลง users.policy_version ตอน register เป็นหลักฐาน consent
+# ⚠️ bump ที่นี่ที่เดียวทุกครั้งที่แก้เนื้อหา policies/ ให้มีผลจริง
+# ต้องตรงกับหมายเลขในไฟล์ policies/*.md · ห้าม hardcode เลขซ้ำที่จุด INSERT อีก
+# v1.1 (เพิ่มการเก็บพิกัดตอนรับงาน) ยังเป็นร่าง — bump เป็น "1.1" พร้อมตอนเปิดฟีเจอร์ GPS จริง
+POLICY_VERSION = "1.0"
+
 
 # ---------------------------------------------------------------------------
 # DB Connection Pool (lifespan)
@@ -910,7 +917,7 @@ async def google_callback(
     user = await db.fetchrow(
         """
         INSERT INTO users (email, password_hash, role, terms_accepted_at, policy_version)
-        VALUES ($1, 'google_oauth', $2, NOW(), '1.0')
+        VALUES ($1, 'google_oauth', $2, NOW(), $3)
         ON CONFLICT (email) DO UPDATE
             SET role = CASE
                 WHEN users.password_hash = 'google_oauth' THEN $2
@@ -919,7 +926,7 @@ async def google_callback(
             -- ไม่ทับ terms_accepted_at เดิม (user เก่าเก็บ consent ไว้แล้ว)
         RETURNING id, role, is_active
         """,
-        email, body.role,
+        email, body.role, POLICY_VERSION,
     )
 
     if not user["is_active"]:
@@ -977,7 +984,7 @@ async def register(body: RegisterRequest, db: asyncpg.Connection = Depends(get_d
         VALUES ($1, $2, $3, $4, NOW(), $5)
         RETURNING id, role
         """,
-        body.email, phone, hashed, body.role, "1.0",
+        body.email, phone, hashed, body.role, POLICY_VERSION,
     )
 
     token = create_token(str(user["id"]), user["role"])
