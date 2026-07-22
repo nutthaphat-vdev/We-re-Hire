@@ -107,54 +107,33 @@ ratio = float(worker_rate) / float(job_rate)
 ratio = worker_rate / job_rate
 ```
 
-### 5. ⏳ Render free tier หลับ → cron ตายทั้งหมด — **ข้อสรุปนี้กำลังถูกตรวจสอบใหม่**
+### 5. ✅ cron ทำงานปกติ — ปัญหาเดิมคือ "log มองไม่เห็น" ไม่ใช่ "cron ไม่รัน" (สรุป 2026-07-22)
 
-> ## ⚠️ อ่านก่อน — อย่าเพิ่งเชื่อข้อสรุปด้านล่าง (อัปเดต 2026-07-21)
->
-> **พบว่าหลักฐานที่ใช้สรุปไว้เดิมใช้ไม่ได้** — `logger` ใน `main.py` ถูกสร้างด้วย
-> `logging.getLogger("wehire")` เฉยๆ **ไม่มี handler ไม่มี level** ⇒ Python ตกไปใช้
-> `logging.lastResort` ซึ่งออก stderr **ที่ระดับ WARNING ขึ้นไปเท่านั้น**
-> ⇒ **`logger.info()` ทั้ง 20 จุดถูกทิ้งก่อนออกจาก process ไม่เคยโผล่ใน Render เลย**
->
-> ⇒ ข้อความ *"ค้น log ย้อน 7 วัน = No matching logs"* **ไม่ได้แปลว่า cron ไม่รัน**
-> มันแปลว่า **log ออกไม่ได้ตั้งแต่แรก** ไม่ว่า cron จะรันหรือไม่
->
-> **แก้แล้ว** — commit `eb497d2` ใส่ `StreamHandler(sys.stdout)` + `setLevel(INFO)` ให้ logger
-> (พร้อมกับ `378af40` ให้ `/health` รับ HEAD — UptimeRobot ยิง HEAD เป็น default เลยได้ 405 มาตลอด
-> และ `106ca48` ใส่ `misfire_grace_time` + `coalesce`)
->
-> **หลังแก้ 21 ก.ค. เวลา ~20:40–21:40 น. เห็น cron รันครบทุกรอบ ห่างกัน 5 นาทีเป๊ะ 12 ครั้งติด**
-> `[noshow] done` · `[auto_verify]` · `[check_expired_jobs]` ตรงเวลาทั้งหมด ไม่มี `MISSED` ไม่มี `ERROR`
->
-> ### 🕐 รอผลข้ามคืน 21→22 ก.ค. ก่อนสรุป
-> เช็ค: Render → Logs → ค้น **`alerted=`** ย้อน 12 ชม. (ควรได้ ~100+ บรรทัด ถ้าไม่ขาด)
-> - **ไม่ขาดตลอดคืน** → cron ไม่เคยพัง · ปัญหาคือ log ล้วนๆ · **ไม่ต้องจ่าย $7** → ลบข้อสรุปด้านล่างทิ้ง
-> - **ขาดเป็นช่วงตอนดึก** → เรื่องหลับเป็นจริงบางส่วน · ค่อยตัดสินใจ Starter $7
->
-> **บทเรียน:** อย่าตีความ "ไม่มี log" ว่า "ไม่ได้รัน" จนกว่าจะพิสูจน์ก่อนว่า **log ตัวนั้นออกได้จริง**
+> **ข้อสรุปเดิม (19 ก.ค.) ที่ว่า "Render หลับ → cron ตาย" — ผิด** · หลักฐานที่ใช้ตอนนั้นใช้ไม่ได้ตั้งแต่แรก
 
----
+**สาเหตุจริง — 3 บั๊กซ้อนกัน:**
 
-<details>
-<summary><b>ข้อสรุปเดิม 2026-07-19 (เก็บไว้อ้างอิง — รอผลข้ามคืนก่อนตัดสิน)</b></summary>
+| # | บั๊ก | ผล | commit แก้ |
+|---|------|-----|-----------|
+| 1 | `logger = logging.getLogger("wehire")` **ไม่มี handler/level** → ตกไปใช้ `logging.lastResort` ซึ่งออกแค่ WARNING+ | **`logger.info()` ทั้ง 20 จุดถูกทิ้งเงียบ** ไม่เคยโผล่ใน Render → หน้าตาเหมือน cron ไม่รัน | `eb497d2` |
+| 2 | `/health` รับแค่ GET แต่ UptimeRobot ยิง **HEAD** | ได้ 405 ทุกครั้ง → monitor ขึ้น Down + ปลุกเครื่องไม่ค่อยติด | `378af40` |
+| 3 | `AsyncIOScheduler` ไม่ตั้ง `misfire_grace_time` (default 1 วิ) | ถ้า process ถูก suspend รอบที่ผ่านไปจะถูกข้ามเงียบ | `106ca48` |
 
-**อาการที่หลอกให้ debug ผิดจุด:** "งานโพสต์แล้วค้างเกิน 48 ชม. ไม่ปิดเอง" → **โค้ด `check_expired_jobs` ถูกต้องทุกบรรทัด** ปัญหาอยู่ที่ cron ไม่เคยรัน
+**บทเรียนหลัก (สำคัญกว่าตัวบั๊ก):**
+> **"ไม่มี log" ≠ "ไม่ได้รัน"** — ต้องพิสูจน์ก่อนว่า log ตัวนั้น *ออกได้จริง* ก่อนใช้ความเงียบเป็นหลักฐาน
+> ข้อสรุป 19 ก.ค. เขียนว่า "ยืนยันแล้ว" ทั้งที่ตั้งอยู่บนหลักฐานที่ใช้ไม่ได้ → พา debug ผิดทางทั้งวัน 21 ก.ค.
 
-**หลักฐาน:** Render dashboard → ค้น log `[check_expired_jobs]` ย้อน 7 วัน = **No matching logs**
+**หลักฐานที่ยืนยัน (หลังแก้ทั้ง 3):**
+- 21 ก.ค. 12:48 → 22 ก.ค. 02:57 = **171 รอบต่อเนื่อง 14.2 ชม.** · ช่องว่างมากสุด 302 วิ (ควร 300) · **ไม่มีรอบขาดเลย · ไม่มี `MISSED` ไม่มี `ERROR`**
+- **ช่วงดึก 23:00–02:57 ครบ 48 รอบต่อเนื่อง** ← ตอนไม่มีใครแตะแอป เหลือแค่ UptimeRobot ping → cron ยังเดินเป๊ะ
 
-**สาเหตุ:** Render free tier spin down หลังไม่มี traffic ~15 นาที → process ดับ → `AsyncIOScheduler` ที่รันใน process เดียวกับ FastAPI ดับตาม → interval 30 นาทีไม่มีทางครบรอบ
+**⇒ สรุป: keep-alive ping (UptimeRobot `/health` ทุก 5 นาที) เอาอยู่ · ไม่ต้องจ่าย Render Starter $7 ตอนนี้**
 
-**กระทบ cron ทั้ง 4 ตัว (main.py ~626-630):**
-- `check_noshow_workers` (5 นาที) → **no-show detection ตาย** ← จุดขาย anti-ghosting เงียบสนิท
-- `auto_verify_completed_jobs` (30 นาที) → ไม่ auto-verify
-- `check_expired_jobs` (30 นาที) → งานค้างไม่ปิด
-- `send_d1_reminders` → ไม่เตือนล่วงหน้า
-
-**แก้:** Render Starter $7/mo (always-on, ไม่ต้องแตะโค้ด) **หรือ** keep-alive ping `/health` ทุก 5 นาที (UptimeRobot / cron-job.org — ดู `launch/REVISED_PLAN.md` Phase 0)
-
-> ⚠️ **ห้ามไปแก้โค้ด cron เพื่อ "ซ่อม" อาการนี้** — โค้ดไม่ผิด · เช็ค log ก่อนเสมอว่า cron รันจริงไหม
-
-</details>
+**เงื่อนไขที่ยังต้องมี (ห้ามถอด):**
+- ✅ logger ต้องมี `StreamHandler(sys.stdout)` + `setLevel(INFO)` — ดู `main.py` ใต้ `getLogger` (มีคอมเมนต์ "ห้ามลบ" กำกับ)
+- ✅ UptimeRobot ต้อง ping `https://we-re-hire.onrender.com/health` (URL backend Render ไม่ใช่ Cloudflare) ทุก **≤ 5 นาที**
+- ✅ `/health` ต้องรับ HEAD (`@app.api_route(..., methods=["GET","HEAD"])`)
+- 🔭 ถ้าวันหลัง traffic โต/pilot จริง อยากได้ headroom → ค่อย upgrade Starter $7 เพื่อความมั่นใจ ไม่ใช่เพราะจำเป็น
 
 ---
 
