@@ -9,6 +9,7 @@ Stack: FastAPI + asyncpg + Supabase (PostgreSQL + PostGIS) + PyJWT
 import os
 import re
 import sys
+import secrets
 import logging
 import asyncpg
 import jwt
@@ -56,7 +57,7 @@ class Settings(BaseSettings):
     jwt_secret:           str
     jwt_algorithm:        str = "HS256"
     jwt_expire_minutes:   int = 120
-    cors_origins:         str = "http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000,null"
+    cors_origins:         str = "http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000"
     frontend_url:         str = ""   # Railway frontend URL เช่น https://wehire.up.railway.app
     supabase_url:         str = "https://wexupoegrynxbhdzioym.supabase.co"
     supabase_anon_key:    str = ""
@@ -702,7 +703,11 @@ async def _rate_limit_handler(request: Request, exc: RateLimitExceeded):
     return JSONResponse(status_code=429, content={"detail": "คำขอมากเกินไป กรุณารอสักครู่แล้วลองใหม่"})
 app.add_exception_handler(RateLimitExceeded, _rate_limit_handler)
 
-origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
+# ❗ กัน "null" / "*" หลุดเข้ามาทาง env var — เป็น origin ที่ปลอมได้ (file://, sandboxed iframe)
+# ห้ามอนุญาต เพราะ allow_credentials=True อยู่ด้วย (audit 2026-07-22 ข้อ 2)
+_CORS_BLOCKED = {"null", "*"}
+origins = [o.strip() for o in settings.cors_origins.split(",")
+           if o.strip() and o.strip().lower() not in _CORS_BLOCKED]
 if settings.frontend_url:
     origins.append(settings.frontend_url.strip())
 # Explicit allowlist — current Cloudflare Worker URL
@@ -3596,7 +3601,8 @@ async def request_background_check(
 @app.post("/admin/cron/trigger", tags=["Admin"], include_in_schema=False)
 async def trigger_cron(x_admin_secret: str = Header(default="")):
     """Test-only: manually trigger auto_verify + check_expired_jobs crons (guarded by admin_secret)"""
-    if not settings.admin_secret or x_admin_secret != settings.admin_secret:
+    if not settings.admin_secret or not secrets.compare_digest(
+        x_admin_secret.encode(), settings.admin_secret.encode()):
         raise HTTPException(status_code=403, detail="Forbidden")
     await auto_verify_completed_jobs()
     await check_expired_jobs()
@@ -3989,7 +3995,8 @@ async def admin_verify_worker(
     db: asyncpg.Connection = Depends(get_db),
 ):
     """Admin อนุมัติ background check ของ worker"""
-    if not settings.admin_secret or x_admin_secret != settings.admin_secret:
+    if not settings.admin_secret or not secrets.compare_digest(
+        x_admin_secret.encode(), settings.admin_secret.encode()):
         raise HTTPException(status_code=403, detail="ไม่มีสิทธิ์")
 
     worker = await db.fetchrow(
@@ -4020,7 +4027,8 @@ async def admin_verify_employer(
     db: asyncpg.Connection = Depends(get_db),
 ):
     """Admin อนุมัติ employer verification"""
-    if not settings.admin_secret or x_admin_secret != settings.admin_secret:
+    if not settings.admin_secret or not secrets.compare_digest(
+        x_admin_secret.encode(), settings.admin_secret.encode()):
         raise HTTPException(status_code=403, detail="ไม่มีสิทธิ์")
 
     emp = await db.fetchrow(
